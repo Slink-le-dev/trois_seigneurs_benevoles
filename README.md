@@ -1,5 +1,7 @@
 # Postes Signaleurs — Course de montagne
 
+Application en ligne : **https://trois-seigneurs-benevoles.vercel.app**
+
 Application de gestion des postes de signaleurs pour une course de montagne à 3 parcours,
 conforme au [cahier des charges](./Cahier_des_charges_Postes_Signaleurs.pdf).
 
@@ -50,6 +52,21 @@ même réseau Wi-Fi, utilisez l'URL réseau affichée par Vite (ex. http://192.1
 
 ## 4. Déploiement (Vercel)
 
+L'app est déployée sur https://trois-seigneurs-benevoles.vercel.app (projet Vercel
+`the-slinkies/trois-seigneurs-benevoles`, dépôt GitHub
+[Slink-le-dev/trois_seigneurs_benevoles](https://github.com/Slink-le-dev/trois_seigneurs_benevoles)).
+
+- Le déploiement actuel a été fait via la CLI (`npx vercel --prod`) depuis `app/`. Les pushs
+  GitHub ne redéploient **pas** automatiquement tant que l'intégration Git n'est pas connectée
+  dans le dashboard Vercel (Project Settings > Git > Connect). Une fois connectée, chaque push
+  sur `main` redéploiera automatiquement.
+- Pour redéployer manuellement après un changement : `cd app && npx vercel --prod`.
+- Variables d'environnement (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) déjà configurées sur
+  les environnements Production/Preview/Development du projet Vercel.
+- `app/vercel.json` contient la règle de réécriture SPA nécessaire pour que les routes
+  client-side (ex. `/admin`) ne renvoient pas 404 en navigation directe.
+
+Pour un nouveau déploiement depuis zéro (autre projet) :
 1. Poussez ce projet sur un dépôt GitHub.
 2. Sur [vercel.com](https://vercel.com), importez le dépôt, choisissez le dossier `app` comme
    racine du projet (« Root Directory »).
