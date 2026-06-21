@@ -1,1 +1,4 @@
 .claude/
+
+# Données personnelles (noms, téléphones) - ne jamais committer
+supabase/seed_benevoles.sql
