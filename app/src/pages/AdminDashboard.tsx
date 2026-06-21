@@ -79,7 +79,7 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <div className="h-screen flex flex-col">
-      <header className="bg-blue-900 text-white px-4 py-2 flex items-center justify-between">
+      <header className="bg-[#00C389] text-white px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
           <h1 className="font-semibold">Espace organisateur</h1>
