@@ -35,12 +35,14 @@ export default function BenevolesTable({
   };
 
   async function handleAdd() {
-    if (!nom.trim() || !telephone.trim() || !posteId) {
-      alert('Nom, téléphone et poste sont obligatoires.');
+    if (!nom.trim()) {
+      alert('Le nom est obligatoire.');
       return;
     }
-    const benevole = await onCreateBenevole({ nom: nom.trim(), telephone: telephone.trim() });
-    await onCreateAffectation({ benevole_id: benevole.id, poste_id: posteId, heure_debut: heureDebut, heure_fin: heureFin });
+    const benevole = await onCreateBenevole({ nom: nom.trim(), telephone: telephone.trim() || null });
+    if (posteId) {
+      await onCreateAffectation({ benevole_id: benevole.id, poste_id: posteId, heure_debut: heureDebut, heure_fin: heureFin });
+    }
     setNom('');
     setTelephone('');
     setPosteId('');
@@ -58,31 +60,33 @@ export default function BenevolesTable({
 
       {showForm && (
         <div className="border rounded p-3 mb-3 space-y-2 text-sm">
-          <input className="border rounded px-2 py-1 w-full" placeholder="Nom" value={nom} onChange={(e) => setNom(e.target.value)} />
+          <input className="border rounded px-2 py-1 w-full" placeholder="Nom (obligatoire)" value={nom} onChange={(e) => setNom(e.target.value)} />
           <input
             className="border rounded px-2 py-1 w-full"
-            placeholder="Téléphone"
+            placeholder="Téléphone (optionnel)"
             value={telephone}
             onChange={(e) => setTelephone(e.target.value)}
           />
           <select className="border rounded px-2 py-1 w-full" value={posteId} onChange={(e) => setPosteId(e.target.value)}>
-            <option value="">— Poste affecté —</option>
+            <option value="">— Poste affecté (optionnel) —</option>
             {postes.map((p) => (
               <option key={p.id} value={p.id}>
                 N°{p.numero} — {p.nom}
               </option>
             ))}
           </select>
-          <div className="flex gap-2">
-            <label className="flex-1">
-              Début
-              <input type="time" className="border rounded px-2 py-1 w-full" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} />
-            </label>
-            <label className="flex-1">
-              Fin
-              <input type="time" className="border rounded px-2 py-1 w-full" value={heureFin} onChange={(e) => setHeureFin(e.target.value)} />
-            </label>
-          </div>
+          {posteId && (
+            <div className="flex gap-2">
+              <label className="flex-1">
+                Début
+                <input type="time" className="border rounded px-2 py-1 w-full" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} />
+              </label>
+              <label className="flex-1">
+                Fin
+                <input type="time" className="border rounded px-2 py-1 w-full" value={heureFin} onChange={(e) => setHeureFin(e.target.value)} />
+              </label>
+            </div>
+          )}
           <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={handleAdd}>
             Enregistrer
           </button>
@@ -114,7 +118,8 @@ export default function BenevolesTable({
                   <input
                     className="border rounded px-1 py-0.5 w-28"
                     defaultValue={b.telephone ?? ''}
-                    onBlur={(e) => e.target.value !== b.telephone && onUpdateBenevole(b.id, { telephone: e.target.value })}
+                    placeholder="—"
+                    onBlur={(e) => e.target.value !== (b.telephone ?? '') && onUpdateBenevole(b.id, { telephone: e.target.value || null })}
                   />
                 </td>
                 <td>

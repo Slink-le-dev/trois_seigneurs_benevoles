@@ -38,7 +38,7 @@ create table poste_parcours (
 create table benevoles (
   id uuid primary key default gen_random_uuid(),
   nom text not null,
-  telephone text not null,
+  telephone text,
   created_at timestamptz not null default now()
 );
 
