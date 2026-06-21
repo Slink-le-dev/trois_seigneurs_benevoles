@@ -142,7 +142,15 @@ export default function BenevolesTable({
       </table>
 
       {editingBenevole && (
-        <BenevoleModal benevole={editingBenevole} onClose={() => setEditingBenevole(null)} onUpdate={onUpdateBenevole} />
+        <BenevoleModal
+          benevole={editingBenevole}
+          affectations={affectations}
+          postes={postes}
+          onClose={() => setEditingBenevole(null)}
+          onUpdate={onUpdateBenevole}
+          onCreateAffectation={onCreateAffectation}
+          onDeleteAffectation={onDeleteAffectation}
+        />
       )}
     </div>
   );
