@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import logo from '../assets/logo.png';
 import BenevolesTable from '../components/BenevolesTable';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
@@ -79,7 +80,10 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
   return (
     <div className="h-screen flex flex-col">
       <header className="bg-blue-900 text-white px-4 py-2 flex items-center justify-between">
-        <h1 className="font-semibold">Espace organisateur</h1>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
+          <h1 className="font-semibold">Espace organisateur</h1>
+        </div>
         <div className="flex items-center gap-3 text-sm">
           <a href="/" className="underline opacity-80 hover:opacity-100">
             Vue consultation

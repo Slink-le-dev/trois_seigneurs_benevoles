@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logo from '../assets/logo.png';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
 import PosteForm from '../components/PosteForm';
@@ -23,7 +24,10 @@ export default function PublicConsultation() {
   return (
     <div className="h-screen flex flex-col">
       <header className="bg-blue-700 text-white px-4 py-2 flex items-center justify-between">
-        <h1 className="font-semibold">Postes Signaleurs — Course de montagne</h1>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
+          <h1 className="font-semibold">Postes Signaleurs — Course de montagne</h1>
+        </div>
         <a href="/admin" className="text-sm underline opacity-80 hover:opacity-100">
           Espace organisateur
         </a>
