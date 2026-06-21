@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Affectation, Benevole, Poste } from '../types';
+import BenevoleModal from './BenevoleModal';
 
 interface BenevolesTableProps {
   benevoles: Benevole[];
@@ -28,6 +29,7 @@ export default function BenevolesTable({
   const [posteId, setPosteId] = useState('');
   const [heureDebut, setHeureDebut] = useState('08:00');
   const [heureFin, setHeureFin] = useState('14:00');
+  const [editingBenevole, setEditingBenevole] = useState<Benevole | null>(null);
 
   const posteName = (id: string) => {
     const p = postes.find((p) => p.id === id);
@@ -107,21 +109,8 @@ export default function BenevolesTable({
             const affs = affectations.filter((a) => a.benevole_id === b.id);
             return (
               <tr key={b.id} className="border-b align-top">
-                <td className="py-1">
-                  <input
-                    className="border rounded px-1 py-0.5 w-28"
-                    defaultValue={b.nom}
-                    onBlur={(e) => e.target.value !== b.nom && onUpdateBenevole(b.id, { nom: e.target.value })}
-                  />
-                </td>
-                <td>
-                  <input
-                    className="border rounded px-1 py-0.5 w-28"
-                    defaultValue={b.telephone ?? ''}
-                    placeholder="—"
-                    onBlur={(e) => e.target.value !== (b.telephone ?? '') && onUpdateBenevole(b.id, { telephone: e.target.value || null })}
-                  />
-                </td>
+                <td className="py-1">{b.nom}</td>
+                <td>{b.telephone ?? <span className="text-gray-400">—</span>}</td>
                 <td>
                   {affs.length === 0 ? (
                     <span className="text-gray-400">aucune</span>
@@ -138,7 +127,10 @@ export default function BenevolesTable({
                     </ul>
                   )}
                 </td>
-                <td>
+                <td className="whitespace-nowrap">
+                  <button className="text-blue-600 text-xs mr-2" onClick={() => setEditingBenevole(b)}>
+                    Modifier
+                  </button>
                   <button className="text-red-600 text-xs" onClick={() => onDeleteBenevole(b.id)}>
                     Supprimer
                   </button>
@@ -148,6 +140,10 @@ export default function BenevolesTable({
           })}
         </tbody>
       </table>
+
+      {editingBenevole && (
+        <BenevoleModal benevole={editingBenevole} onClose={() => setEditingBenevole(null)} onUpdate={onUpdateBenevole} />
+      )}
     </div>
   );
 }
