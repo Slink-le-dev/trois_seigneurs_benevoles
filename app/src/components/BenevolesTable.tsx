@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCreneau } from '../lib/format';
 import { Affectation, Benevole, Poste } from '../types';
 import BenevoleModal from './BenevoleModal';
 
@@ -27,8 +28,8 @@ export default function BenevolesTable({
   const [nom, setNom] = useState('');
   const [telephone, setTelephone] = useState('');
   const [posteId, setPosteId] = useState('');
-  const [heureDebut, setHeureDebut] = useState('08:00');
-  const [heureFin, setHeureFin] = useState('14:00');
+  const [heureDebut, setHeureDebut] = useState('');
+  const [heureFin, setHeureFin] = useState('');
   const [editingBenevole, setEditingBenevole] = useState<Benevole | null>(null);
 
   const posteName = (id: string) => {
@@ -43,7 +44,12 @@ export default function BenevolesTable({
     }
     const benevole = await onCreateBenevole({ nom: nom.trim(), telephone: telephone.trim() || null });
     if (posteId) {
-      await onCreateAffectation({ benevole_id: benevole.id, poste_id: posteId, heure_debut: heureDebut, heure_fin: heureFin });
+      await onCreateAffectation({
+        benevole_id: benevole.id,
+        poste_id: posteId,
+        heure_debut: heureDebut || null,
+        heure_fin: heureFin || null,
+      });
     }
     setNom('');
     setTelephone('');
@@ -80,11 +86,11 @@ export default function BenevolesTable({
           {posteId && (
             <div className="flex gap-2">
               <label className="flex-1">
-                Début
+                Début (optionnel)
                 <input type="time" className="border rounded px-2 py-1 w-full" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} />
               </label>
               <label className="flex-1">
-                Fin
+                Fin (optionnel)
                 <input type="time" className="border rounded px-2 py-1 w-full" value={heureFin} onChange={(e) => setHeureFin(e.target.value)} />
               </label>
             </div>
@@ -116,14 +122,18 @@ export default function BenevolesTable({
                     <span className="text-gray-400">aucune</span>
                   ) : (
                     <ul>
-                      {affs.map((a) => (
-                        <li key={a.id} className="flex items-center gap-2">
-                          {posteName(a.poste_id)} ({a.heure_debut.slice(0, 5)}–{a.heure_fin.slice(0, 5)})
-                          <button className="text-red-500 text-xs" onClick={() => onDeleteAffectation(a.id)}>
-                            retirer
-                          </button>
-                        </li>
-                      ))}
+                      {affs.map((a) => {
+                        const creneau = formatCreneau(a.heure_debut, a.heure_fin);
+                        return (
+                          <li key={a.id} className="flex items-center gap-2">
+                            {posteName(a.poste_id)}
+                            {creneau ? ` (${creneau})` : ''}
+                            <button className="text-red-500 text-xs" onClick={() => onDeleteAffectation(a.id)}>
+                              retirer
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </td>

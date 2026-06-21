@@ -46,8 +46,8 @@ create table affectations (
   id uuid primary key default gen_random_uuid(),
   benevole_id uuid not null references benevoles(id) on delete cascade,
   poste_id uuid not null references postes(id) on delete cascade,
-  heure_debut time not null,
-  heure_fin time not null,
+  heure_debut time,
+  heure_fin time,
   created_at timestamptz not null default now()
 );
 

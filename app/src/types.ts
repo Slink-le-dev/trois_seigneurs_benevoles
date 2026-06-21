@@ -54,7 +54,7 @@ export interface Affectation {
   id: string;
   benevole_id: string;
   poste_id: string;
-  heure_debut: string;
-  heure_fin: string;
+  heure_debut: string | null;
+  heure_fin: string | null;
   created_at: string;
 }

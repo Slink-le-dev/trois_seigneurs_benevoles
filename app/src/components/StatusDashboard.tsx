@@ -24,7 +24,10 @@ export default function StatusDashboard({ postes, affectations, onSelectPoste }:
     return postes
       .filter((p) => p.statut === 'non_active')
       .map((p) => {
-        const heuresDebut = affectations.filter((a) => a.poste_id === p.id).map((a) => a.heure_debut);
+        const heuresDebut = affectations
+          .filter((a) => a.poste_id === p.id)
+          .map((a) => a.heure_debut)
+          .filter((h): h is string => !!h);
         const premiereHeure = heuresDebut.sort()[0];
         return { poste: p, premiereHeure };
       })

@@ -1,3 +1,4 @@
+import { formatCreneau } from './format';
 import { Affectation, Benevole, POSTE_TYPES, Poste } from '../types';
 
 export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affectations: Affectation[], benevoles: Benevole[]) {
@@ -13,7 +14,7 @@ export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affect
   const benevolesRows = affectations
     .map((a) => {
       const b = benevoles.find((x) => x.id === a.benevole_id);
-      return `<tr><td>${b?.nom ?? '?'}</td><td>${b?.telephone ?? ''}</td><td>${a.heure_debut.slice(0, 5)} – ${a.heure_fin.slice(0, 5)}</td></tr>`;
+      return `<tr><td>${b?.nom ?? '?'}</td><td>${b?.telephone ?? ''}</td><td>${formatCreneau(a.heure_debut, a.heure_fin) ?? '—'}</td></tr>`;
     })
     .join('');
 

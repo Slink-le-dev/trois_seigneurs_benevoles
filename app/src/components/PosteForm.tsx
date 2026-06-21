@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
 import { Affectation, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
 
@@ -39,8 +40,8 @@ export default function PosteForm({
   const [benevoleChoice, setBenevoleChoice] = useState('__new__');
   const [nom, setNom] = useState('');
   const [telephone, setTelephone] = useState('');
-  const [heureDebut, setHeureDebut] = useState('08:00');
-  const [heureFin, setHeureFin] = useState('14:00');
+  const [heureDebut, setHeureDebut] = useState('');
+  const [heureFin, setHeureFin] = useState('');
 
   const posteAffectations = affectations.filter((a) => a.poste_id === poste.id);
   const statutInfo = POSTE_STATUTS.find((s) => s.code === poste.statut)!;
@@ -55,7 +56,12 @@ export default function PosteForm({
       const b = await onCreateBenevole!({ nom: nom.trim(), telephone: telephone.trim() });
       benevoleId = b.id;
     }
-    await onCreateAffectation!({ benevole_id: benevoleId, poste_id: poste.id, heure_debut: heureDebut, heure_fin: heureFin });
+    await onCreateAffectation!({
+      benevole_id: benevoleId,
+      poste_id: poste.id,
+      heure_debut: heureDebut || null,
+      heure_fin: heureFin || null,
+    });
     setShowAddBenevole(false);
     setNom('');
     setTelephone('');
@@ -255,11 +261,11 @@ export default function PosteForm({
                 )}
                 <div className="flex gap-2">
                   <label className="flex-1">
-                    Début
+                    Début (optionnel)
                     <input type="time" className="border rounded px-2 py-1 w-full" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} />
                   </label>
                   <label className="flex-1">
-                    Fin
+                    Fin (optionnel)
                     <input type="time" className="border rounded px-2 py-1 w-full" value={heureFin} onChange={(e) => setHeureFin(e.target.value)} />
                   </label>
                 </div>
@@ -275,11 +281,13 @@ export default function PosteForm({
               <ul className="mt-1 space-y-1">
                 {posteAffectations.map((a) => {
                   const b = benevoles.find((x) => x.id === a.benevole_id);
+                  const creneau = formatCreneau(a.heure_debut, a.heure_fin);
                   return (
                     <li key={a.id} className="flex items-center justify-between">
                       <span>
                         {b?.nom ?? '?'}
-                        {isAdmin && b?.telephone ? ` — ${b.telephone}` : ''} ({a.heure_debut.slice(0, 5)}–{a.heure_fin.slice(0, 5)})
+                        {isAdmin && b?.telephone ? ` — ${b.telephone}` : ''}
+                        {creneau ? ` (${creneau})` : ''}
                       </span>
                       {isAdmin && (
                         <button className="text-red-500 text-xs" onClick={() => onDeleteAffectation?.(a.id)}>

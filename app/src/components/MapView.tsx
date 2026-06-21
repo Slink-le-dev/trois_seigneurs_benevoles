@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { formatCreneau } from '../lib/format';
 import { posteIcon } from '../lib/icons';
 import { Affectation, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
 
@@ -167,7 +168,8 @@ export default function MapView({
                     : aff
                         .map((a) => {
                           const b = benevoles.find((x) => x.id === a.benevole_id);
-                          return `${b?.nom ?? '?'} (${a.heure_debut.slice(0, 5)}–${a.heure_fin.slice(0, 5)})`;
+                          const creneau = formatCreneau(a.heure_debut, a.heure_fin);
+                          return `${b?.nom ?? '?'}${creneau ? ` (${creneau})` : ''}`;
                         })
                         .join(', ')}
                 </div>

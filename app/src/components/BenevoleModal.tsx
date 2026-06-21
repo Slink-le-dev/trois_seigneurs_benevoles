@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCreneau } from '../lib/format';
 import { Affectation, Benevole, Poste } from '../types';
 
 interface BenevoleModalProps {
@@ -25,8 +26,8 @@ export default function BenevoleModal({
   const [saving, setSaving] = useState(false);
   const [showAddAffectation, setShowAddAffectation] = useState(false);
   const [posteId, setPosteId] = useState('');
-  const [heureDebut, setHeureDebut] = useState('08:00');
-  const [heureFin, setHeureFin] = useState('14:00');
+  const [heureDebut, setHeureDebut] = useState('');
+  const [heureFin, setHeureFin] = useState('');
 
   const benevoleAffectations = affectations.filter((a) => a.benevole_id === benevole.id);
 
@@ -54,7 +55,12 @@ export default function BenevoleModal({
       alert('Choisissez un poste.');
       return;
     }
-    await onCreateAffectation({ benevole_id: benevole.id, poste_id: posteId, heure_debut: heureDebut, heure_fin: heureFin });
+    await onCreateAffectation({
+      benevole_id: benevole.id,
+      poste_id: posteId,
+      heure_debut: heureDebut || null,
+      heure_fin: heureFin || null,
+    });
     setPosteId('');
     setShowAddAffectation(false);
   }
@@ -109,11 +115,11 @@ export default function BenevoleModal({
                 </select>
                 <div className="flex gap-2">
                   <label className="flex-1">
-                    Début
+                    Début (optionnel)
                     <input type="time" className="border rounded px-2 py-1 w-full" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} />
                   </label>
                   <label className="flex-1">
-                    Fin
+                    Fin (optionnel)
                     <input type="time" className="border rounded px-2 py-1 w-full" value={heureFin} onChange={(e) => setHeureFin(e.target.value)} />
                   </label>
                 </div>
@@ -127,16 +133,20 @@ export default function BenevoleModal({
               <p className="text-gray-400 mt-1">Aucune affectation</p>
             ) : (
               <ul className="mt-1 space-y-1">
-                {benevoleAffectations.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between">
-                    <span>
-                      {posteName(a.poste_id)} ({a.heure_debut.slice(0, 5)}–{a.heure_fin.slice(0, 5)})
-                    </span>
-                    <button className="text-red-500 text-xs" onClick={() => onDeleteAffectation(a.id)}>
-                      retirer
-                    </button>
-                  </li>
-                ))}
+                {benevoleAffectations.map((a) => {
+                  const creneau = formatCreneau(a.heure_debut, a.heure_fin);
+                  return (
+                    <li key={a.id} className="flex items-center justify-between">
+                      <span>
+                        {posteName(a.poste_id)}
+                        {creneau ? ` (${creneau})` : ''}
+                      </span>
+                      <button className="text-red-500 text-xs" onClick={() => onDeleteAffectation(a.id)}>
+                        retirer
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
