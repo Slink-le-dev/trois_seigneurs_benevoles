@@ -1,0 +1,219 @@
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from './supabaseClient';
+import {
+  Affectation,
+  Benevole,
+  Parcours,
+  Poste,
+  PosteParcours,
+  PosteStatut,
+  PosteTypeCode,
+} from '../types';
+
+export function useAppData(isAdmin: boolean) {
+  const [parcours, setParcours] = useState<Parcours[]>([]);
+  const [postes, setPostes] = useState<Poste[]>([]);
+  const [posteParcours, setPosteParcoursState] = useState<PosteParcours[]>([]);
+  const [benevoles, setBenevoles] = useState<Benevole[]>([]);
+  const [affectations, setAffectations] = useState<Affectation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refreshAll = useCallback(async () => {
+    setLoading(true);
+    const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
+
+    const [parcoursRes, postesRes, posteParcoursRes, benevolesRes, affectationsRes] = await Promise.all([
+      supabase.from('parcours').select('*').order('created_at'),
+      supabase.from('postes').select('*').order('created_at'),
+      supabase.from('poste_parcours').select('*'),
+      supabase.from(benevolesTable).select('*').order('nom'),
+      supabase.from('affectations').select('*'),
+    ]);
+
+    if (parcoursRes.data) setParcours(parcoursRes.data as Parcours[]);
+    if (postesRes.data) setPostes(postesRes.data as Poste[]);
+    if (posteParcoursRes.data) setPosteParcoursState(posteParcoursRes.data as PosteParcours[]);
+    if (benevolesRes.data) {
+      setBenevoles(
+        (benevolesRes.data as any[]).map((b) => ({
+          id: b.id,
+          nom: b.nom,
+          telephone: b.telephone ?? null,
+          created_at: b.created_at,
+        }))
+      );
+    }
+    if (affectationsRes.data) setAffectations(affectationsRes.data as Affectation[]);
+
+    setLoading(false);
+  }, [isAdmin]);
+
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
+
+  // Realtime : statuts (et créations/suppressions) de postes visibles par tous
+  useEffect(() => {
+    const channel = supabase
+      .channel('postes-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'postes' }, (payload) => {
+        setPostes((current) => {
+          if (payload.eventType === 'DELETE') {
+            return current.filter((p) => p.id !== (payload.old as any).id);
+          }
+          const incoming = payload.new as Poste;
+          const exists = current.some((p) => p.id === incoming.id);
+          return exists
+            ? current.map((p) => (p.id === incoming.id ? incoming : p))
+            : [...current, incoming];
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const getParcoursIdsForPoste = useCallback(
+    (posteId: string) => posteParcours.filter((pp) => pp.poste_id === posteId).map((pp) => pp.parcours_id),
+    [posteParcours]
+  );
+
+  const getAffectationsForPoste = useCallback(
+    (posteId: string) => affectations.filter((a) => a.poste_id === posteId),
+    [affectations]
+  );
+
+  // ---- Parcours ----
+
+  async function createParcours(data: Partial<Parcours>) {
+    const { data: row, error } = await supabase.from('parcours').insert(data).select().single();
+    if (error) throw error;
+    setParcours((c) => [...c, row as Parcours]);
+    return row as Parcours;
+  }
+
+  async function updateParcours(id: string, data: Partial<Parcours>) {
+    const { data: row, error } = await supabase.from('parcours').update(data).eq('id', id).select().single();
+    if (error) throw error;
+    setParcours((c) => c.map((p) => (p.id === id ? (row as Parcours) : p)));
+  }
+
+  async function deleteParcoursGpx(id: string) {
+    await updateParcours(id, { gpx_geojson: null, distance_km: null, denivele_m: null });
+  }
+
+  // ---- Postes ----
+
+  async function createPoste(data: Partial<Poste>, parcoursIds: string[]) {
+    const numero = data.numero ?? (postes.length ? Math.max(...postes.map((p) => p.numero)) + 1 : 1);
+    const { data: row, error } = await supabase.from('postes').insert({ ...data, numero }).select().single();
+    if (error) throw error;
+    const poste = row as Poste;
+    setPostes((c) => [...c, poste]);
+    if (parcoursIds.length) await setPosteParcoursLinks(poste.id, parcoursIds);
+    return poste;
+  }
+
+  async function updatePoste(id: string, data: Partial<Poste>) {
+    const { data: row, error } = await supabase.from('postes').update(data).eq('id', id).select().single();
+    if (error) throw error;
+    setPostes((c) => c.map((p) => (p.id === id ? (row as Poste) : p)));
+  }
+
+  async function deletePoste(id: string) {
+    const { error } = await supabase.from('postes').delete().eq('id', id);
+    if (error) throw error;
+    setPostes((c) => c.filter((p) => p.id !== id));
+    setPosteParcoursState((c) => c.filter((pp) => pp.poste_id !== id));
+    setAffectations((c) => c.filter((a) => a.poste_id !== id));
+  }
+
+  async function setPosteParcoursLinks(posteId: string, parcoursIds: string[]) {
+    await supabase.from('poste_parcours').delete().eq('poste_id', posteId);
+    if (parcoursIds.length) {
+      await supabase.from('poste_parcours').insert(parcoursIds.map((parcours_id) => ({ poste_id: posteId, parcours_id })));
+    }
+    setPosteParcoursState((c) => [
+      ...c.filter((pp) => pp.poste_id !== posteId),
+      ...parcoursIds.map((parcours_id) => ({ poste_id: posteId, parcours_id })),
+    ]);
+  }
+
+  async function setPosteStatut(posteId: string, statut: PosteStatut) {
+    await updatePoste(posteId, { statut, statut_updated_at: new Date().toISOString() });
+  }
+
+  async function setPosteTypes(posteId: string, types: PosteTypeCode[]) {
+    await updatePoste(posteId, { types });
+  }
+
+  async function movePoste(posteId: string, lat: number, lng: number) {
+    await updatePoste(posteId, { lat, lng });
+  }
+
+  // ---- Bénévoles & affectations ----
+
+  async function createBenevole(data: Partial<Benevole>) {
+    const { data: row, error } = await supabase.from('benevoles').insert(data).select().single();
+    if (error) throw error;
+    setBenevoles((c) => [...c, row as Benevole]);
+    return row as Benevole;
+  }
+
+  async function updateBenevole(id: string, data: Partial<Benevole>) {
+    const { data: row, error } = await supabase.from('benevoles').update(data).eq('id', id).select().single();
+    if (error) throw error;
+    setBenevoles((c) => c.map((b) => (b.id === id ? (row as Benevole) : b)));
+  }
+
+  async function deleteBenevole(id: string) {
+    const { error } = await supabase.from('benevoles').delete().eq('id', id);
+    if (error) throw error;
+    setBenevoles((c) => c.filter((b) => b.id !== id));
+    setAffectations((c) => c.filter((a) => a.benevole_id !== id));
+  }
+
+  async function createAffectation(data: Partial<Affectation>) {
+    const { data: row, error } = await supabase.from('affectations').insert(data).select().single();
+    if (error) throw error;
+    setAffectations((c) => [...c, row as Affectation]);
+    return row as Affectation;
+  }
+
+  async function deleteAffectation(id: string) {
+    const { error } = await supabase.from('affectations').delete().eq('id', id);
+    if (error) throw error;
+    setAffectations((c) => c.filter((a) => a.id !== id));
+  }
+
+  return {
+    parcours,
+    postes,
+    posteParcours,
+    benevoles,
+    affectations,
+    loading,
+    refreshAll,
+    getParcoursIdsForPoste,
+    getAffectationsForPoste,
+    createParcours,
+    updateParcours,
+    deleteParcoursGpx,
+    createPoste,
+    updatePoste,
+    deletePoste,
+    setPosteParcoursLinks,
+    setPosteStatut,
+    setPosteTypes,
+    movePoste,
+    createBenevole,
+    updateBenevole,
+    deleteBenevole,
+    createAffectation,
+    deleteAffectation,
+  };
+}
+
+export type AppData = ReturnType<typeof useAppData>;
