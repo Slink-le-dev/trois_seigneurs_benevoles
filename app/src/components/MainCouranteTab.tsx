@@ -84,10 +84,11 @@ const JOURNAL_FIELD_LABELS: Record<string, string> = {
   commentaire: 'Description',
   abandon: 'Abandon',
   date_depart: 'Date départ',
-  lieu_depart: 'Lieu départ',
-  lieu_arrivee_attendue: 'Lieu arrivée attendue',
-  heure_arrivee_estimee: 'Heure arrivée estimée',
-  heure_arrivee_effective: 'Heure arrivée effective',
+  lieu_depart: 'Lieu de départ',
+  lieu_arrivee_attendue: "Lieu d'arrivée",
+  heure_arrivee_estimee: "Heure estimée d'arrivée",
+  lien_suivi_gps: 'Lien de suivi GPS',
+  heure_arrivee_effective: "Heure d'arrivée effective",
   statut: 'Statut',
 };
 
@@ -146,6 +147,14 @@ export default function MainCouranteTab({
   const [showFormModal, setShowFormModal] = useState(false);
   const [viewingEventId, setViewingEventId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState('');
+  const [abandonDraft, setAbandonDraft] = useState({
+    abandon: false,
+    lieu_depart: '',
+    lieu_arrivee_attendue: '',
+    heure_arrivee_estimee: '',
+    heure_arrivee_effective: '',
+    lien_suivi_gps: '',
+  });
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPosteId, setFilterPosteId] = useState('');
@@ -164,6 +173,30 @@ export default function MainCouranteTab({
     if (!viewingEventId || !newComment.trim()) return;
     await onAddCommentaire(viewingEventId, newComment.trim());
     setNewComment('');
+  }
+
+  function openActivity(event: MainCouranteEvent) {
+    setViewingEventId(event.id);
+    setAbandonDraft({
+      abandon: event.abandon,
+      lieu_depart: event.lieu_depart ?? '',
+      lieu_arrivee_attendue: event.lieu_arrivee_attendue ?? '',
+      heure_arrivee_estimee: event.heure_arrivee_estimee ?? '',
+      heure_arrivee_effective: event.heure_arrivee_effective ?? '',
+      lien_suivi_gps: event.lien_suivi_gps ?? '',
+    });
+  }
+
+  async function handleSaveAbandon() {
+    if (!viewingEventId) return;
+    await onUpdate(viewingEventId, {
+      abandon: abandonDraft.abandon,
+      lieu_depart: abandonDraft.abandon ? abandonDraft.lieu_depart || null : null,
+      lieu_arrivee_attendue: abandonDraft.abandon ? abandonDraft.lieu_arrivee_attendue || null : null,
+      heure_arrivee_estimee: abandonDraft.abandon ? abandonDraft.heure_arrivee_estimee || null : null,
+      heure_arrivee_effective: abandonDraft.abandon ? abandonDraft.heure_arrivee_effective || null : null,
+      lien_suivi_gps: abandonDraft.abandon ? abandonDraft.lien_suivi_gps || null : null,
+    });
   }
 
   const benevolesRecepteurs = useMemo(() => {
@@ -536,12 +569,23 @@ export default function MainCouranteTab({
                             : ''}
                         </div>
                       )}
+                      {event.lien_suivi_gps && (
+                        <a
+                          href={event.lien_suivi_gps}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-600 underline block"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Suivi GPS
+                        </a>
+                      )}
                       {event.commentaire && <div className="text-xs text-gray-500 italic break-words">{event.commentaire}</div>}
                       <div className="flex gap-2 pt-1">
                         <button className="text-blue-600 text-xs" onClick={() => handleEdit(event)}>
                           Modifier
                         </button>
-                        <button className="text-gray-600 text-xs" onClick={() => setViewingEventId(event.id)}>
+                        <button className="text-gray-600 text-xs" onClick={() => openActivity(event)}>
                           Activité (
                           {journal.filter((j) => j.event_id === event.id).length +
                             commentaires.filter((c) => c.event_id === event.id).length}
@@ -577,6 +621,70 @@ export default function MainCouranteTab({
                 className="text-gray-400 hover:text-gray-700 text-xl leading-none"
               >
                 ×
+              </button>
+            </div>
+
+            <div className="border-b pb-3 mb-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={abandonDraft.abandon}
+                  onChange={(e) => setAbandonDraft((d) => ({ ...d, abandon: e.target.checked }))}
+                />
+                Abandon
+              </label>
+              {abandonDraft.abandon && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="space-y-1 text-xs">
+                    Lieu de départ
+                    <input
+                      className="border rounded px-2 py-1 w-full text-sm"
+                      value={abandonDraft.lieu_depart}
+                      onChange={(e) => setAbandonDraft((d) => ({ ...d, lieu_depart: e.target.value }))}
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs">
+                    Lieu d'arrivée
+                    <input
+                      className="border rounded px-2 py-1 w-full text-sm"
+                      value={abandonDraft.lieu_arrivee_attendue}
+                      onChange={(e) => setAbandonDraft((d) => ({ ...d, lieu_arrivee_attendue: e.target.value }))}
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs">
+                    Heure estimée d'arrivée
+                    <input
+                      type="time"
+                      className="border rounded px-2 py-1 w-full text-sm"
+                      value={abandonDraft.heure_arrivee_estimee}
+                      onChange={(e) => setAbandonDraft((d) => ({ ...d, heure_arrivee_estimee: e.target.value }))}
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs">
+                    Lien de suivi GPS <span className="text-gray-400">(optionnel)</span>
+                    <input
+                      className="border rounded px-2 py-1 w-full text-sm"
+                      value={abandonDraft.lien_suivi_gps}
+                      onChange={(e) => setAbandonDraft((d) => ({ ...d, lien_suivi_gps: e.target.value }))}
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs">
+                    Heure d'arrivée effective <span className="text-gray-400">(optionnel)</span>
+                    <input
+                      type="time"
+                      className="border rounded px-2 py-1 w-full text-sm"
+                      value={abandonDraft.heure_arrivee_effective}
+                      onChange={(e) => setAbandonDraft((d) => ({ ...d, heure_arrivee_effective: e.target.value }))}
+                    />
+                  </label>
+                </div>
+              )}
+              <button
+                type="button"
+                className="rounded bg-green-600 text-white px-3 py-1.5 text-sm hover:bg-green-700"
+                onClick={handleSaveAbandon}
+              >
+                Enregistrer
               </button>
             </div>
 

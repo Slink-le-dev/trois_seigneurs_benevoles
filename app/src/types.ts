@@ -95,6 +95,7 @@ export interface MainCouranteEvent {
   lieu_arrivee_attendue: string | null;
   heure_arrivee_estimee: string | null;
   heure_arrivee_effective: string | null;
+  lien_suivi_gps: string | null;
   statut: MainCouranteStatus;
 }
 

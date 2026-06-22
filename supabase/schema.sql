@@ -83,6 +83,7 @@ create table main_courante (
   lieu_arrivee_attendue text,
   heure_arrivee_estimee time,
   heure_arrivee_effective time,
+  lien_suivi_gps text,
   statut text not null default 'prise en charge en cours'
     check (statut in ('prise en charge en cours', 'pris en charge', 'terminé', 'abandonné')),
   constraint main_courante_appelant_xor
