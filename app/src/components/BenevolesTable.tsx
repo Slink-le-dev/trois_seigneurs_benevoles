@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatCreneau } from '../lib/format';
 import { Affectation, Benevole, Poste } from '../types';
 import BenevoleModal from './BenevoleModal';
+
+type SortColumn = 'nom' | 'telephone' | 'affectations';
 
 interface BenevolesTableProps {
   benevoles: Benevole[];
@@ -31,11 +33,46 @@ export default function BenevolesTable({
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
   const [editingBenevole, setEditingBenevole] = useState<Benevole | null>(null);
+  const [sortColumn, setSortColumn] = useState<SortColumn>('nom');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const posteName = (id: string) => {
     const p = postes.find((p) => p.id === id);
     return p ? `N°${p.numero} — ${p.nom}` : '(poste supprimé)';
   };
+
+  const affectationsLabel = (benevoleId: string) =>
+    affectations
+      .filter((a) => a.benevole_id === benevoleId)
+      .map((a) => posteName(a.poste_id))
+      .sort()
+      .join(', ');
+
+  function handleSort(column: SortColumn) {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  }
+
+  function sortIndicator(column: SortColumn) {
+    if (sortColumn !== column) return null;
+    return <span className="text-gray-400"> {sortDirection === 'asc' ? '▲' : '▼'}</span>;
+  }
+
+  const sortedBenevoles = useMemo(() => {
+    const sortValue = (b: Benevole) => {
+      if (sortColumn === 'nom') return b.nom;
+      if (sortColumn === 'telephone') return b.telephone ?? '';
+      return affectationsLabel(b.id);
+    };
+    const sorted = [...benevoles].sort((a, b) => sortValue(a).localeCompare(sortValue(b), 'fr', { sensitivity: 'base' }));
+    if (sortDirection === 'desc') sorted.reverse();
+    return sorted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [benevoles, affectations, postes, sortColumn, sortDirection]);
 
   async function handleAdd() {
     if (!nom.trim()) {
@@ -104,14 +141,20 @@ export default function BenevolesTable({
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="text-left border-b">
-            <th className="py-1">Nom</th>
-            <th>Téléphone</th>
-            <th>Affectations</th>
+            <th className="py-1 cursor-pointer select-none hover:text-blue-700" onClick={() => handleSort('nom')}>
+              Nom{sortIndicator('nom')}
+            </th>
+            <th className="cursor-pointer select-none hover:text-blue-700" onClick={() => handleSort('telephone')}>
+              Téléphone{sortIndicator('telephone')}
+            </th>
+            <th className="cursor-pointer select-none hover:text-blue-700" onClick={() => handleSort('affectations')}>
+              Affectations{sortIndicator('affectations')}
+            </th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {benevoles.map((b) => {
+          {sortedBenevoles.map((b) => {
             const affs = affectations.filter((a) => a.benevole_id === b.id);
             return (
               <tr key={b.id} className="border-b align-top">
