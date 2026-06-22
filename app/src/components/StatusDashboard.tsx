@@ -7,11 +7,18 @@ interface StatusDashboardProps {
   onSelectPoste: (id: string) => void;
 }
 
+function dateLocale(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export default function StatusDashboard({ postes, affectations, onSelectPoste }: StatusDashboardProps) {
   const [heureSeuil, setHeureSeuil] = useState(() => {
     const now = new Date();
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   });
+  const [jourReference, setJourReference] = useState(() => dateLocale(new Date()));
+
+  const estAujourdhui = jourReference === dateLocale(new Date());
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -21,6 +28,7 @@ export default function StatusDashboard({ postes, affectations, onSelectPoste }:
   }, [postes]);
 
   const postesEnRetard = useMemo(() => {
+    if (!estAujourdhui) return [];
     return postes
       .filter((p) => p.statut === 'non_active')
       .map((p) => {
@@ -33,7 +41,7 @@ export default function StatusDashboard({ postes, affectations, onSelectPoste }:
       })
       .filter(({ premiereHeure }) => premiereHeure && premiereHeure.slice(0, 5) < heureSeuil)
       .sort((a, b) => (a.premiereHeure ?? '').localeCompare(b.premiereHeure ?? ''));
-  }, [postes, affectations, heureSeuil]);
+  }, [postes, affectations, heureSeuil, estAujourdhui]);
 
   return (
     <div className="space-y-4">
@@ -52,11 +60,26 @@ export default function StatusDashboard({ postes, affectations, onSelectPoste }:
         <h2 className="font-semibold text-sm uppercase text-gray-500 mb-2">
           Postes non activés en retard
         </h2>
-        <label className="text-sm flex items-center gap-2 mb-2">
-          Heure de référence :
-          <input type="time" value={heureSeuil} onChange={(e) => setHeureSeuil(e.target.value)} className="border rounded px-2 py-1" />
-        </label>
-        {postesEnRetard.length === 0 ? (
+        <div className="flex flex-wrap gap-4 mb-2">
+          <label className="text-sm flex items-center gap-2">
+            Jour de référence :
+            <input
+              type="date"
+              value={jourReference}
+              onChange={(e) => setJourReference(e.target.value)}
+              className="border rounded px-2 py-1"
+            />
+          </label>
+          <label className="text-sm flex items-center gap-2">
+            Heure de référence :
+            <input type="time" value={heureSeuil} onChange={(e) => setHeureSeuil(e.target.value)} className="border rounded px-2 py-1" />
+          </label>
+        </div>
+        {!estAujourdhui ? (
+          <p className="text-sm text-gray-400">
+            Les alertes ne s'affichent que pour le jour de référence sélectionné (aujourd'hui : {dateLocale(new Date())}).
+          </p>
+        ) : postesEnRetard.length === 0 ? (
           <p className="text-sm text-gray-400">Aucun poste en retard pour cette heure.</p>
         ) : (
           <ul className="text-sm space-y-1">
