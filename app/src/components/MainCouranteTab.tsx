@@ -399,7 +399,7 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
             />
           </label>
           <label className="space-y-1 text-sm lg:col-span-3">
-            Commentaire
+            Description
             <textarea
               rows={3}
               className="border rounded px-2 py-2 w-full"

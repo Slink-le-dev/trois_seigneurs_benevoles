@@ -115,7 +115,7 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
               <th>Parcours</th>
               <th>Objet</th>
               <th>Dossard</th>
-              <th>Commentaire</th>
+              <th>Description</th>
               <th>Abandon</th>
               <th>Date départ</th>
               <th>Lieu départ</th>
