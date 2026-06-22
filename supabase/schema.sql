@@ -24,7 +24,7 @@ create table postes (
   types text[] not null default '{}',
   notes text,
   statut text not null default 'non_active'
-    check (statut in ('non_active', 'en_place', 'alerte', 'ferme')),
+    check (statut in ('desactive', 'non_active', 'en_place', 'alerte', 'ferme')),
   statut_updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );

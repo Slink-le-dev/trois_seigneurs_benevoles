@@ -1,5 +1,5 @@
 export type PosteTypeCode = 'signaleur' | 'medical' | 'eau' | 'nourriture';
-export type PosteStatut = 'non_active' | 'en_place' | 'alerte' | 'ferme';
+export type PosteStatut = 'desactive' | 'non_active' | 'en_place' | 'alerte' | 'ferme';
 
 export const POSTE_TYPES: { code: PosteTypeCode; label: string; couleur: string; emoji: string }[] = [
   { code: 'signaleur', label: 'Signaleur', couleur: '#eab308', emoji: '🚩' },
@@ -9,7 +9,8 @@ export const POSTE_TYPES: { code: PosteTypeCode; label: string; couleur: string;
 ];
 
 export const POSTE_STATUTS: { code: PosteStatut; label: string; couleur: string }[] = [
-  { code: 'non_active', label: 'Non activé', couleur: '#9ca3af' },
+  { code: 'desactive', label: 'Désactivé', couleur: '#9ca3af' },
+  { code: 'non_active', label: "En cours d'activation", couleur: '#f97316' },
   { code: 'en_place', label: 'En place', couleur: '#16a34a' },
   { code: 'alerte', label: 'Alerte', couleur: '#dc2626' },
   { code: 'ferme', label: 'Fermé', couleur: '#1f2937' },
