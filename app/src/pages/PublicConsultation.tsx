@@ -41,6 +41,8 @@ export default function PublicConsultation() {
         setFilterTypes={setFilterTypes}
         filterStatuts={filterStatuts}
         setFilterStatuts={setFilterStatuts}
+        parcoursVisibility={parcoursVisibility}
+        setParcoursVisibility={setParcoursVisibility}
         showPois={showPois}
         setShowPois={setShowPois}
       />
@@ -61,7 +63,6 @@ export default function PublicConsultation() {
           filterParcoursIds={filterParcoursIds}
           showPois={showPois}
         />
-        <ParcoursLegend visibility={parcoursVisibility} setVisibility={setParcoursVisibility} parcours={data.parcours} />
       </div>
 
       {selectedPoste && (
@@ -75,32 +76,6 @@ export default function PublicConsultation() {
           onClose={() => setSelectedPosteId(null)}
         />
       )}
-    </div>
-  );
-}
-
-function ParcoursLegend({
-  parcours,
-  visibility,
-  setVisibility,
-}: {
-  parcours: { id: string; nom: string; couleur: string }[];
-  visibility: Record<string, boolean>;
-  setVisibility: (v: Record<string, boolean>) => void;
-}) {
-  if (!parcours.length) return null;
-  return (
-    <div className="absolute top-2 right-2 bg-white/95 rounded shadow p-2 text-sm space-y-1 z-[500]">
-      {parcours.map((p) => (
-        <label key={p.id} className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={visibility[p.id] !== false}
-            onChange={() => setVisibility({ ...visibility, [p.id]: visibility[p.id] === false })}
-          />
-          <span style={{ color: p.couleur }}>●</span> {p.nom}
-        </label>
-      ))}
     </div>
   );
 }

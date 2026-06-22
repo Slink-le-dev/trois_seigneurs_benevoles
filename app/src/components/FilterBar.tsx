@@ -8,6 +8,8 @@ interface FilterBarProps {
   setFilterTypes: (types: PosteTypeCode[]) => void;
   filterStatuts: PosteStatut[];
   setFilterStatuts: (statuts: PosteStatut[]) => void;
+  parcoursVisibility: Record<string, boolean>;
+  setParcoursVisibility: (v: Record<string, boolean>) => void;
   showPois: boolean;
   setShowPois: (show: boolean) => void;
 }
@@ -24,6 +26,8 @@ export default function FilterBar({
   setFilterTypes,
   filterStatuts,
   setFilterStatuts,
+  parcoursVisibility,
+  setParcoursVisibility,
   showPois,
   setShowPois,
 }: FilterBarProps) {
@@ -71,10 +75,21 @@ export default function FilterBar({
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap border-l pl-4">
+        <span className="text-gray-500">Traces GPX :</span>
+        {parcours.map((p) => (
+          <label key={p.id} className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={parcoursVisibility[p.id] !== false}
+              onChange={() => setParcoursVisibility({ ...parcoursVisibility, [p.id]: parcoursVisibility[p.id] === false })}
+            />
+            <span style={{ color: p.couleur }}>●</span> {p.nom}
+          </label>
+        ))}
         <label className="flex items-center gap-1">
           <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
-          Points d'intérêt du GPX (POI)
+          Points d'intérêt (POI)
         </label>
       </div>
     </div>

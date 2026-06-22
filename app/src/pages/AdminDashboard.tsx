@@ -116,6 +116,8 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
             setFilterTypes={setFilterTypes}
             filterStatuts={filterStatuts}
             setFilterStatuts={setFilterStatuts}
+            parcoursVisibility={parcoursVisibility}
+            setParcoursVisibility={setParcoursVisibility}
             showPois={showPois}
             setShowPois={setShowPois}
           />
