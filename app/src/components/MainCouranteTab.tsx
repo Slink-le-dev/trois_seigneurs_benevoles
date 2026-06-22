@@ -51,6 +51,11 @@ function formatTime(value?: string | null) {
   return value.slice(0, 5);
 }
 
+function timeOfDay(value: string): string {
+  const d = new Date(value);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 function todayLocal(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -156,11 +161,11 @@ export default function MainCouranteTab({
     lien_suivi_gps: '',
   });
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPosteId, setFilterPosteId] = useState('');
   const [filterAppelantId, setFilterAppelantId] = useState('');
   const [filterRecepteurId, setFilterRecepteurId] = useState('');
-  const [filterDate, setFilterDate] = useState('');
+  const [filterHeureDebut, setFilterHeureDebut] = useState('');
+  const [filterHeureFin, setFilterHeureFin] = useState('');
 
   const viewingEvent = events.find((e) => e.id === viewingEventId) ?? null;
 
@@ -211,11 +216,14 @@ export default function MainCouranteTab({
   const filteredEvents = useMemo(() => {
     const term = search.trim().toLowerCase();
     return events.filter((event) => {
-      if (filterStatus !== 'all' && event.statut !== filterStatus) return false;
       if (filterPosteId && event.poste_origine_id !== filterPosteId) return false;
       if (filterAppelantId && event.benevole_appelant_id !== filterAppelantId) return false;
       if (filterRecepteurId && event.benevole_recepteur_id !== filterRecepteurId) return false;
-      if (filterDate && event.date_evenement !== filterDate) return false;
+      if (filterHeureDebut || filterHeureFin) {
+        const heureSaisie = timeOfDay(event.created_at);
+        if (filterHeureDebut && heureSaisie < filterHeureDebut) return false;
+        if (filterHeureFin && heureSaisie > filterHeureFin) return false;
+      }
 
       if (!term) return true;
       const posteName = formatPosteName(postes, event.poste_origine_id).toLowerCase();
@@ -236,7 +244,7 @@ export default function MainCouranteTab({
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(term));
     });
-  }, [events, search, filterStatus, filterPosteId, filterAppelantId, filterRecepteurId, filterDate, postes, benevoles]);
+  }, [events, search, filterPosteId, filterAppelantId, filterRecepteurId, filterHeureDebut, filterHeureFin, postes, benevoles]);
 
   function setField<K extends keyof MainCouranteEvent>(field: K, value: MainCouranteEvent[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -357,20 +365,6 @@ export default function MainCouranteTab({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <select className="border rounded px-2 py-2 text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-              <option value="all">Tous statuts</option>
-              {STATUTS.map((status) => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              className="border rounded px-2 py-2 text-sm"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
             <select className="border rounded px-2 py-2 text-sm" value={filterPosteId} onChange={(e) => setFilterPosteId(e.target.value)}>
               <option value="">Tous postes</option>
               {postes.map((poste) => (
@@ -389,6 +383,26 @@ export default function MainCouranteTab({
                 <option key={benevole.id} value={benevole.id}>{benevole.nom}</option>
               ))}
             </select>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="flex items-center gap-2 text-sm">
+              Heure de saisie entre
+              <input
+                type="time"
+                className="border rounded px-2 py-2 text-sm w-full"
+                value={filterHeureDebut}
+                onChange={(e) => setFilterHeureDebut(e.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              et
+              <input
+                type="time"
+                className="border rounded px-2 py-2 text-sm w-full"
+                value={filterHeureFin}
+                onChange={(e) => setFilterHeureFin(e.target.value)}
+              />
+            </label>
           </div>
         </div>
       </div>
