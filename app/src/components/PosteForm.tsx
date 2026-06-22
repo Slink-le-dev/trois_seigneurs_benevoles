@@ -3,6 +3,18 @@ import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
 import { Affectation, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
 
+function GoogleMapsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 2C7.589 2 4 5.589 4 10c0 5.6 6.5 11.2 7.3 11.9a1 1 0 0 0 1.4 0C13.5 21.2 20 15.6 20 10c0-4.411-3.589-8-8-8z"
+        fill="#4285F4"
+      />
+      <circle cx="12" cy="10" r="3" fill="white" />
+    </svg>
+  );
+}
+
 interface PosteFormProps {
   poste: Poste;
   parcours: Parcours[];
@@ -308,9 +320,10 @@ export default function PosteForm({
               href={`https://www.google.com/maps/dir/?api=1&destination=${poste.lat},${poste.lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 inline-flex items-center gap-1"
+              className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 inline-flex items-center gap-1.5"
             >
-              🧭 Accéder à ce poste
+              <GoogleMapsIcon />
+              Accéder avec Google Maps
             </a>
             <button
               className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
