@@ -195,14 +195,6 @@ export default function FilterBar({
                     <input type="checkbox" checked={draftShowPois} onChange={(e) => setDraftShowPois(e.target.checked)} />
                     Points d'intérêt (POI)
                   </label>
-                  <label className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={draftShowExtractions}
-                      onChange={(e) => setDraftShowExtractions(e.target.checked)}
-                    />
-                    Points d'extraction
-                  </label>
                 </div>
               </div>
 
@@ -219,6 +211,14 @@ export default function FilterBar({
                       {t.emoji} {t.label}
                     </label>
                   ))}
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={draftShowExtractions}
+                      onChange={(e) => setDraftShowExtractions(e.target.checked)}
+                    />
+                    🚑 Points d'extraction
+                  </label>
                 </div>
               </div>
 
