@@ -2,8 +2,8 @@ import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { formatCreneau } from '../lib/format';
-import { posteIcon } from '../lib/icons';
-import { Affectation, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
+import { extractionIcon, posteIcon } from '../lib/icons';
+import { Affectation, Benevole, Parcours, PointExtraction, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
 
 interface MapViewProps {
   parcours: Parcours[];
@@ -23,6 +23,13 @@ interface MapViewProps {
   filterParcoursIds?: string[];
   showPois?: boolean;
   searchBenevole?: string;
+  pointsExtraction?: PointExtraction[];
+  showExtractions?: boolean;
+  selectedExtractionId?: string | null;
+  onSelectExtraction?: (id: string) => void;
+  placingModeExtraction?: boolean;
+  onMapClickCreateExtraction?: (lat: number, lng: number) => void;
+  onMoveExtraction?: (id: string, lat: number, lng: number) => void;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -84,6 +91,13 @@ export default function MapView({
   filterParcoursIds,
   showPois = false,
   searchBenevole = '',
+  pointsExtraction = [],
+  showExtractions = true,
+  selectedExtractionId = null,
+  onSelectExtraction,
+  placingModeExtraction,
+  onMapClickCreateExtraction,
+  onMoveExtraction,
 }: MapViewProps) {
   const query = searchBenevole.trim().toLowerCase();
   const visiblePostes = postes.filter((p) => {
@@ -114,7 +128,7 @@ export default function MapView({
       center={[45.9, 6.1]}
       zoom={11}
       style={{ height: '100%', width: '100%' }}
-      className={placingMode ? 'cursor-crosshair' : ''}
+      className={placingMode || placingModeExtraction ? 'cursor-crosshair' : ''}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -123,6 +137,7 @@ export default function MapView({
 
       <FitToData parcours={parcours} postes={postes} />
       {placingMode && <MapClickHandler onClick={onMapClickCreate} />}
+      {placingModeExtraction && <MapClickHandler onClick={onMapClickCreateExtraction} />}
 
       {parcours
         .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false)
@@ -186,6 +201,30 @@ export default function MapView({
           </Marker>
         );
       })}
+
+      {showExtractions &&
+        pointsExtraction.map((point) => (
+          <Marker
+            key={point.id}
+            position={[point.lat, point.lng]}
+            icon={extractionIcon(point.lettre)}
+            draggable={isAdmin}
+            eventHandlers={{
+              click: () => onSelectExtraction?.(point.id),
+              dragend: (e) => {
+                const pos = (e.target as L.Marker).getLatLng();
+                onMoveExtraction?.(point.id, pos.lat, pos.lng);
+              },
+            }}
+            opacity={selectedExtractionId === point.id ? 1 : 0.95}
+          >
+            <Tooltip>
+              <div className="text-xs leading-snug">
+                <span className="font-semibold">{point.lettre}.</span> {point.libelle}
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
     </MapContainer>
   );
 }

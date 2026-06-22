@@ -4,6 +4,7 @@ import {
   Affectation,
   Benevole,
   Parcours,
+  PointExtraction,
   Poste,
   PosteParcours,
   PosteStatut,
@@ -16,18 +17,20 @@ export function useAppData(isAdmin: boolean) {
   const [posteParcours, setPosteParcoursState] = useState<PosteParcours[]>([]);
   const [benevoles, setBenevoles] = useState<Benevole[]>([]);
   const [affectations, setAffectations] = useState<Affectation[]>([]);
+  const [pointsExtraction, setPointsExtraction] = useState<PointExtraction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
     const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
 
-    const [parcoursRes, postesRes, posteParcoursRes, benevolesRes, affectationsRes] = await Promise.all([
+    const [parcoursRes, postesRes, posteParcoursRes, benevolesRes, affectationsRes, pointsExtractionRes] = await Promise.all([
       supabase.from('parcours').select('*').order('created_at'),
       supabase.from('postes').select('*').order('created_at'),
       supabase.from('poste_parcours').select('*'),
       supabase.from(benevolesTable).select('*').order('nom'),
       supabase.from('affectations').select('*'),
+      supabase.from('points_extraction').select('*').order('created_at'),
     ]);
 
     if (parcoursRes.data) setParcours(parcoursRes.data as Parcours[]);
@@ -44,6 +47,7 @@ export function useAppData(isAdmin: boolean) {
       );
     }
     if (affectationsRes.data) setAffectations(affectationsRes.data as Affectation[]);
+    if (pointsExtractionRes.data) setPointsExtraction(pointsExtractionRes.data as PointExtraction[]);
 
     setLoading(false);
   }, [isAdmin]);
@@ -188,6 +192,42 @@ export function useAppData(isAdmin: boolean) {
     setAffectations((c) => c.filter((a) => a.id !== id));
   }
 
+  // ---- Points d'extraction ----
+
+  function nextLettreExtraction(): string {
+    const used = new Set(pointsExtraction.map((p) => p.lettre));
+    for (let i = 0; i < 26; i++) {
+      const lettre = String.fromCharCode(65 + i);
+      if (!used.has(lettre)) return lettre;
+    }
+    return '';
+  }
+
+  async function createPointExtraction(data: Partial<PointExtraction>) {
+    const lettre = data.lettre ?? nextLettreExtraction();
+    const { data: row, error } = await supabase.from('points_extraction').insert({ ...data, lettre }).select().single();
+    if (error) throw error;
+    const point = row as PointExtraction;
+    setPointsExtraction((c) => [...c, point]);
+    return point;
+  }
+
+  async function updatePointExtraction(id: string, data: Partial<PointExtraction>) {
+    const { data: row, error } = await supabase.from('points_extraction').update(data).eq('id', id).select().single();
+    if (error) throw error;
+    setPointsExtraction((c) => c.map((p) => (p.id === id ? (row as PointExtraction) : p)));
+  }
+
+  async function deletePointExtraction(id: string) {
+    const { error } = await supabase.from('points_extraction').delete().eq('id', id);
+    if (error) throw error;
+    setPointsExtraction((c) => c.filter((p) => p.id !== id));
+  }
+
+  async function moveExtraction(id: string, lat: number, lng: number) {
+    await updatePointExtraction(id, { lat, lng });
+  }
+
   return {
     parcours,
     postes,
@@ -213,6 +253,11 @@ export function useAppData(isAdmin: boolean) {
     deleteBenevole,
     createAffectation,
     deleteAffectation,
+    pointsExtraction,
+    createPointExtraction,
+    updatePointExtraction,
+    deletePointExtraction,
+    moveExtraction,
   };
 }
 

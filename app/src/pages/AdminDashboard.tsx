@@ -4,6 +4,7 @@ import BenevolesTable from '../components/BenevolesTable';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
 import ParcoursPanel from '../components/ParcoursPanel';
+import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
 import StatusDashboard from '../components/StatusDashboard';
 import { useAppData } from '../lib/useAppData';
@@ -37,6 +38,11 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
+  const [showExtractions, setShowExtractions] = useState(true);
+  const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
+  const [placingModeExtraction, setPlacingModeExtraction] = useState(false);
+  const [manualLatExtraction, setManualLatExtraction] = useState('');
+  const [manualLngExtraction, setManualLngExtraction] = useState('');
 
   // Garantit l'existence des 3 parcours de la course (une seule fois)
   const seedingParcours = useRef(false);
@@ -56,6 +62,7 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
   }, [data.loading, data.parcours.length]);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
+  const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
 
   async function handleMapClickCreate(lat: number, lng: number) {
     const poste = await data.createPoste({ nom: 'Nouveau poste', lat, lng, types: [], statut: 'non_active' }, []);
@@ -74,6 +81,35 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
     setManualLat('');
     setManualLng('');
     setSelectedPosteId(poste.id);
+  }
+
+  function togglePlacingMode() {
+    setPlacingModeExtraction(false);
+    setPlacingMode((v) => !v);
+  }
+
+  function togglePlacingModeExtraction() {
+    setPlacingMode(false);
+    setPlacingModeExtraction((v) => !v);
+  }
+
+  async function handleMapClickCreateExtraction(lat: number, lng: number) {
+    const point = await data.createPointExtraction({ libelle: 'Nouveau point', lat, lng });
+    setPlacingModeExtraction(false);
+    setSelectedExtractionId(point.id);
+  }
+
+  async function handleManualCreateExtraction() {
+    const lat = Number(manualLatExtraction);
+    const lng = Number(manualLngExtraction);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      alert('Coordonnées GPS invalides.');
+      return;
+    }
+    const point = await data.createPointExtraction({ libelle: 'Nouveau point', lat, lng });
+    setManualLatExtraction('');
+    setManualLngExtraction('');
+    setSelectedExtractionId(point.id);
   }
 
   if (data.loading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
@@ -121,6 +157,8 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
             setParcoursVisibility={setParcoursVisibility}
             showPois={showPois}
             setShowPois={setShowPois}
+            showExtractions={showExtractions}
+            setShowExtractions={setShowExtractions}
             searchBenevole={searchBenevole}
             setSearchBenevole={setSearchBenevole}
           />
@@ -138,7 +176,7 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
                 <h2 className="font-semibold text-sm uppercase text-gray-500">Nouveau poste</h2>
                 <button
                   className={`w-full py-2 rounded text-sm ${placingMode ? 'bg-blue-700 text-white' : 'border hover:bg-gray-50'}`}
-                  onClick={() => setPlacingMode((v) => !v)}
+                  onClick={togglePlacingMode}
                 >
                   {placingMode ? 'Cliquez sur la carte…' : '📍 Cliquer sur la carte'}
                 </button>
@@ -157,6 +195,33 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
                   />
                 </div>
                 <button className="w-full py-2 rounded border text-sm hover:bg-gray-50" onClick={handleManualCreate}>
+                  Créer via coordonnées
+                </button>
+              </div>
+
+              <div className="border-t pt-3 space-y-2">
+                <h2 className="font-semibold text-sm uppercase text-gray-500">Nouveau point d'extraction</h2>
+                <button
+                  className={`w-full py-2 rounded text-sm ${placingModeExtraction ? 'bg-red-600 text-white' : 'border hover:bg-gray-50'}`}
+                  onClick={togglePlacingModeExtraction}
+                >
+                  {placingModeExtraction ? 'Cliquez sur la carte…' : '📍 Cliquer sur la carte'}
+                </button>
+                <div className="flex gap-2">
+                  <input
+                    className="border rounded px-2 py-1 w-full text-sm"
+                    placeholder="Latitude"
+                    value={manualLatExtraction}
+                    onChange={(e) => setManualLatExtraction(e.target.value)}
+                  />
+                  <input
+                    className="border rounded px-2 py-1 w-full text-sm"
+                    placeholder="Longitude"
+                    value={manualLngExtraction}
+                    onChange={(e) => setManualLngExtraction(e.target.value)}
+                  />
+                </div>
+                <button className="w-full py-2 rounded border text-sm hover:bg-gray-50" onClick={handleManualCreateExtraction}>
                   Créer via coordonnées
                 </button>
               </div>
@@ -181,6 +246,13 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
                 filterParcoursIds={filterParcoursIds}
                 showPois={showPois}
                 searchBenevole={searchBenevole}
+                pointsExtraction={data.pointsExtraction}
+                showExtractions={showExtractions}
+                selectedExtractionId={selectedExtractionId}
+                onSelectExtraction={setSelectedExtractionId}
+                placingModeExtraction={placingModeExtraction}
+                onMapClickCreateExtraction={handleMapClickCreateExtraction}
+                onMoveExtraction={data.moveExtraction}
               />
             </div>
           </div>
@@ -224,6 +296,16 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
           onCreateBenevole={data.createBenevole}
           onCreateAffectation={data.createAffectation}
           onDeleteAffectation={data.deleteAffectation}
+        />
+      )}
+
+      {selectedExtraction && (
+        <PointExtractionForm
+          point={selectedExtraction}
+          isAdmin
+          onClose={() => setSelectedExtractionId(null)}
+          onUpdate={(d) => data.updatePointExtraction(selectedExtraction.id, d)}
+          onDelete={() => data.deletePointExtraction(selectedExtraction.id)}
         />
       )}
     </div>

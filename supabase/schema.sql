@@ -51,6 +51,15 @@ create table affectations (
   created_at timestamptz not null default now()
 );
 
+create table points_extraction (
+  id uuid primary key default gen_random_uuid(),
+  lettre text not null,
+  libelle text not null,
+  lat double precision not null,
+  lng double precision not null,
+  created_at timestamptz not null default now()
+);
+
 -- Vue publique des benevoles : expose tout sauf le telephone.
 -- Note : les vues Postgres s'executent par defaut avec les droits du proprietaire de la vue
 -- (ici le role postgres, qui bypass la RLS), donc cette vue retourne toutes les lignes a
@@ -70,12 +79,14 @@ alter table postes enable row level security;
 alter table poste_parcours enable row level security;
 alter table benevoles enable row level security;
 alter table affectations enable row level security;
+alter table points_extraction enable row level security;
 
 -- Lecture publique (anon + authenticated) sur les tables sans donnee sensible
 create policy "lecture publique parcours" on parcours for select using (true);
 create policy "lecture publique postes" on postes for select using (true);
 create policy "lecture publique poste_parcours" on poste_parcours for select using (true);
 create policy "lecture publique affectations" on affectations for select using (true);
+create policy "lecture publique points_extraction" on points_extraction for select using (true);
 
 -- benevoles : lecture du telephone reservee aux organisateurs connectes.
 -- Le public doit utiliser la vue benevoles_public (qui n'expose pas le telephone).
@@ -94,6 +105,8 @@ create policy "ecriture organisateur poste_parcours" on poste_parcours for all
 create policy "ecriture organisateur benevoles" on benevoles for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "ecriture organisateur affectations" on affectations for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "ecriture organisateur points_extraction" on points_extraction for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Note : la policy "ecriture organisateur parcours" ci-dessus couvre aussi le select,

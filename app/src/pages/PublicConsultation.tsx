@@ -2,6 +2,7 @@ import { useState } from 'react';
 import logo from '../assets/logo.png';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
+import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
 import { useAppData } from '../lib/useAppData';
 import { PosteStatut, PosteTypeCode } from '../types';
@@ -15,8 +16,11 @@ export default function PublicConsultation() {
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
+  const [showExtractions, setShowExtractions] = useState(true);
+  const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
+  const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
 
   if (data.loading) {
     return <div className="p-6 text-center text-gray-500">Chargement…</div>;
@@ -46,6 +50,8 @@ export default function PublicConsultation() {
         setParcoursVisibility={setParcoursVisibility}
         showPois={showPois}
         setShowPois={setShowPois}
+        showExtractions={showExtractions}
+        setShowExtractions={setShowExtractions}
         searchBenevole={searchBenevole}
         setSearchBenevole={setSearchBenevole}
       />
@@ -66,6 +72,10 @@ export default function PublicConsultation() {
           filterParcoursIds={filterParcoursIds}
           showPois={showPois}
           searchBenevole={searchBenevole}
+          pointsExtraction={data.pointsExtraction}
+          showExtractions={showExtractions}
+          selectedExtractionId={selectedExtractionId}
+          onSelectExtraction={setSelectedExtractionId}
         />
       </div>
 
@@ -79,6 +89,10 @@ export default function PublicConsultation() {
           isAdmin={false}
           onClose={() => setSelectedPosteId(null)}
         />
+      )}
+
+      {selectedExtraction && (
+        <PointExtractionForm point={selectedExtraction} isAdmin={false} onClose={() => setSelectedExtractionId(null)} />
       )}
     </div>
   );

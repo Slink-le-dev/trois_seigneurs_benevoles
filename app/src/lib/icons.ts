@@ -23,3 +23,23 @@ export function posteIcon(numero: number, couleur: string, statut: PosteStatut, 
     iconAnchor: [14, 14],
   });
 }
+
+export function extractionIcon(lettre: string): L.DivIcon {
+  const html = `
+    <div style="
+      width:26px;height:26px;border-radius:6px;
+      background:#dc2626;border:2.5px solid #fff;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 1px 3px rgba(0,0,0,.5);
+      color:#fff;font-weight:700;font-size:13px;line-height:1;
+      text-shadow:0 0 2px rgba(0,0,0,.7);
+    ">${lettre}</div>
+  `;
+
+  return L.divIcon({
+    html,
+    className: 'poste-marker-icon',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}

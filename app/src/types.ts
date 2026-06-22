@@ -58,3 +58,12 @@ export interface Affectation {
   heure_fin: string | null;
   created_at: string;
 }
+
+export interface PointExtraction {
+  id: string;
+  lettre: string;
+  libelle: string;
+  lat: number;
+  lng: number;
+  created_at: string;
+}

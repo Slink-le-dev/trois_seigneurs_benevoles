@@ -13,6 +13,8 @@ interface FilterBarProps {
   setParcoursVisibility: (v: Record<string, boolean>) => void;
   showPois: boolean;
   setShowPois: (show: boolean) => void;
+  showExtractions: boolean;
+  setShowExtractions: (show: boolean) => void;
   searchBenevole: string;
   setSearchBenevole: (v: string) => void;
 }
@@ -53,6 +55,8 @@ export default function FilterBar({
   setParcoursVisibility,
   showPois,
   setShowPois,
+  showExtractions,
+  setShowExtractions,
   searchBenevole,
   setSearchBenevole,
 }: FilterBarProps) {
@@ -62,12 +66,14 @@ export default function FilterBar({
   const [draftStatuts, setDraftStatuts] = useState(filterStatuts);
   const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
   const [draftShowPois, setDraftShowPois] = useState(showPois);
+  const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
 
   const hasActiveFilters =
     filterParcoursIds.length > 0 ||
     filterTypes.length > 0 ||
     filterStatuts.length > 0 ||
     showPois ||
+    !showExtractions ||
     parcours.some((p) => parcoursVisibility[p.id] === false);
 
   function openPopup() {
@@ -76,6 +82,7 @@ export default function FilterBar({
     setDraftStatuts(filterStatuts);
     setDraftVisibility(parcoursVisibility);
     setDraftShowPois(showPois);
+    setDraftShowExtractions(showExtractions);
     setShowPopup(true);
   }
 
@@ -85,6 +92,7 @@ export default function FilterBar({
     setFilterStatuts(draftStatuts);
     setParcoursVisibility(draftVisibility);
     setShowPois(draftShowPois);
+    setShowExtractions(draftShowExtractions);
     setShowPopup(false);
   }
 
@@ -94,6 +102,7 @@ export default function FilterBar({
     setFilterStatuts([]);
     setParcoursVisibility({});
     setShowPois(false);
+    setShowExtractions(true);
     setShowPopup(false);
   }
 
@@ -185,6 +194,14 @@ export default function FilterBar({
                   <label className="flex items-center gap-1">
                     <input type="checkbox" checked={draftShowPois} onChange={(e) => setDraftShowPois(e.target.checked)} />
                     Points d'intérêt (POI)
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={draftShowExtractions}
+                      onChange={(e) => setDraftShowExtractions(e.target.checked)}
+                    />
+                    Points d'extraction
                   </label>
                 </div>
               </div>
