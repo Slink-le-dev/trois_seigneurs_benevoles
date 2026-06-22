@@ -36,6 +36,7 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [showPois, setShowPois] = useState(false);
+  const [searchBenevole, setSearchBenevole] = useState('');
 
   // Garantit l'existence des 3 parcours de la course (une seule fois)
   const seedingParcours = useRef(false);
@@ -120,6 +121,8 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
             setParcoursVisibility={setParcoursVisibility}
             showPois={showPois}
             setShowPois={setShowPois}
+            searchBenevole={searchBenevole}
+            setSearchBenevole={setSearchBenevole}
           />
           <div className="flex-1 flex overflow-hidden">
             <aside className="w-80 border-r overflow-y-auto p-3 space-y-4 hidden md:block">
@@ -177,6 +180,7 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
                 filterStatuts={filterStatuts}
                 filterParcoursIds={filterParcoursIds}
                 showPois={showPois}
+                searchBenevole={searchBenevole}
               />
             </div>
           </div>

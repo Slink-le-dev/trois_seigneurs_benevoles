@@ -22,6 +22,7 @@ interface MapViewProps {
   filterStatuts?: PosteStatut[];
   filterParcoursIds?: string[];
   showPois?: boolean;
+  searchBenevole?: string;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -82,13 +83,20 @@ export default function MapView({
   filterStatuts,
   filterParcoursIds,
   showPois = false,
+  searchBenevole = '',
 }: MapViewProps) {
+  const query = searchBenevole.trim().toLowerCase();
   const visiblePostes = postes.filter((p) => {
     if (filterTypes?.length && !p.types.some((t) => filterTypes.includes(t))) return false;
     if (filterStatuts?.length && !filterStatuts.includes(p.statut)) return false;
     if (filterParcoursIds?.length) {
       const ids = getParcoursIdsForPoste(p.id);
       if (!ids.some((id) => filterParcoursIds.includes(id))) return false;
+    }
+    if (query) {
+      const aff = getAffectationsForPoste(p.id);
+      const hasMatch = aff.some((a) => benevoles.find((b) => b.id === a.benevole_id)?.nom.toLowerCase().includes(query));
+      if (!hasMatch) return false;
     }
     return true;
   });

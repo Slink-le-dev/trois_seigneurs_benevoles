@@ -14,6 +14,7 @@ export default function PublicConsultation() {
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [showPois, setShowPois] = useState(false);
+  const [searchBenevole, setSearchBenevole] = useState('');
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
 
@@ -45,6 +46,8 @@ export default function PublicConsultation() {
         setParcoursVisibility={setParcoursVisibility}
         showPois={showPois}
         setShowPois={setShowPois}
+        searchBenevole={searchBenevole}
+        setSearchBenevole={setSearchBenevole}
       />
 
       <div className="flex-1 relative">
@@ -62,6 +65,7 @@ export default function PublicConsultation() {
           filterStatuts={filterStatuts}
           filterParcoursIds={filterParcoursIds}
           showPois={showPois}
+          searchBenevole={searchBenevole}
         />
       </div>
 

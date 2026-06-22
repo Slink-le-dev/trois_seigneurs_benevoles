@@ -12,6 +12,8 @@ interface FilterBarProps {
   setParcoursVisibility: (v: Record<string, boolean>) => void;
   showPois: boolean;
   setShowPois: (show: boolean) => void;
+  searchBenevole: string;
+  setSearchBenevole: (v: string) => void;
 }
 
 function toggle<T>(list: T[], value: T): T[] {
@@ -30,6 +32,8 @@ export default function FilterBar({
   setParcoursVisibility,
   showPois,
   setShowPois,
+  searchBenevole,
+  setSearchBenevole,
 }: FilterBarProps) {
   return (
     <div className="flex flex-wrap gap-4 text-sm p-2 bg-white border-b">
@@ -91,6 +95,29 @@ export default function FilterBar({
           <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
           Points d'intérêt (POI)
         </label>
+      </div>
+
+      <div className="flex items-center gap-2 border-l pl-4">
+        <span className="text-gray-500">Bénévole :</span>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher par nom…"
+            value={searchBenevole}
+            onChange={(e) => setSearchBenevole(e.target.value)}
+            className="border rounded px-2 py-1 pr-7 text-sm w-44"
+          />
+          {searchBenevole && (
+            <button
+              type="button"
+              onClick={() => setSearchBenevole('')}
+              aria-label="Réinitialiser la recherche"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
