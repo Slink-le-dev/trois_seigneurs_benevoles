@@ -83,8 +83,8 @@ create table main_courante (
   lieu_arrivee_attendue text,
   heure_arrivee_estimee time,
   heure_arrivee_effective time,
-  statut text not null default 'en cours'
-    check (statut in ('en cours', 'terminé', 'abandonné')),
+  statut text not null default 'prise en charge en cours'
+    check (statut in ('prise en charge en cours', 'pris en charge', 'terminé', 'abandonné')),
   constraint main_courante_appelant_xor
     check ((benevole_appelant_id is not null) <> (appelant_special is not null))
 );

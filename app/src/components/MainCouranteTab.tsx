@@ -4,7 +4,7 @@ import { printMainCourante } from '../lib/print';
 
 const POSTE_NUMERO_PC_SECURITE = 100;
 
-const STATUTS: MainCouranteStatus[] = ['en cours', 'terminé', 'abandonné'];
+const STATUTS: MainCouranteStatus[] = ['prise en charge en cours', 'pris en charge', 'terminé', 'abandonné'];
 
 const APPELANT_SPECIAL_OPTIONS: { value: AppelantSpecial; label: string }[] = [
   { value: 'coureur', label: 'Coureur' },
@@ -73,7 +73,7 @@ const emptyForm: Partial<MainCouranteEvent> = {
   lieu_arrivee_attendue: '',
   heure_arrivee_estimee: '',
   heure_arrivee_effective: '',
-  statut: 'en cours',
+  statut: 'prise en charge en cours',
 };
 
 export default function MainCouranteTab({ events, postes, benevoles, parcours, affectations, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
@@ -177,7 +177,7 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
       lieu_arrivee_attendue: form.lieu_arrivee_attendue || null,
       heure_arrivee_estimee: form.heure_arrivee_estimee || null,
       heure_arrivee_effective: form.heure_arrivee_effective || null,
-      statut: form.statut ?? 'en cours',
+      statut: form.statut ?? 'prise en charge en cours',
     };
 
     try {
@@ -417,7 +417,7 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
             Statut
             <select
               className="border rounded px-2 py-2 w-full"
-              value={form.statut ?? 'en cours'}
+              value={form.statut ?? 'prise en charge en cours'}
               onChange={(e) => setField('statut', e.target.value as MainCouranteStatus)}
             >
               {STATUTS.map((status) => (
