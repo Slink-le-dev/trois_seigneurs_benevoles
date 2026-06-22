@@ -160,7 +160,7 @@ export default function MapView({
             opacity={selectedPosteId === poste.id ? 1 : 0.95}
           >
             <Tooltip>
-              <div className="text-xs leading-snug max-w-[220px]">
+              <div className="text-xs leading-snug w-60 max-h-64 overflow-y-auto break-words">
                 <div className="font-semibold mb-0.5">
                   {poste.numero}. {poste.nom}
                 </div>

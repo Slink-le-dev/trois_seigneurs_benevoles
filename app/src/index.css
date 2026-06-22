@@ -16,3 +16,10 @@ input[type='checkbox'] {
   width: 16px;
   height: 16px;
 }
+
+/* Leaflet force le texte des tooltips sur une seule ligne (white-space: nowrap),
+   ce qui fait déborder la mini-fiche poste quand elle contient beaucoup d'infos. */
+.leaflet-tooltip {
+  white-space: normal;
+  max-width: 260px;
+}
