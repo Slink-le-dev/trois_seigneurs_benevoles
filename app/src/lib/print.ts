@@ -1,11 +1,18 @@
 import { formatCreneau } from './format';
-import { Affectation, AppelantSpecial, Benevole, MainCouranteEvent, POSTE_TYPES, Poste } from '../types';
+import {
+  Affectation,
+  Benevole,
+  MainCouranteCommentaire,
+  MainCouranteEvent,
+  MainCouranteJournalEntry,
+  POSTE_TYPES,
+  Poste,
+} from '../types';
+import { JOURNAL_FIELD_LABELS, formatAppelant, formatJournalValue, formatPosteName } from './mainCourante';
 
-const APPELANT_SPECIAL_LABELS: Record<AppelantSpecial, string> = {
-  coureur: 'Coureur',
-  croix_rouge: 'Croix-Rouge',
-  autre: 'Autre',
-};
+function formatDatetime(value: string): string {
+  return new Date(value).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+}
 
 export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affectations: Affectation[], benevoles: Benevole[]) {
   const win = window.open('', '_blank', 'width=600,height=800');
@@ -54,37 +61,80 @@ export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affect
   win.document.close();
 }
 
-export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], benevoles: Benevole[]) {
+export function printMainCourante(
+  events: MainCouranteEvent[],
+  postes: Poste[],
+  benevoles: Benevole[],
+  journal: MainCouranteJournalEntry[],
+  commentaires: MainCouranteCommentaire[]
+) {
   const win = window.open('', '_blank', 'width=1000,height=800');
   if (!win) return;
 
-  const rows = events
+  type ActivityItem =
+    | { kind: 'creation'; created_at: string; created_by: string }
+    | (MainCouranteJournalEntry & { kind: 'journal' })
+    | (MainCouranteCommentaire & { kind: 'comment' });
+
+  const tickets = events
     .map((event) => {
       const poste = postes.find((p) => p.id === event.poste_origine_id);
-      const appelant = event.appelant_special
-        ? APPELANT_SPECIAL_LABELS[event.appelant_special]
-        : benevoles.find((b) => b.id === event.benevole_appelant_id)?.nom ?? '—';
       const recepteur = benevoles.find((b) => b.id === event.benevole_recepteur_id);
+
+      const activity: ActivityItem[] = ([
+        { kind: 'creation', created_at: event.created_at, created_by: event.created_by },
+        ...journal.filter((j) => j.event_id === event.id).map((j) => ({ ...j, kind: 'journal' as const })),
+        ...commentaires.filter((c) => c.event_id === event.id).map((c) => ({ ...c, kind: 'comment' as const })),
+      ] as ActivityItem[]).sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+      const activityRows = activity
+        .map((item) => {
+          if (item.kind === 'creation') {
+            return `<div class="activity-row">${formatDatetime(item.created_at)} · ${item.created_by} — Créé</div>`;
+          }
+          if (item.kind === 'comment') {
+            return `<div class="activity-row">${formatDatetime(item.created_at)} · ${item.created_by} — Commentaire : ${item.contenu}</div>`;
+          }
+          return `<div class="activity-row">${formatDatetime(item.created_at)} · ${item.created_by} — ${
+            JOURNAL_FIELD_LABELS[item.champ] ?? item.champ
+          } : ${formatJournalValue(item.champ, item.ancienne_valeur, postes, benevoles)} → ${formatJournalValue(
+            item.champ,
+            item.nouvelle_valeur,
+            postes,
+            benevoles
+          )}</div>`;
+        })
+        .join('');
+
+      const abandonRows = event.abandon
+        ? `
+          <div class="meta-row"><span>Lieu de départ</span><span>${event.lieu_depart ?? '—'}</span></div>
+          <div class="meta-row"><span>Lieu d'arrivée</span><span>${event.lieu_arrivee_attendue ?? '—'}</span></div>
+          <div class="meta-row"><span>Heure estimée d'arrivée</span><span>${event.heure_arrivee_estimee ?? '—'}</span></div>
+          <div class="meta-row"><span>Heure d'arrivée effective</span><span>${event.heure_arrivee_effective ?? '—'}</span></div>
+          <div class="meta-row"><span>Lien de suivi GPS</span><span>${event.lien_suivi_gps ?? '—'}</span></div>
+        `
+        : '';
+
       return `
-        <tr>
-          <td>${event.numero}</td>
-          <td>${event.date_evenement ?? '—'}</td>
-          <td>${new Date(event.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
-          <td>${poste ? `N°${poste.numero} — ${poste.nom}` : '—'}</td>
-          <td>${appelant}</td>
-          <td>${recepteur?.nom ?? '—'}</td>
-          <td>${event.course ?? '—'}</td>
-          <td>${event.objet ?? '—'}</td>
-          <td>${event.dossard ?? '—'}</td>
-          <td>${event.commentaire ?? '—'}</td>
-          <td>${event.abandon ? 'Oui' : 'Non'}</td>
-          <td>${event.date_depart ?? '—'}</td>
-          <td>${event.lieu_depart ?? '—'}</td>
-          <td>${event.lieu_arrivee_attendue ?? '—'}</td>
-          <td>${event.heure_arrivee_estimee ?? '—'}</td>
-          <td>${event.heure_arrivee_effective ?? '—'}</td>
-          <td>${event.statut}</td>
-        </tr>
+        <div class="ticket">
+          <h2>N°${event.numero} — ${event.objet ?? '—'}</h2>
+          <div class="meta">
+            <div class="meta-row"><span>Date</span><span>${event.date_evenement ?? '—'}</span></div>
+            <div class="meta-row"><span>Poste</span><span>${poste ? `N°${poste.numero} — ${poste.nom}` : '—'}</span></div>
+            <div class="meta-row"><span>Appelant → Récepteur</span><span>${formatAppelant(benevoles, event)} → ${
+        recepteur?.nom ?? '—'
+      }</span></div>
+            <div class="meta-row"><span>Parcours</span><span>${event.course ?? '—'}</span></div>
+            <div class="meta-row"><span>Dossard</span><span>${event.dossard ?? '—'}</span></div>
+            <div class="meta-row"><span>Description</span><span>${event.commentaire ?? '—'}</span></div>
+            <div class="meta-row"><span>Statut</span><span>${event.statut}</span></div>
+            <div class="meta-row"><span>Abandon</span><span>${event.abandon ? 'Oui' : 'Non'}</span></div>
+            ${abandonRows}
+          </div>
+          <h3>Historique</h3>
+          <div class="activity">${activityRows}</div>
+        </div>
       `;
     })
     .join('');
@@ -97,38 +147,18 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
         <style>
           body { font-family: sans-serif; padding: 24px; color: #111; }
           h1 { font-size: 20px; margin-bottom: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
-          th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
-          th { background: #f3f4f6; }
-          .small { font-size: 11px; color: #555; }
+          .ticket { border: 1px solid #ccc; border-radius: 4px; padding: 12px 16px; margin-bottom: 16px; page-break-inside: avoid; }
+          .ticket h2 { font-size: 15px; margin: 0 0 8px; }
+          .ticket h3 { font-size: 12px; text-transform: uppercase; color: #666; margin: 12px 0 6px; }
+          .meta-row { display: flex; gap: 8px; font-size: 12px; padding: 2px 0; }
+          .meta-row span:first-child { width: 180px; color: #555; flex-shrink: 0; }
+          .activity-row { font-size: 11px; color: #333; padding: 2px 0; border-top: 1px solid #eee; }
+          .activity-row:first-child { border-top: none; }
         </style>
       </head>
       <body>
         <h1>Main courante</h1>
-        <table>
-          <thead>
-            <tr>
-              <th>N°</th>
-              <th>Date</th>
-              <th>Heure saisie</th>
-              <th>Poste</th>
-              <th>Appelant</th>
-              <th>Récepteur</th>
-              <th>Parcours</th>
-              <th>Objet</th>
-              <th>Dossard</th>
-              <th>Description</th>
-              <th>Abandon</th>
-              <th>Date départ</th>
-              <th>Lieu départ</th>
-              <th>Arrivée attendue</th>
-              <th>Arrivée estimée</th>
-              <th>Arrivée effective</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody>${rows || '<tr><td colspan="17">Aucun événement</td></tr>'}</tbody>
-        </table>
+        ${tickets || '<p>Aucun événement.</p>'}
         <script>window.onload = () => window.print();</script>
       </body>
     </html>

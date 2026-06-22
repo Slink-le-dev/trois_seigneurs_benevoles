@@ -11,6 +11,14 @@ import {
   Poste,
 } from '../types';
 import { printMainCourante } from '../lib/print';
+import {
+  APPELANT_SPECIAL_LABELS,
+  JOURNAL_FIELD_LABELS,
+  findName,
+  formatAppelant,
+  formatJournalValue,
+  formatPosteName,
+} from '../lib/mainCourante';
 
 const POSTE_NUMERO_PC_SECURITE = 100;
 
@@ -28,18 +36,6 @@ const APPELANT_SPECIAL_OPTIONS: { value: AppelantSpecial; label: string }[] = [
   { value: 'croix_rouge', label: 'Croix-Rouge' },
   { value: 'autre', label: 'Autre' },
 ];
-
-const APPELANT_SPECIAL_LABELS: Record<AppelantSpecial, string> = {
-  coureur: 'Coureur',
-  croix_rouge: 'Croix-Rouge',
-  autre: 'Autre',
-};
-
-function formatAppelant(benevoles: Benevole[], event: Pick<MainCouranteEvent, 'benevole_appelant_id' | 'appelant_special'>) {
-  if (event.appelant_special) return APPELANT_SPECIAL_LABELS[event.appelant_special];
-  if (!event.benevole_appelant_id) return '—';
-  return findName(benevoles, event.benevole_appelant_id);
-}
 
 function formatDate(value?: string | null) {
   if (!value) return '—';
@@ -66,44 +62,6 @@ function formatDatetime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-}
-
-function findName<T extends { id: string; nom: string }>(items: T[], id: string) {
-  return items.find((item) => item.id === id)?.nom ?? '(inconnu)';
-}
-
-function formatPosteName(postes: Poste[], id: string) {
-  const poste = postes.find((p) => p.id === id);
-  return poste ? `N°${poste.numero} — ${poste.nom}` : '(poste supprimé)';
-}
-
-const JOURNAL_FIELD_LABELS: Record<string, string> = {
-  date_evenement: 'Date',
-  poste_origine_id: 'Poste',
-  benevole_appelant_id: 'Appelant',
-  appelant_special: 'Appelant (catégorie)',
-  benevole_recepteur_id: 'Récepteur',
-  course: 'Parcours',
-  objet: 'Objet',
-  dossard: 'Dossard',
-  commentaire: 'Description',
-  abandon: 'Abandon',
-  date_depart: 'Date départ',
-  lieu_depart: 'Lieu de départ',
-  lieu_arrivee_attendue: "Lieu d'arrivée",
-  heure_arrivee_estimee: "Heure estimée d'arrivée",
-  lien_suivi_gps: 'Lien de suivi GPS',
-  heure_arrivee_effective: "Heure d'arrivée effective",
-  statut: 'Statut',
-};
-
-function formatJournalValue(champ: string, value: string | null, postes: Poste[], benevoles: Benevole[]): string {
-  if (value == null) return '—';
-  if (champ === 'poste_origine_id') return formatPosteName(postes, value);
-  if (champ === 'benevole_appelant_id' || champ === 'benevole_recepteur_id') return findName(benevoles, value);
-  if (champ === 'appelant_special') return APPELANT_SPECIAL_LABELS[value as AppelantSpecial] ?? value;
-  if (champ === 'abandon') return value === 'true' ? 'Oui' : 'Non';
-  return value;
 }
 
 interface MainCouranteTabProps {
@@ -349,7 +307,7 @@ export default function MainCouranteTab({
           <button
             type="button"
             className="rounded border px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700"
-            onClick={() => printMainCourante(filteredEvents, postes, benevoles)}
+            onClick={() => printMainCourante(filteredEvents, postes, benevoles, journal, commentaires)}
           >
             Exporter en PDF
           </button>
