@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
-import { MainCouranteEvent, MainCouranteStatus, Benevole, Poste } from '../types';
+import { Affectation, MainCouranteEvent, MainCouranteStatus, Benevole, Poste } from '../types';
 import { printMainCourante } from '../lib/print';
+
+const POSTE_NUMERO_PC_SECURITE = 100;
 
 const STATUTS: MainCouranteStatus[] = ['en cours', 'terminé', 'abandonné'];
 
@@ -34,6 +36,7 @@ interface MainCouranteTabProps {
   events: MainCouranteEvent[];
   postes: Poste[];
   benevoles: Benevole[];
+  affectations: Affectation[];
   onCreate: (data: Partial<MainCouranteEvent>) => Promise<MainCouranteEvent>;
   onUpdate: (id: string, data: Partial<MainCouranteEvent>) => Promise<MainCouranteEvent>;
   onDelete: (id: string) => Promise<MainCouranteEvent>;
@@ -54,7 +57,7 @@ const emptyForm: Partial<MainCouranteEvent> = {
   statut: 'en cours',
 };
 
-export default function MainCouranteTab({ events, postes, benevoles, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
+export default function MainCouranteTab({ events, postes, benevoles, affectations, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
   const [editingEvent, setEditingEvent] = useState<MainCouranteEvent | null>(null);
   const [form, setForm] = useState<Partial<MainCouranteEvent>>(emptyForm);
   const [search, setSearch] = useState('');
@@ -63,6 +66,13 @@ export default function MainCouranteTab({ events, postes, benevoles, onCreate, o
   const [filterAppelantId, setFilterAppelantId] = useState('');
   const [filterRecepteurId, setFilterRecepteurId] = useState('');
   const [filterDate, setFilterDate] = useState('');
+
+  const benevolesRecepteurs = useMemo(() => {
+    const posteSecurite = postes.find((p) => p.numero === POSTE_NUMERO_PC_SECURITE);
+    if (!posteSecurite) return [];
+    const ids = new Set(affectations.filter((a) => a.poste_id === posteSecurite.id).map((a) => a.benevole_id));
+    return benevoles.filter((b) => ids.has(b.id));
+  }, [postes, affectations, benevoles]);
 
   const filteredEvents = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -224,7 +234,7 @@ export default function MainCouranteTab({ events, postes, benevoles, onCreate, o
             </select>
             <select className="border rounded px-2 py-2 text-sm" value={filterRecepteurId} onChange={(e) => setFilterRecepteurId(e.target.value)}>
               <option value="">Tous récepteurs</option>
-              {benevoles.map((benevole) => (
+              {benevolesRecepteurs.map((benevole) => (
                 <option key={benevole.id} value={benevole.id}>{benevole.nom}</option>
               ))}
             </select>
@@ -278,7 +288,7 @@ export default function MainCouranteTab({ events, postes, benevoles, onCreate, o
               onChange={(e) => setField('benevole_recepteur_id', e.target.value)}
             >
               <option value="">— Choisir un bénévole —</option>
-              {benevoles.map((b) => (
+              {benevolesRecepteurs.map((b) => (
                 <option key={b.id} value={b.id}>{b.nom}</option>
               ))}
             </select>
