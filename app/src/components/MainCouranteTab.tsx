@@ -6,6 +6,13 @@ const POSTE_NUMERO_PC_SECURITE = 100;
 
 const STATUTS: MainCouranteStatus[] = ['prise en charge en cours', 'pris en charge', 'terminé', 'abandonné'];
 
+const STATUT_COLORS: Record<MainCouranteStatus, { header: string; accent: string }> = {
+  'prise en charge en cours': { header: 'bg-orange-100 text-orange-800', accent: 'border-orange-400' },
+  'pris en charge': { header: 'bg-blue-100 text-blue-800', accent: 'border-blue-400' },
+  'terminé': { header: 'bg-green-100 text-green-800', accent: 'border-green-400' },
+  'abandonné': { header: 'bg-gray-200 text-gray-700', accent: 'border-gray-400' },
+};
+
 const APPELANT_SPECIAL_OPTIONS: { value: AppelantSpecial; label: string }[] = [
   { value: 'coureur', label: 'Coureur' },
   { value: 'croix_rouge', label: 'Croix-Rouge' },
@@ -478,66 +485,63 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
         </div>
       )}
 
-      <div className="overflow-x-auto border rounded bg-white shadow-sm">
-        <table className="min-w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
-              <th className="whitespace-nowrap px-2 py-2 border-b">Date</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Heure saisie</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Poste</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Appelant</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Récepteur</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Parcours</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Objet</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Dossard</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Abandon</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Départ</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Lieu départ</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Arrivée attendue</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Arrivée estimée</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Arrivée effective</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Statut</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Commentaire</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEvents.length === 0 ? (
-              <tr>
-                <td colSpan={17} className="p-4 text-center text-gray-500">Aucun événement correspondant.</td>
-              </tr>
-            ) : (
-              filteredEvents.map((event) => (
-                <tr key={event.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                  <td className="px-2 py-2 align-top">{formatDate(event.date_evenement)}</td>
-                  <td className="px-2 py-2 align-top">{formatDatetime(event.created_at)}</td>
-                  <td className="px-2 py-2 align-top">{formatPosteName(postes, event.poste_origine_id)}</td>
-                  <td className="px-2 py-2 align-top">{formatAppelant(benevoles, event)}</td>
-                  <td className="px-2 py-2 align-top">{findName(benevoles, event.benevole_recepteur_id)}</td>
-                  <td className="px-2 py-2 align-top">{event.course}</td>
-                  <td className="px-2 py-2 align-top">{event.objet}</td>
-                  <td className="px-2 py-2 align-top">{event.dossard ?? '—'}</td>
-                  <td className="px-2 py-2 align-top">{event.abandon ? 'Oui' : 'Non'}</td>
-                  <td className="px-2 py-2 align-top">{event.date_depart ? formatDate(event.date_depart) : '—'}</td>
-                  <td className="px-2 py-2 align-top">{event.lieu_depart ?? '—'}</td>
-                  <td className="px-2 py-2 align-top">{event.lieu_arrivee_attendue ?? '—'}</td>
-                  <td className="px-2 py-2 align-top">{formatTime(event.heure_arrivee_estimee)}</td>
-                  <td className="px-2 py-2 align-top">{formatTime(event.heure_arrivee_effective)}</td>
-                  <td className="px-2 py-2 align-top">{event.statut}</td>
-                  <td className="px-2 py-2 align-top break-words max-w-xs">{event.commentaire ?? '—'}</td>
-                  <td className="px-2 py-2 align-top whitespace-nowrap">
-                    <button className="text-blue-600 text-xs mr-2" onClick={() => handleEdit(event)}>
-                      Modifier
-                    </button>
-                    <button className="text-red-600 text-xs" onClick={() => handleDelete(event.id)}>
-                      Supprimer
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {STATUTS.map((status) => {
+          const colEvents = filteredEvents.filter((event) => event.statut === status);
+          const colors = STATUT_COLORS[status];
+          return (
+            <div key={status} className="flex flex-col rounded border bg-gray-50 min-h-[200px]">
+              <div className={`px-3 py-2 rounded-t font-semibold text-sm flex items-center justify-between ${colors.header}`}>
+                <span>{status}</span>
+                <span className="text-xs rounded-full bg-white/70 px-2 py-0.5">{colEvents.length}</span>
+              </div>
+              <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                {colEvents.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-4">Aucun événement.</p>
+                ) : (
+                  colEvents.map((event) => (
+                    <div key={event.id} className={`bg-white rounded shadow-sm border-l-4 ${colors.accent} p-3 text-sm space-y-1`}>
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-semibold break-words">{event.objet}</span>
+                        {event.dossard && (
+                          <span className="text-xs rounded bg-gray-100 px-1.5 py-0.5 whitespace-nowrap">#{event.dossard}</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">{formatDate(event.date_evenement)} · {formatDatetime(event.created_at)}</div>
+                      <div className="text-xs text-gray-600">{formatPosteName(postes, event.poste_origine_id)}</div>
+                      {event.course && <div className="text-xs text-gray-600">Parcours : {event.course}</div>}
+                      <div className="text-xs text-gray-600">
+                        {formatAppelant(benevoles, event)} → {findName(benevoles, event.benevole_recepteur_id)}
+                      </div>
+                      {event.abandon && (
+                        <span className="inline-block text-xs rounded bg-red-100 text-red-700 px-1.5 py-0.5">Abandon</span>
+                      )}
+                      {(event.lieu_arrivee_attendue || event.heure_arrivee_estimee || event.heure_arrivee_effective) && (
+                        <div className="text-xs text-gray-600">
+                          Arrivée {event.lieu_arrivee_attendue ?? ''}
+                          {event.heure_arrivee_effective
+                            ? ` (effective ${formatTime(event.heure_arrivee_effective)})`
+                            : event.heure_arrivee_estimee
+                            ? ` (estimée ${formatTime(event.heure_arrivee_estimee)})`
+                            : ''}
+                        </div>
+                      )}
+                      {event.commentaire && <div className="text-xs text-gray-500 italic break-words">{event.commentaire}</div>}
+                      <div className="flex gap-2 pt-1">
+                        <button className="text-blue-600 text-xs" onClick={() => handleEdit(event)}>
+                          Modifier
+                        </button>
+                        <button className="text-red-600 text-xs" onClick={() => handleDelete(event.id)}>
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
