@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Parcours, POSTE_STATUTS, POSTE_TYPES, PosteStatut, PosteTypeCode } from '../types';
 
 interface FilterBarProps {
@@ -16,8 +17,28 @@ interface FilterBarProps {
   setSearchBenevole: (v: string) => void;
 }
 
+const ACCENT = '#005F61';
+
 function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
+
+function FunnelIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
 }
 
 export default function FilterBar({
@@ -35,90 +56,187 @@ export default function FilterBar({
   searchBenevole,
   setSearchBenevole,
 }: FilterBarProps) {
+  const [showPopup, setShowPopup] = useState(false);
+  const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
+  const [draftTypes, setDraftTypes] = useState(filterTypes);
+  const [draftStatuts, setDraftStatuts] = useState(filterStatuts);
+  const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
+  const [draftShowPois, setDraftShowPois] = useState(showPois);
+
+  const hasActiveFilters =
+    filterParcoursIds.length > 0 ||
+    filterTypes.length > 0 ||
+    filterStatuts.length > 0 ||
+    showPois ||
+    parcours.some((p) => parcoursVisibility[p.id] === false);
+
+  function openPopup() {
+    setDraftParcoursIds(filterParcoursIds);
+    setDraftTypes(filterTypes);
+    setDraftStatuts(filterStatuts);
+    setDraftVisibility(parcoursVisibility);
+    setDraftShowPois(showPois);
+    setShowPopup(true);
+  }
+
+  function handleApply() {
+    setFilterParcoursIds(draftParcoursIds);
+    setFilterTypes(draftTypes);
+    setFilterStatuts(draftStatuts);
+    setParcoursVisibility(draftVisibility);
+    setShowPois(draftShowPois);
+    setShowPopup(false);
+  }
+
+  function handleReset() {
+    setFilterParcoursIds([]);
+    setFilterTypes([]);
+    setFilterStatuts([]);
+    setParcoursVisibility({});
+    setShowPois(false);
+    setShowPopup(false);
+  }
+
   return (
-    <div className="flex flex-wrap gap-4 text-sm p-2 bg-white border-b">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-gray-500">Parcours :</span>
-        {parcours.map((p) => (
-          <label key={p.id} className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={filterParcoursIds.length === 0 || filterParcoursIds.includes(p.id)}
-              onChange={() => setFilterParcoursIds(toggle(filterParcoursIds, p.id))}
-            />
-            <span style={{ color: p.couleur }}>●</span> {p.nom}
-          </label>
-        ))}
+    <div className="flex items-center gap-2 p-2 bg-white border-b text-sm">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Rechercher un bénévole par nom…"
+          value={searchBenevole}
+          onChange={(e) => setSearchBenevole(e.target.value)}
+          className="border rounded px-2 py-1 pr-7 text-sm w-56"
+        />
+        {searchBenevole && (
+          <button
+            type="button"
+            onClick={() => setSearchBenevole('')}
+            aria-label="Réinitialiser la recherche"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 leading-none"
+          >
+            ×
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-gray-500">Type :</span>
-        {POSTE_TYPES.map((t) => (
-          <label key={t.code} className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={filterTypes.length === 0 || filterTypes.includes(t.code)}
-              onChange={() => setFilterTypes(toggle(filterTypes, t.code))}
-            />
-            {t.emoji} {t.label}
-          </label>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-gray-500">Statut :</span>
-        {POSTE_STATUTS.map((s) => (
-          <label key={s.code} className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={filterStatuts.length === 0 || filterStatuts.includes(s.code)}
-              onChange={() => setFilterStatuts(toggle(filterStatuts, s.code))}
-            />
-            <span style={{ color: s.couleur }}>●</span> {s.label}
-          </label>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap border-l pl-4">
-        <span className="text-gray-500">Traces GPX :</span>
-        {parcours.map((p) => (
-          <label key={p.id} className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={parcoursVisibility[p.id] !== false}
-              onChange={() => setParcoursVisibility({ ...parcoursVisibility, [p.id]: parcoursVisibility[p.id] === false })}
-            />
-            <span style={{ color: p.couleur }}>●</span> {p.nom}
-          </label>
-        ))}
-        <label className="flex items-center gap-1">
-          <input type="checkbox" checked={showPois} onChange={(e) => setShowPois(e.target.checked)} />
-          Points d'intérêt (POI)
-        </label>
-      </div>
-
-      <div className="flex items-center gap-2 border-l pl-4">
-        <span className="text-gray-500">Bénévole :</span>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Rechercher par nom…"
-            value={searchBenevole}
-            onChange={(e) => setSearchBenevole(e.target.value)}
-            className="border rounded px-2 py-1 pr-7 text-sm w-44"
-          />
-          {searchBenevole && (
-            <button
-              type="button"
-              onClick={() => setSearchBenevole('')}
-              aria-label="Réinitialiser la recherche"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 leading-none"
-            >
-              ×
-            </button>
+      <button
+        type="button"
+        onClick={openPopup}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded border hover:bg-gray-50"
+        style={hasActiveFilters ? { borderColor: ACCENT, color: ACCENT } : undefined}
+      >
+        <span className="relative inline-flex">
+          <FunnelIcon />
+          {hasActiveFilters && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: ACCENT }} />
           )}
+        </span>
+        Filtres
+      </button>
+
+      {showPopup && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1000] p-4"
+          onClick={() => setShowPopup(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-5 max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-lg font-semibold">Filtres</h2>
+              <button onClick={() => setShowPopup(false)} className="text-gray-400 hover:text-gray-700 text-xl leading-none">
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Parcours</h3>
+                <div className="flex flex-wrap gap-3">
+                  {parcours.map((p) => (
+                    <label key={p.id} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={draftParcoursIds.length === 0 || draftParcoursIds.includes(p.id)}
+                        onChange={() => setDraftParcoursIds(toggle(draftParcoursIds, p.id))}
+                      />
+                      <span style={{ color: p.couleur }}>●</span> {p.nom}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Traces GPX</h3>
+                <div className="flex flex-wrap gap-3">
+                  {parcours.map((p) => (
+                    <label key={p.id} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={draftVisibility[p.id] !== false}
+                        onChange={() =>
+                          setDraftVisibility({ ...draftVisibility, [p.id]: draftVisibility[p.id] === false })
+                        }
+                      />
+                      <span style={{ color: p.couleur }}>●</span> {p.nom}
+                    </label>
+                  ))}
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" checked={draftShowPois} onChange={(e) => setDraftShowPois(e.target.checked)} />
+                    Points d'intérêt (POI)
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Type</h3>
+                <div className="flex flex-wrap gap-3">
+                  {POSTE_TYPES.map((t) => (
+                    <label key={t.code} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={draftTypes.length === 0 || draftTypes.includes(t.code)}
+                        onChange={() => setDraftTypes(toggle(draftTypes, t.code))}
+                      />
+                      {t.emoji} {t.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Statut</h3>
+                <div className="flex flex-wrap gap-3">
+                  {POSTE_STATUTS.map((s) => (
+                    <label key={s.code} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={draftStatuts.length === 0 || draftStatuts.includes(s.code)}
+                        onChange={() => setDraftStatuts(toggle(draftStatuts, s.code))}
+                      />
+                      <span style={{ color: s.couleur }}>●</span> {s.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between gap-2 mt-5 pt-3 border-t">
+              <button className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50" onClick={handleReset}>
+                Réinitialiser
+              </button>
+              <button
+                className="text-sm px-3 py-1.5 text-white rounded"
+                style={{ backgroundColor: ACCENT }}
+                onClick={handleApply}
+              >
+                Appliquer
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
