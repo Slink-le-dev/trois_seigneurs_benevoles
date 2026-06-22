@@ -15,6 +15,15 @@ function GoogleMapsIcon() {
   );
 }
 
+function OsmAndIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="5" fill="#1B8A5A" />
+      <path d="M12 5l4 13-4-3-4 3 4-13z" fill="white" />
+    </svg>
+  );
+}
+
 interface PosteFormProps {
   poste: Poste;
   parcours: Parcours[];
@@ -324,6 +333,15 @@ export default function PosteForm({
             >
               <GoogleMapsIcon />
               Accéder avec Google Maps
+            </a>
+            <a
+              href={`https://osmand.net/go?lat=${poste.lat}&lon=${poste.lng}&z=15`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 inline-flex items-center gap-1.5"
+            >
+              <OsmAndIcon />
+              Accéder avec OsmAnd
             </a>
             <button
               className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
