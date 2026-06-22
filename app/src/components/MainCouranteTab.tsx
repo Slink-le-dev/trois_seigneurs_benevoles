@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Affectation, AppelantSpecial, MainCouranteEvent, MainCouranteStatus, Benevole, Parcours, Poste } from '../types';
+import {
+  Affectation,
+  AppelantSpecial,
+  Benevole,
+  MainCouranteCommentaire,
+  MainCouranteEvent,
+  MainCouranteJournalEntry,
+  MainCouranteStatus,
+  Parcours,
+  Poste,
+} from '../types';
 import { printMainCourante } from '../lib/print';
 
 const POSTE_NUMERO_PC_SECURITE = 100;
@@ -57,15 +67,46 @@ function formatPosteName(postes: Poste[], id: string) {
   return poste ? `N°${poste.numero} — ${poste.nom}` : '(poste supprimé)';
 }
 
+const JOURNAL_FIELD_LABELS: Record<string, string> = {
+  date_evenement: 'Date',
+  poste_origine_id: 'Poste',
+  benevole_appelant_id: 'Appelant',
+  appelant_special: 'Appelant (catégorie)',
+  benevole_recepteur_id: 'Récepteur',
+  course: 'Parcours',
+  objet: 'Objet',
+  dossard: 'Dossard',
+  commentaire: 'Description',
+  abandon: 'Abandon',
+  date_depart: 'Date départ',
+  lieu_depart: 'Lieu départ',
+  lieu_arrivee_attendue: 'Lieu arrivée attendue',
+  heure_arrivee_estimee: 'Heure arrivée estimée',
+  heure_arrivee_effective: 'Heure arrivée effective',
+  statut: 'Statut',
+};
+
+function formatJournalValue(champ: string, value: string | null, postes: Poste[], benevoles: Benevole[]): string {
+  if (value == null) return '—';
+  if (champ === 'poste_origine_id') return formatPosteName(postes, value);
+  if (champ === 'benevole_appelant_id' || champ === 'benevole_recepteur_id') return findName(benevoles, value);
+  if (champ === 'appelant_special') return APPELANT_SPECIAL_LABELS[value as AppelantSpecial] ?? value;
+  if (champ === 'abandon') return value === 'true' ? 'Oui' : 'Non';
+  return value;
+}
+
 interface MainCouranteTabProps {
   events: MainCouranteEvent[];
   postes: Poste[];
   benevoles: Benevole[];
   parcours: Parcours[];
   affectations: Affectation[];
+  journal: MainCouranteJournalEntry[];
+  commentaires: MainCouranteCommentaire[];
   onCreate: (data: Partial<MainCouranteEvent>) => Promise<MainCouranteEvent>;
   onUpdate: (id: string, data: Partial<MainCouranteEvent>) => Promise<MainCouranteEvent>;
   onDelete: (id: string) => Promise<MainCouranteEvent>;
+  onAddCommentaire: (eventId: string, contenu: string) => Promise<MainCouranteCommentaire>;
 }
 
 const emptyForm: Partial<MainCouranteEvent> = {
@@ -83,16 +124,43 @@ const emptyForm: Partial<MainCouranteEvent> = {
   statut: 'prise en charge en cours',
 };
 
-export default function MainCouranteTab({ events, postes, benevoles, parcours, affectations, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
+export default function MainCouranteTab({
+  events,
+  postes,
+  benevoles,
+  parcours,
+  affectations,
+  journal,
+  commentaires,
+  onCreate,
+  onUpdate,
+  onDelete,
+  onAddCommentaire,
+}: MainCouranteTabProps) {
   const [editingEvent, setEditingEvent] = useState<MainCouranteEvent | null>(null);
   const [form, setForm] = useState<Partial<MainCouranteEvent>>(emptyForm);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [viewingEventId, setViewingEventId] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState('');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPosteId, setFilterPosteId] = useState('');
   const [filterAppelantId, setFilterAppelantId] = useState('');
   const [filterRecepteurId, setFilterRecepteurId] = useState('');
   const [filterDate, setFilterDate] = useState('');
+
+  const activityFeed = useMemo(() => {
+    if (!viewingEventId) return [];
+    const j = journal.filter((entry) => entry.event_id === viewingEventId).map((entry) => ({ ...entry, kind: 'journal' as const }));
+    const c = commentaires.filter((entry) => entry.event_id === viewingEventId).map((entry) => ({ ...entry, kind: 'comment' as const }));
+    return [...j, ...c].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }, [viewingEventId, journal, commentaires]);
+
+  async function handleAddComment() {
+    if (!viewingEventId || !newComment.trim()) return;
+    await onAddCommentaire(viewingEventId, newComment.trim());
+    setNewComment('');
+  }
 
   const benevolesRecepteurs = useMemo(() => {
     const posteSecurite = postes.find((p) => p.numero === POSTE_NUMERO_PC_SECURITE);
@@ -531,6 +599,12 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
                         <button className="text-blue-600 text-xs" onClick={() => handleEdit(event)}>
                           Modifier
                         </button>
+                        <button className="text-gray-600 text-xs" onClick={() => setViewingEventId(event.id)}>
+                          Activité (
+                          {journal.filter((j) => j.event_id === event.id).length +
+                            commentaires.filter((c) => c.event_id === event.id).length}
+                          )
+                        </button>
                         <button className="text-red-600 text-xs" onClick={() => handleDelete(event.id)}>
                           Supprimer
                         </button>
@@ -543,6 +617,67 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
           );
         })}
       </div>
+
+      {viewingEventId && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1000] p-4"
+          onClick={() => setViewingEventId(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-lg w-full p-5 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="font-semibold text-sm">Activité</h3>
+              <button
+                type="button"
+                onClick={() => setViewingEventId(null)}
+                className="text-gray-400 hover:text-gray-700 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
+              {activityFeed.length === 0 ? (
+                <p className="text-xs text-gray-400">Aucune activité pour le moment.</p>
+              ) : (
+                activityFeed.map((item) =>
+                  item.kind === 'comment' ? (
+                    <div key={item.id} className="bg-blue-50 rounded p-2 text-sm">
+                      <div className="text-xs text-gray-500 mb-0.5">{formatDatetime(item.created_at)} · {item.created_by}</div>
+                      <div className="break-words">{item.contenu}</div>
+                    </div>
+                  ) : (
+                    <div key={item.id} className="text-xs text-gray-500 border-l-2 border-gray-200 pl-2">
+                      {formatDatetime(item.created_at)} · {item.created_by} — {JOURNAL_FIELD_LABELS[item.champ] ?? item.champ} :{' '}
+                      {formatJournalValue(item.champ, item.ancienne_valeur, postes, benevoles)} →{' '}
+                      {formatJournalValue(item.champ, item.nouvelle_valeur, postes, benevoles)}
+                    </div>
+                  )
+                )
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t">
+              <textarea
+                rows={2}
+                className="border rounded px-2 py-1 w-full text-sm"
+                placeholder="Ajouter un commentaire…"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded bg-blue-600 text-white px-3 text-sm self-end py-1.5 hover:bg-blue-700"
+                onClick={handleAddComment}
+              >
+                Envoyer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

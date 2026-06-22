@@ -89,6 +89,24 @@ create table main_courante (
     check ((benevole_appelant_id is not null) <> (appelant_special is not null))
 );
 
+create table main_courante_journal (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references main_courante(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  created_by text not null,
+  champ text not null,
+  ancienne_valeur text,
+  nouvelle_valeur text
+);
+
+create table main_courante_commentaires (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references main_courante(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  created_by text not null,
+  contenu text not null
+);
+
 -- Vue publique des benevoles : expose tout sauf le telephone.
 -- Note : les vues Postgres s'executent par defaut avec les droits du proprietaire de la vue
 -- (ici le role postgres, qui bypass la RLS), donc cette vue retourne toutes les lignes a
@@ -110,6 +128,8 @@ alter table benevoles enable row level security;
 alter table affectations enable row level security;
 alter table points_extraction enable row level security;
 alter table main_courante enable row level security;
+alter table main_courante_journal enable row level security;
+alter table main_courante_commentaires enable row level security;
 
 -- Lecture publique (anon + authenticated) sur les tables sans donnee sensible
 create policy "lecture publique parcours" on parcours for select using (true);
@@ -141,6 +161,14 @@ create policy "ecriture organisateur points_extraction" on points_extraction for
 create policy "lecture organisateur main_courante" on main_courante for select
   using (auth.role() = 'authenticated');
 create policy "ecriture organisateur main_courante" on main_courante for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "lecture organisateur main_courante_journal" on main_courante_journal for select
+  using (auth.role() = 'authenticated');
+create policy "ecriture organisateur main_courante_journal" on main_courante_journal for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "lecture organisateur main_courante_commentaires" on main_courante_commentaires for select
+  using (auth.role() = 'authenticated');
+create policy "ecriture organisateur main_courante_commentaires" on main_courante_commentaires for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Note : la policy "ecriture organisateur parcours" ci-dessus couvre aussi le select,

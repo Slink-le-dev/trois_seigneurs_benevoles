@@ -97,3 +97,21 @@ export interface MainCouranteEvent {
   heure_arrivee_effective: string | null;
   statut: MainCouranteStatus;
 }
+
+export interface MainCouranteJournalEntry {
+  id: string;
+  event_id: string;
+  created_at: string;
+  created_by: string;
+  champ: string;
+  ancienne_valeur: string | null;
+  nouvelle_valeur: string | null;
+}
+
+export interface MainCouranteCommentaire {
+  id: string;
+  event_id: string;
+  created_at: string;
+  created_by: string;
+  contenu: string;
+}

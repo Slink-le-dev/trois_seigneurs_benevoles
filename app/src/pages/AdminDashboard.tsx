@@ -23,11 +23,19 @@ export default function AdminDashboard() {
   if (sessionLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
   if (!session) return <AdminLogin />;
 
-  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} />;
+  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} />;
 }
 
-function AdminContent({ onSignOut, currentUserId }: { onSignOut: () => void; currentUserId: string }) {
-  const data = useAppData(true, currentUserId);
+function AdminContent({
+  onSignOut,
+  currentUserId,
+  currentUserEmail,
+}: {
+  onSignOut: () => void;
+  currentUserId: string;
+  currentUserEmail: string | null;
+}) {
+  const data = useAppData(true, currentUserId, currentUserEmail);
   const [tab, setTab] = useState<Tab>('carte');
   const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
@@ -295,9 +303,12 @@ function AdminContent({ onSignOut, currentUserId }: { onSignOut: () => void; cur
             benevoles={data.benevoles}
             parcours={data.parcours}
             affectations={data.affectations}
+            journal={data.mainCouranteJournal}
+            commentaires={data.mainCouranteCommentaires}
             onCreate={data.createMainCourante}
             onUpdate={data.updateMainCourante}
             onDelete={data.deleteMainCourante}
+            onAddCommentaire={data.createMainCouranteCommentaire}
           />
         </div>
       )}

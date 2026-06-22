@@ -3,7 +3,9 @@ import { supabase } from './supabaseClient';
 import {
   Affectation,
   Benevole,
+  MainCouranteCommentaire,
   MainCouranteEvent,
+  MainCouranteJournalEntry,
   Parcours,
   PointExtraction,
   Poste,
@@ -12,7 +14,7 @@ import {
   PosteTypeCode,
 } from '../types';
 
-export function useAppData(isAdmin: boolean, currentUserId: string | null = null) {
+export function useAppData(isAdmin: boolean, currentUserId: string | null = null, currentUserLabel: string | null = null) {
   const [parcours, setParcours] = useState<Parcours[]>([]);
   const [postes, setPostes] = useState<Poste[]>([]);
   const [posteParcours, setPosteParcoursState] = useState<PosteParcours[]>([]);
@@ -20,6 +22,8 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   const [affectations, setAffectations] = useState<Affectation[]>([]);
   const [pointsExtraction, setPointsExtraction] = useState<PointExtraction[]>([]);
   const [mainCourante, setMainCourante] = useState<MainCouranteEvent[]>([]);
+  const [mainCouranteJournal, setMainCouranteJournal] = useState<MainCouranteJournalEntry[]>([]);
+  const [mainCouranteCommentaires, setMainCouranteCommentaires] = useState<MainCouranteCommentaire[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {
@@ -52,6 +56,15 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     if (affectationsRes.data) setAffectations(affectationsRes.data as Affectation[]);
     if (pointsExtractionRes.data) setPointsExtraction(pointsExtractionRes.data as PointExtraction[]);
     if (mainCouranteRes.data) setMainCourante(mainCouranteRes.data as MainCouranteEvent[]);
+
+    if (isAdmin) {
+      const [journalRes, commentairesRes] = await Promise.all([
+        supabase.from('main_courante_journal').select('*').order('created_at'),
+        supabase.from('main_courante_commentaires').select('*').order('created_at'),
+      ]);
+      if (journalRes.data) setMainCouranteJournal(journalRes.data as MainCouranteJournalEntry[]);
+      if (commentairesRes.data) setMainCouranteCommentaires(commentairesRes.data as MainCouranteCommentaire[]);
+    }
 
     setLoading(false);
   }, [isAdmin]);
@@ -247,6 +260,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
 
   async function updateMainCourante(id: string, data: Partial<MainCouranteEvent>) {
     if (!currentUserId) throw new Error('Utilisateur non authentifié.');
+    const before = mainCourante.find((m) => m.id === id);
     const { data: row, error } = await supabase
       .from('main_courante')
       .update({ ...data, updated_by: currentUserId, updated_at: new Date().toISOString() })
@@ -256,7 +270,38 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     if (error) throw error;
     const event = row as MainCouranteEvent;
     setMainCourante((c) => c.map((m) => (m.id === id ? event : m)));
+
+    if (before) {
+      const auteur = currentUserLabel ?? currentUserId;
+      const journalEntries = Object.keys(data)
+        .filter((champ) => (before as any)[champ] !== (event as any)[champ])
+        .map((champ) => ({
+          event_id: id,
+          created_by: auteur,
+          champ,
+          ancienne_valeur: (before as any)[champ] != null ? String((before as any)[champ]) : null,
+          nouvelle_valeur: (event as any)[champ] != null ? String((event as any)[champ]) : null,
+        }));
+      if (journalEntries.length) {
+        const { data: rows } = await supabase.from('main_courante_journal').insert(journalEntries).select();
+        if (rows) setMainCouranteJournal((c) => [...c, ...(rows as MainCouranteJournalEntry[])]);
+      }
+    }
+
     return event;
+  }
+
+  async function createMainCouranteCommentaire(eventId: string, contenu: string) {
+    if (!currentUserId) throw new Error('Utilisateur non authentifié.');
+    const { data: row, error } = await supabase
+      .from('main_courante_commentaires')
+      .insert({ event_id: eventId, created_by: currentUserLabel ?? currentUserId, contenu })
+      .select()
+      .single();
+    if (error) throw error;
+    const commentaire = row as MainCouranteCommentaire;
+    setMainCouranteCommentaires((c) => [...c, commentaire]);
+    return commentaire;
   }
 
   async function deleteMainCourante(id: string) {
@@ -280,6 +325,8 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     affectations,
     pointsExtraction,
     mainCourante,
+    mainCouranteJournal,
+    mainCouranteCommentaires,
     loading,
     refreshAll,
     getParcoursIdsForPoste,
@@ -306,6 +353,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     createMainCourante,
     updateMainCourante,
     deleteMainCourante,
+    createMainCouranteCommentaire,
   };
 }
 
