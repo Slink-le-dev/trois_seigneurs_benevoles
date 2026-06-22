@@ -293,6 +293,7 @@ function AdminContent({ onSignOut, currentUserId }: { onSignOut: () => void; cur
             events={data.mainCourante}
             postes={data.postes}
             benevoles={data.benevoles}
+            parcours={data.parcours}
             affectations={data.affectations}
             onCreate={data.createMainCourante}
             onUpdate={data.updateMainCourante}

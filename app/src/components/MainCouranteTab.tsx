@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Affectation, AppelantSpecial, MainCouranteEvent, MainCouranteStatus, Benevole, Poste } from '../types';
+import { Affectation, AppelantSpecial, MainCouranteEvent, MainCouranteStatus, Benevole, Parcours, Poste } from '../types';
 import { printMainCourante } from '../lib/print';
 
 const POSTE_NUMERO_PC_SECURITE = 100;
@@ -54,6 +54,7 @@ interface MainCouranteTabProps {
   events: MainCouranteEvent[];
   postes: Poste[];
   benevoles: Benevole[];
+  parcours: Parcours[];
   affectations: Affectation[];
   onCreate: (data: Partial<MainCouranteEvent>) => Promise<MainCouranteEvent>;
   onUpdate: (id: string, data: Partial<MainCouranteEvent>) => Promise<MainCouranteEvent>;
@@ -75,7 +76,7 @@ const emptyForm: Partial<MainCouranteEvent> = {
   statut: 'en cours',
 };
 
-export default function MainCouranteTab({ events, postes, benevoles, affectations, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
+export default function MainCouranteTab({ events, postes, benevoles, parcours, affectations, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
   const [editingEvent, setEditingEvent] = useState<MainCouranteEvent | null>(null);
   const [form, setForm] = useState<Partial<MainCouranteEvent>>(emptyForm);
   const [search, setSearch] = useState('');
@@ -326,13 +327,19 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
             </select>
           </label>
           <label className="space-y-1 text-sm">
-            Course
-            <input
-              type="text"
+            Parcours
+            <select
               className="border rounded px-2 py-2 w-full"
               value={form.course ?? ''}
               onChange={(e) => setField('course', e.target.value)}
-            />
+            >
+              <option value="">— Choisir —</option>
+              {parcours.map((p) => (
+                <option key={p.id} value={p.nom}>{p.nom}</option>
+              ))}
+              <option value="Tous">Tous</option>
+              <option value="Autre">Autre</option>
+            </select>
           </label>
           <label className="space-y-1 text-sm">
             Objet
@@ -446,7 +453,7 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
               <th className="whitespace-nowrap px-2 py-2 border-b">Poste</th>
               <th className="whitespace-nowrap px-2 py-2 border-b">Appelant</th>
               <th className="whitespace-nowrap px-2 py-2 border-b">Récepteur</th>
-              <th className="whitespace-nowrap px-2 py-2 border-b">Course</th>
+              <th className="whitespace-nowrap px-2 py-2 border-b">Parcours</th>
               <th className="whitespace-nowrap px-2 py-2 border-b">Objet</th>
               <th className="whitespace-nowrap px-2 py-2 border-b">Dossard</th>
               <th className="whitespace-nowrap px-2 py-2 border-b">Abandon</th>

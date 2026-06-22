@@ -112,7 +112,7 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
               <th>Poste</th>
               <th>Appelant</th>
               <th>Récepteur</th>
-              <th>Course</th>
+              <th>Parcours</th>
               <th>Objet</th>
               <th>Dossard</th>
               <th>Commentaire</th>
