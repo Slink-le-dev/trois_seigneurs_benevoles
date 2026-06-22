@@ -79,6 +79,7 @@ const emptyForm: Partial<MainCouranteEvent> = {
 export default function MainCouranteTab({ events, postes, benevoles, parcours, affectations, onCreate, onUpdate, onDelete }: MainCouranteTabProps) {
   const [editingEvent, setEditingEvent] = useState<MainCouranteEvent | null>(null);
   const [form, setForm] = useState<Partial<MainCouranteEvent>>(emptyForm);
+  const [showFormModal, setShowFormModal] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPosteId, setFilterPosteId] = useState('');
@@ -134,6 +135,7 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
 
   function handleEdit(event: MainCouranteEvent) {
     setEditingEvent(event);
+    setShowFormModal(true);
     setForm({
       date_evenement: event.date_evenement,
       poste_origine_id: event.poste_origine_id,
@@ -187,6 +189,7 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
         await onCreate(record);
       }
       resetForm();
+      setShowFormModal(false);
     } catch (error) {
       console.error(error);
       alert('Erreur lors de l’enregistrement de l’événement.');
@@ -210,13 +213,25 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
           <h2 className="font-semibold text-lg">Main courante</h2>
           <p className="text-sm text-gray-500">Enregistrez et suivez les événements en direct.</p>
         </div>
-        <button
-          type="button"
-          className="rounded border px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700"
-          onClick={() => printMainCourante(filteredEvents, postes, benevoles)}
-        >
-          Exporter en PDF
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="rounded border px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700"
+            onClick={() => {
+              resetForm();
+              setShowFormModal(true);
+            }}
+          >
+            Ajouter un évènement
+          </button>
+          <button
+            type="button"
+            className="rounded border px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700"
+            onClick={() => printMainCourante(filteredEvents, postes, benevoles)}
+          >
+            Exporter en PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -264,8 +279,25 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
         </div>
       </div>
 
-      <div className="border rounded p-4 bg-white shadow-sm">
-        <h3 className="font-semibold mb-3 text-sm">{editingEvent ? 'Modifier un événement' : 'Ajouter un événement'}</h3>
+      {showFormModal && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1000] p-4"
+          onClick={() => setShowFormModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-5 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="font-semibold text-sm">{editingEvent ? 'Modifier un événement' : 'Ajouter un événement'}</h3>
+              <button
+                type="button"
+                onClick={() => setShowFormModal(false)}
+                className="text-gray-400 hover:text-gray-700 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
         <div className="grid gap-3 lg:grid-cols-3">
           <label className="space-y-1 text-sm">
             Date de l'événement
@@ -442,7 +474,9 @@ export default function MainCouranteTab({ events, postes, benevoles, parcours, a
             Réinitialiser
           </button>
         </div>
-      </div>
+          </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto border rounded bg-white shadow-sm">
         <table className="min-w-full text-sm border-collapse">
