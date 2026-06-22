@@ -120,7 +120,7 @@ export function printMainCourante(
         <div class="ticket">
           <h2>N°${event.numero} — ${event.objet ?? '—'}</h2>
           <div class="meta">
-            <div class="meta-row"><span>Date</span><span>${event.date_evenement ?? '—'}</span></div>
+            <div class="meta-row"><span>Date et heure</span><span>${formatDatetime(event.created_at)}</span></div>
             <div class="meta-row"><span>Poste</span><span>${poste ? `N°${poste.numero} — ${poste.nom}` : '—'}</span></div>
             <div class="meta-row"><span>Appelant → Récepteur</span><span>${formatAppelant(benevoles, event)} → ${
         recepteur?.nom ?? '—'
