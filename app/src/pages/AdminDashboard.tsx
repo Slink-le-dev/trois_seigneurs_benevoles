@@ -135,7 +135,7 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
         {(['carte', 'benevoles', 'dashboard'] as Tab[]).map((t) => (
           <button
             key={t}
-            className={`px-4 py-2 ${tab === t ? 'border-b-2 border-blue-700 font-medium' : 'text-gray-500'}`}
+            className={`px-4 py-2 ${tab === t ? 'border-b-2 border-[#F3EA5D] font-medium' : 'text-gray-500'}`}
             onClick={() => setTab(t)}
           >
             {t === 'carte' ? 'Carte & postes' : t === 'benevoles' ? 'Bénévoles' : 'Tableau de bord'}
