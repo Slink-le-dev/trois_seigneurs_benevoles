@@ -70,7 +70,8 @@ create table main_courante (
   deleted_at timestamptz,
   deleted_by text,
   poste_origine_id uuid not null references postes(id) on delete restrict,
-  benevole_appelant_id uuid not null references benevoles(id) on delete restrict,
+  benevole_appelant_id uuid references benevoles(id) on delete restrict,
+  appelant_special text check (appelant_special in ('coureur', 'croix_rouge', 'autre')),
   benevole_recepteur_id uuid not null references benevoles(id) on delete restrict,
   course text not null,
   objet text not null,
@@ -83,7 +84,9 @@ create table main_courante (
   heure_arrivee_estimee time,
   heure_arrivee_effective time,
   statut text not null default 'en cours'
-    check (statut in ('en cours', 'terminé', 'abandonné'))
+    check (statut in ('en cours', 'terminé', 'abandonné')),
+  constraint main_courante_appelant_xor
+    check ((benevole_appelant_id is not null) <> (appelant_special is not null))
 );
 
 -- Vue publique des benevoles : expose tout sauf le telephone.

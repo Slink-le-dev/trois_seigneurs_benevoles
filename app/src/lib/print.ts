@@ -1,5 +1,11 @@
 import { formatCreneau } from './format';
-import { Affectation, Benevole, MainCouranteEvent, POSTE_TYPES, Poste } from '../types';
+import { Affectation, AppelantSpecial, Benevole, MainCouranteEvent, POSTE_TYPES, Poste } from '../types';
+
+const APPELANT_SPECIAL_LABELS: Record<AppelantSpecial, string> = {
+  coureur: 'Coureur',
+  croix_rouge: 'Croix-Rouge',
+  autre: 'Autre',
+};
 
 export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affectations: Affectation[], benevoles: Benevole[]) {
   const win = window.open('', '_blank', 'width=600,height=800');
@@ -55,14 +61,16 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
   const rows = events
     .map((event) => {
       const poste = postes.find((p) => p.id === event.poste_origine_id);
-      const appelant = benevoles.find((b) => b.id === event.benevole_appelant_id);
+      const appelant = event.appelant_special
+        ? APPELANT_SPECIAL_LABELS[event.appelant_special]
+        : benevoles.find((b) => b.id === event.benevole_appelant_id)?.nom ?? '—';
       const recepteur = benevoles.find((b) => b.id === event.benevole_recepteur_id);
       return `
         <tr>
           <td>${event.date_evenement ?? '—'}</td>
           <td>${new Date(event.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
           <td>${poste ? `N°${poste.numero} — ${poste.nom}` : '—'}</td>
-          <td>${appelant?.nom ?? '—'}</td>
+          <td>${appelant}</td>
           <td>${recepteur?.nom ?? '—'}</td>
           <td>${event.course ?? '—'}</td>
           <td>${event.objet ?? '—'}</td>

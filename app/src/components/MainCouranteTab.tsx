@@ -1,10 +1,28 @@
 import { useMemo, useState } from 'react';
-import { Affectation, MainCouranteEvent, MainCouranteStatus, Benevole, Poste } from '../types';
+import { Affectation, AppelantSpecial, MainCouranteEvent, MainCouranteStatus, Benevole, Poste } from '../types';
 import { printMainCourante } from '../lib/print';
 
 const POSTE_NUMERO_PC_SECURITE = 100;
 
 const STATUTS: MainCouranteStatus[] = ['en cours', 'terminé', 'abandonné'];
+
+const APPELANT_SPECIAL_OPTIONS: { value: AppelantSpecial; label: string }[] = [
+  { value: 'coureur', label: 'Coureur' },
+  { value: 'croix_rouge', label: 'Croix-Rouge' },
+  { value: 'autre', label: 'Autre' },
+];
+
+const APPELANT_SPECIAL_LABELS: Record<AppelantSpecial, string> = {
+  coureur: 'Coureur',
+  croix_rouge: 'Croix-Rouge',
+  autre: 'Autre',
+};
+
+function formatAppelant(benevoles: Benevole[], event: Pick<MainCouranteEvent, 'benevole_appelant_id' | 'appelant_special'>) {
+  if (event.appelant_special) return APPELANT_SPECIAL_LABELS[event.appelant_special];
+  if (!event.benevole_appelant_id) return '—';
+  return findName(benevoles, event.benevole_appelant_id);
+}
 
 function formatDate(value?: string | null) {
   if (!value) return '—';
@@ -85,7 +103,7 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
 
       if (!term) return true;
       const posteName = formatPosteName(postes, event.poste_origine_id).toLowerCase();
-      const appelantName = findName(benevoles, event.benevole_appelant_id).toLowerCase();
+      const appelantName = formatAppelant(benevoles, event).toLowerCase();
       const recepteurName = findName(benevoles, event.benevole_recepteur_id).toLowerCase();
       return [
         event.course,
@@ -119,6 +137,7 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
       date_evenement: event.date_evenement,
       poste_origine_id: event.poste_origine_id,
       benevole_appelant_id: event.benevole_appelant_id,
+      appelant_special: event.appelant_special,
       benevole_recepteur_id: event.benevole_recepteur_id,
       course: event.course,
       objet: event.objet,
@@ -135,7 +154,8 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
   }
 
   async function handleSubmit() {
-    if (!form.date_evenement || !form.poste_origine_id || !form.benevole_appelant_id || !form.benevole_recepteur_id || !form.course || !form.objet) {
+    const hasAppelant = !!form.benevole_appelant_id || !!form.appelant_special;
+    if (!form.date_evenement || !form.poste_origine_id || !hasAppelant || !form.benevole_recepteur_id || !form.course || !form.objet) {
       alert('Les champs date, poste, appelant, récepteur, course et objet sont obligatoires.');
       return;
     }
@@ -143,7 +163,8 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
     const record: Partial<MainCouranteEvent> = {
       date_evenement: form.date_evenement,
       poste_origine_id: form.poste_origine_id,
-      benevole_appelant_id: form.benevole_appelant_id,
+      benevole_appelant_id: form.benevole_appelant_id || null,
+      appelant_special: form.appelant_special || null,
       benevole_recepteur_id: form.benevole_recepteur_id,
       course: form.course,
       objet: form.objet,
@@ -271,12 +292,23 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
             Bénévole appelant
             <select
               className="border rounded px-2 py-2 w-full"
-              value={form.benevole_appelant_id ?? ''}
-              onChange={(e) => setField('benevole_appelant_id', e.target.value)}
+              value={form.benevole_appelant_id ?? form.appelant_special ?? ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                const special = APPELANT_SPECIAL_OPTIONS.find((o) => o.value === value);
+                if (special) {
+                  setForm((c) => ({ ...c, appelant_special: special.value, benevole_appelant_id: null }));
+                } else {
+                  setForm((c) => ({ ...c, benevole_appelant_id: value || null, appelant_special: null }));
+                }
+              }}
             >
-              <option value="">— Choisir un bénévole —</option>
+              <option value="">— Choisir un appelant —</option>
               {benevoles.map((b) => (
                 <option key={b.id} value={b.id}>{b.nom}</option>
+              ))}
+              {APPELANT_SPECIAL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </label>
@@ -439,7 +471,7 @@ export default function MainCouranteTab({ events, postes, benevoles, affectation
                   <td className="px-2 py-2 align-top">{formatDate(event.date_evenement)}</td>
                   <td className="px-2 py-2 align-top">{formatDatetime(event.created_at)}</td>
                   <td className="px-2 py-2 align-top">{formatPosteName(postes, event.poste_origine_id)}</td>
-                  <td className="px-2 py-2 align-top">{findName(benevoles, event.benevole_appelant_id)}</td>
+                  <td className="px-2 py-2 align-top">{formatAppelant(benevoles, event)}</td>
                   <td className="px-2 py-2 align-top">{findName(benevoles, event.benevole_recepteur_id)}</td>
                   <td className="px-2 py-2 align-top">{event.course}</td>
                   <td className="px-2 py-2 align-top">{event.objet}</td>

@@ -70,6 +70,7 @@ export interface PointExtraction {
 }
 
 export type MainCouranteStatus = 'en cours' | 'terminé' | 'abandonné';
+export type AppelantSpecial = 'coureur' | 'croix_rouge' | 'autre';
 
 export interface MainCouranteEvent {
   id: string;
@@ -81,7 +82,8 @@ export interface MainCouranteEvent {
   deleted_at: string | null;
   deleted_by: string | null;
   poste_origine_id: string;
-  benevole_appelant_id: string;
+  benevole_appelant_id: string | null;
+  appelant_special: AppelantSpecial | null;
   benevole_recepteur_id: string;
   course: string;
   objet: string;
