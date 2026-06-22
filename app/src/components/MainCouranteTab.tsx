@@ -162,6 +162,8 @@ export default function MainCouranteTab({
   const [filterRecepteurId, setFilterRecepteurId] = useState('');
   const [filterDate, setFilterDate] = useState('');
 
+  const viewingEvent = events.find((e) => e.id === viewingEventId) ?? null;
+
   const activityFeed = useMemo(() => {
     if (!viewingEventId) return [];
     const j = journal.filter((entry) => entry.event_id === viewingEventId).map((entry) => ({ ...entry, kind: 'journal' as const }));
@@ -545,7 +547,10 @@ export default function MainCouranteTab({
                   colEvents.map((event) => (
                     <div key={event.id} className={`bg-white rounded shadow-sm border-l-4 ${colors.accent} p-3 text-sm space-y-1`}>
                       <div className="flex justify-between items-start gap-2">
-                        <span className="font-semibold break-words">{event.objet}</span>
+                        <span className="font-semibold break-words">
+                          <span className="text-gray-400 font-normal mr-1">#{event.numero}</span>
+                          {event.objet}
+                        </span>
                         {event.dossard && (
                           <span className="text-xs rounded bg-gray-100 px-1.5 py-0.5 whitespace-nowrap">#{event.dossard}</span>
                         )}
@@ -614,7 +619,7 @@ export default function MainCouranteTab({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-start mb-3">
-              <h3 className="font-semibold text-sm">Activité</h3>
+              <h3 className="font-semibold text-sm">Activité — Évènement #{viewingEvent?.numero}</h3>
               <button
                 type="button"
                 onClick={() => setViewingEventId(null)}

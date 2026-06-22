@@ -74,6 +74,7 @@ export type AppelantSpecial = 'coureur' | 'croix_rouge' | 'autre';
 
 export interface MainCouranteEvent {
   id: string;
+  numero: number;
   date_evenement: string;
   created_at: string;
   created_by: string;

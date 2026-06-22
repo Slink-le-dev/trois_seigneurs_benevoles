@@ -62,6 +62,7 @@ create table points_extraction (
 
 create table main_courante (
   id uuid primary key default gen_random_uuid(),
+  numero integer generated always as identity unique,
   date_evenement date not null,
   created_at timestamptz not null default now(),
   created_by text not null,

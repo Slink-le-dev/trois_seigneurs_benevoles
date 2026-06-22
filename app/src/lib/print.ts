@@ -67,6 +67,7 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
       const recepteur = benevoles.find((b) => b.id === event.benevole_recepteur_id);
       return `
         <tr>
+          <td>${event.numero}</td>
           <td>${event.date_evenement ?? '—'}</td>
           <td>${new Date(event.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
           <td>${poste ? `N°${poste.numero} — ${poste.nom}` : '—'}</td>
@@ -107,6 +108,7 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
         <table>
           <thead>
             <tr>
+              <th>N°</th>
               <th>Date</th>
               <th>Heure saisie</th>
               <th>Poste</th>
@@ -125,7 +127,7 @@ export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], 
               <th>Statut</th>
             </tr>
           </thead>
-          <tbody>${rows || '<tr><td colspan="16">Aucun événement</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td colspan="17">Aucun événement</td></tr>'}</tbody>
         </table>
         <script>window.onload = () => window.print();</script>
       </body>
