@@ -476,51 +476,6 @@ export default function MainCouranteTab({
             />
           </label>
           <label className="space-y-1 text-sm">
-            Date départ
-            <input
-              type="date"
-              className="border rounded px-2 py-2 w-full"
-              value={form.date_depart ?? ''}
-              onChange={(e) => setField('date_depart', e.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            Lieu départ
-            <input
-              type="text"
-              className="border rounded px-2 py-2 w-full"
-              value={form.lieu_depart ?? ''}
-              onChange={(e) => setField('lieu_depart', e.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            Lieu arrivée attendue
-            <input
-              type="text"
-              className="border rounded px-2 py-2 w-full"
-              value={form.lieu_arrivee_attendue ?? ''}
-              onChange={(e) => setField('lieu_arrivee_attendue', e.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            Heure arrivée estimée
-            <input
-              type="time"
-              className="border rounded px-2 py-2 w-full"
-              value={form.heure_arrivee_estimee ?? ''}
-              onChange={(e) => setField('heure_arrivee_estimee', e.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            Heure arrivée effective
-            <input
-              type="time"
-              className="border rounded px-2 py-2 w-full"
-              value={form.heure_arrivee_effective ?? ''}
-              onChange={(e) => setField('heure_arrivee_effective', e.target.value)}
-            />
-          </label>
-          <label className="space-y-1 text-sm">
             Statut
             <select
               className="border rounded px-2 py-2 w-full"
@@ -531,14 +486,6 @@ export default function MainCouranteTab({
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!!form.abandon}
-              onChange={(e) => setField('abandon', e.target.checked)}
-            />
-            Abandon
           </label>
         </div>
         <div className="flex flex-wrap gap-2 mt-4">
