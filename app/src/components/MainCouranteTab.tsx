@@ -51,6 +51,11 @@ function formatTime(value?: string | null) {
   return value.slice(0, 5);
 }
 
+function todayLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function formatDatetime(value?: string | null) {
   if (!value) return '—';
   const date = new Date(value);
@@ -110,7 +115,6 @@ interface MainCouranteTabProps {
 }
 
 const emptyForm: Partial<MainCouranteEvent> = {
-  date_evenement: new Date().toISOString().slice(0, 10),
   course: '',
   objet: '',
   dossard: '',
@@ -233,13 +237,13 @@ export default function MainCouranteTab({
 
   async function handleSubmit() {
     const hasAppelant = !!form.benevole_appelant_id || !!form.appelant_special;
-    if (!form.date_evenement || !form.poste_origine_id || !hasAppelant || !form.benevole_recepteur_id || !form.course || !form.objet) {
-      alert('Les champs date, poste, appelant, récepteur, course et objet sont obligatoires.');
+    if (!form.poste_origine_id || !hasAppelant || !form.benevole_recepteur_id || !form.course || !form.objet) {
+      alert('Les champs poste, appelant, récepteur, course et objet sont obligatoires.');
       return;
     }
 
     const record: Partial<MainCouranteEvent> = {
-      date_evenement: form.date_evenement,
+      date_evenement: editingEvent ? form.date_evenement : todayLocal(),
       poste_origine_id: form.poste_origine_id,
       benevole_appelant_id: form.benevole_appelant_id || null,
       appelant_special: form.appelant_special || null,
@@ -374,15 +378,6 @@ export default function MainCouranteTab({
               </button>
             </div>
         <div className="grid gap-3 lg:grid-cols-3">
-          <label className="space-y-1 text-sm">
-            Date de l'événement
-            <input
-              type="date"
-              className="border rounded px-2 py-2 w-full"
-              value={form.date_evenement ?? ''}
-              onChange={(e) => setField('date_evenement', e.target.value)}
-            />
-          </label>
           <label className="space-y-1 text-sm">
             Poste d'origine
             <select
