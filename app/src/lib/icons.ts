@@ -3,7 +3,7 @@ import { POSTE_STATUTS, PosteStatut } from '../types';
 
 export function posteIcon(numero: number, couleur: string, statut: PosteStatut, alerteNonPourvu: boolean): L.DivIcon {
   const statutInfo = POSTE_STATUTS.find((s) => s.code === statut) ?? POSTE_STATUTS[0];
-  const alerteRing = alerteNonPourvu ? ', 0 0 0 3px #dc2626' : '';
+  const alerteRing = alerteNonPourvu && statut !== 'desactive' ? ', 0 0 0 3px #dc2626' : '';
 
   const html = `
     <div style="
