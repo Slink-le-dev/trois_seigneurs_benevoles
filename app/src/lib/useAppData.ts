@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import {
   Affectation,
   Benevole,
+  MainCouranteEvent,
   Parcours,
   PointExtraction,
   Poste,
@@ -11,26 +12,28 @@ import {
   PosteTypeCode,
 } from '../types';
 
-export function useAppData(isAdmin: boolean) {
+export function useAppData(isAdmin: boolean, currentUserId: string | null = null) {
   const [parcours, setParcours] = useState<Parcours[]>([]);
   const [postes, setPostes] = useState<Poste[]>([]);
   const [posteParcours, setPosteParcoursState] = useState<PosteParcours[]>([]);
   const [benevoles, setBenevoles] = useState<Benevole[]>([]);
   const [affectations, setAffectations] = useState<Affectation[]>([]);
   const [pointsExtraction, setPointsExtraction] = useState<PointExtraction[]>([]);
+  const [mainCourante, setMainCourante] = useState<MainCouranteEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
     const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
 
-    const [parcoursRes, postesRes, posteParcoursRes, benevolesRes, affectationsRes, pointsExtractionRes] = await Promise.all([
+    const [parcoursRes, postesRes, posteParcoursRes, benevolesRes, affectationsRes, pointsExtractionRes, mainCouranteRes] = await Promise.all([
       supabase.from('parcours').select('*').order('created_at'),
       supabase.from('postes').select('*').order('created_at'),
       supabase.from('poste_parcours').select('*'),
       supabase.from(benevolesTable).select('*').order('nom'),
       supabase.from('affectations').select('*'),
       supabase.from('points_extraction').select('*').order('created_at'),
+      supabase.from('main_courante').select('*').is('deleted_at', null).order('date_evenement', { ascending: false }).order('created_at', { ascending: false }),
     ]);
 
     if (parcoursRes.data) setParcours(parcoursRes.data as Parcours[]);
@@ -48,6 +51,7 @@ export function useAppData(isAdmin: boolean) {
     }
     if (affectationsRes.data) setAffectations(affectationsRes.data as Affectation[]);
     if (pointsExtractionRes.data) setPointsExtraction(pointsExtractionRes.data as PointExtraction[]);
+    if (mainCouranteRes.data) setMainCourante(mainCouranteRes.data as MainCouranteEvent[]);
 
     setLoading(false);
   }, [isAdmin]);
@@ -228,12 +232,54 @@ export function useAppData(isAdmin: boolean) {
     await updatePointExtraction(id, { lat, lng });
   }
 
+  async function createMainCourante(data: Partial<MainCouranteEvent>) {
+    if (!currentUserId) throw new Error('Utilisateur non authentifié.');
+    const { data: row, error } = await supabase
+      .from('main_courante')
+      .insert({ ...data, created_by: currentUserId })
+      .select()
+      .single();
+    if (error) throw error;
+    const event = row as MainCouranteEvent;
+    setMainCourante((c) => [event, ...c]);
+    return event;
+  }
+
+  async function updateMainCourante(id: string, data: Partial<MainCouranteEvent>) {
+    if (!currentUserId) throw new Error('Utilisateur non authentifié.');
+    const { data: row, error } = await supabase
+      .from('main_courante')
+      .update({ ...data, updated_by: currentUserId, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    const event = row as MainCouranteEvent;
+    setMainCourante((c) => c.map((m) => (m.id === id ? event : m)));
+    return event;
+  }
+
+  async function deleteMainCourante(id: string) {
+    if (!currentUserId) throw new Error('Utilisateur non authentifié.');
+    const { data: row, error } = await supabase
+      .from('main_courante')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: currentUserId })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    setMainCourante((c) => c.filter((m) => m.id !== id));
+    return row as MainCouranteEvent;
+  }
+
   return {
     parcours,
     postes,
     posteParcours,
     benevoles,
     affectations,
+    pointsExtraction,
+    mainCourante,
     loading,
     refreshAll,
     getParcoursIdsForPoste,
@@ -253,11 +299,13 @@ export function useAppData(isAdmin: boolean) {
     deleteBenevole,
     createAffectation,
     deleteAffectation,
-    pointsExtraction,
     createPointExtraction,
     updatePointExtraction,
     deletePointExtraction,
     moveExtraction,
+    createMainCourante,
+    updateMainCourante,
+    deleteMainCourante,
   };
 }
 

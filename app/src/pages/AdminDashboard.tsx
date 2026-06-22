@@ -7,6 +7,7 @@ import ParcoursPanel from '../components/ParcoursPanel';
 import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
 import StatusDashboard from '../components/StatusDashboard';
+import MainCouranteTab from '../components/MainCouranteTab';
 import { useAppData } from '../lib/useAppData';
 import { useSession } from '../lib/useSession';
 import { PosteStatut, PosteTypeCode } from '../types';
@@ -14,7 +15,7 @@ import AdminLogin from './AdminLogin';
 
 const DEFAULT_COULEURS = ['#2563eb', '#16a34a', '#dc2626'];
 
-type Tab = 'carte' | 'benevoles' | 'dashboard';
+type Tab = 'carte' | 'benevoles' | 'dashboard' | 'maincourante';
 
 export default function AdminDashboard() {
   const { session, loading: sessionLoading, signOut } = useSession();
@@ -22,11 +23,11 @@ export default function AdminDashboard() {
   if (sessionLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
   if (!session) return <AdminLogin />;
 
-  return <AdminContent onSignOut={signOut} />;
+  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} />;
 }
 
-function AdminContent({ onSignOut }: { onSignOut: () => void }) {
-  const data = useAppData(true);
+function AdminContent({ onSignOut, currentUserId }: { onSignOut: () => void; currentUserId: string }) {
+  const data = useAppData(true, currentUserId);
   const [tab, setTab] = useState<Tab>('carte');
   const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
@@ -132,13 +133,19 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
       </header>
 
       <nav className="flex border-b bg-white text-sm">
-        {(['carte', 'benevoles', 'dashboard'] as Tab[]).map((t) => (
+        {(['carte', 'benevoles', 'dashboard', 'maincourante'] as Tab[]).map((t) => (
           <button
             key={t}
             className={`px-4 py-2 ${tab === t ? 'border-b-2 border-[#F3EA5D] font-medium' : 'text-gray-500'}`}
             onClick={() => setTab(t)}
           >
-            {t === 'carte' ? 'Carte & postes' : t === 'benevoles' ? 'Bénévoles' : 'Tableau de bord'}
+            {t === 'carte'
+              ? 'Carte & postes'
+              : t === 'benevoles'
+              ? 'Bénévoles'
+              : t === 'dashboard'
+              ? 'Tableau de bord'
+              : 'Main courante'}
           </button>
         ))}
       </nav>
@@ -277,6 +284,19 @@ function AdminContent({ onSignOut }: { onSignOut: () => void }) {
       {tab === 'dashboard' && (
         <div className="flex-1 overflow-y-auto p-4">
           <StatusDashboard postes={data.postes} affectations={data.affectations} onSelectPoste={(id) => { setTab('carte'); setSelectedPosteId(id); }} />
+        </div>
+      )}
+
+      {tab === 'maincourante' && (
+        <div className="flex-1 overflow-y-auto p-4">
+          <MainCouranteTab
+            events={data.mainCourante}
+            postes={data.postes}
+            benevoles={data.benevoles}
+            onCreate={data.createMainCourante}
+            onUpdate={data.updateMainCourante}
+            onDelete={data.deleteMainCourante}
+          />
         </div>
       )}
 

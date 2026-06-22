@@ -68,3 +68,30 @@ export interface PointExtraction {
   lng: number;
   created_at: string;
 }
+
+export type MainCouranteStatus = 'en cours' | 'terminé' | 'abandonné';
+
+export interface MainCouranteEvent {
+  id: string;
+  date_evenement: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string | null;
+  updated_by: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  poste_origine_id: string;
+  benevole_appelant_id: string;
+  benevole_recepteur_id: string;
+  course: string;
+  objet: string;
+  dossard: string | null;
+  commentaire: string | null;
+  abandon: boolean;
+  date_depart: string | null;
+  lieu_depart: string | null;
+  lieu_arrivee_attendue: string | null;
+  heure_arrivee_estimee: string | null;
+  heure_arrivee_effective: string | null;
+  statut: MainCouranteStatus;
+}

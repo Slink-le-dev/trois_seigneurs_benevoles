@@ -1,5 +1,5 @@
 import { formatCreneau } from './format';
-import { Affectation, Benevole, POSTE_TYPES, Poste } from '../types';
+import { Affectation, Benevole, MainCouranteEvent, POSTE_TYPES, Poste } from '../types';
 
 export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affectations: Affectation[], benevoles: Benevole[]) {
   const win = window.open('', '_blank', 'width=600,height=800');
@@ -40,6 +40,84 @@ export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affect
         <table>
           <thead><tr><th>Bénévole</th><th>Téléphone</th><th>Créneau</th></tr></thead>
           <tbody>${benevolesRows || '<tr><td colspan="3">Aucun bénévole affecté</td></tr>'}</tbody>
+        </table>
+        <script>window.onload = () => window.print();</script>
+      </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+export function printMainCourante(events: MainCouranteEvent[], postes: Poste[], benevoles: Benevole[]) {
+  const win = window.open('', '_blank', 'width=1000,height=800');
+  if (!win) return;
+
+  const rows = events
+    .map((event) => {
+      const poste = postes.find((p) => p.id === event.poste_origine_id);
+      const appelant = benevoles.find((b) => b.id === event.benevole_appelant_id);
+      const recepteur = benevoles.find((b) => b.id === event.benevole_recepteur_id);
+      return `
+        <tr>
+          <td>${event.date_evenement ?? '—'}</td>
+          <td>${new Date(event.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+          <td>${poste ? `N°${poste.numero} — ${poste.nom}` : '—'}</td>
+          <td>${appelant?.nom ?? '—'}</td>
+          <td>${recepteur?.nom ?? '—'}</td>
+          <td>${event.course ?? '—'}</td>
+          <td>${event.objet ?? '—'}</td>
+          <td>${event.dossard ?? '—'}</td>
+          <td>${event.commentaire ?? '—'}</td>
+          <td>${event.abandon ? 'Oui' : 'Non'}</td>
+          <td>${event.date_depart ?? '—'}</td>
+          <td>${event.lieu_depart ?? '—'}</td>
+          <td>${event.lieu_arrivee_attendue ?? '—'}</td>
+          <td>${event.heure_arrivee_estimee ?? '—'}</td>
+          <td>${event.heure_arrivee_effective ?? '—'}</td>
+          <td>${event.statut}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  win.document.write(`
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Main courante</title>
+        <style>
+          body { font-family: sans-serif; padding: 24px; color: #111; }
+          h1 { font-size: 20px; margin-bottom: 12px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+          th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+          th { background: #f3f4f6; }
+          .small { font-size: 11px; color: #555; }
+        </style>
+      </head>
+      <body>
+        <h1>Main courante</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Heure saisie</th>
+              <th>Poste</th>
+              <th>Appelant</th>
+              <th>Récepteur</th>
+              <th>Course</th>
+              <th>Objet</th>
+              <th>Dossard</th>
+              <th>Commentaire</th>
+              <th>Abandon</th>
+              <th>Date départ</th>
+              <th>Lieu départ</th>
+              <th>Arrivée attendue</th>
+              <th>Arrivée estimée</th>
+              <th>Arrivée effective</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="16">Aucun événement</td></tr>'}</tbody>
         </table>
         <script>window.onload = () => window.print();</script>
       </body>
