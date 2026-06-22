@@ -302,20 +302,30 @@ export default function PosteForm({
           </div>
         </div>
 
-        <div className="flex justify-between mt-5 pt-3 border-t">
-          <button
-            className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
-            onClick={() =>
-              printFeuilleDeRoute(
-                poste,
-                parcours.filter((p) => selectedParcoursIds.includes(p.id)).map((p) => p.nom),
-                posteAffectations,
-                benevoles
-              )
-            }
-          >
-            Imprimer la feuille de route
-          </button>
+        <div className="flex justify-between mt-5 pt-3 border-t flex-wrap gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${poste.lat},${poste.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 inline-flex items-center gap-1"
+            >
+              🧭 Accéder à ce poste
+            </a>
+            <button
+              className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
+              onClick={() =>
+                printFeuilleDeRoute(
+                  poste,
+                  parcours.filter((p) => selectedParcoursIds.includes(p.id)).map((p) => p.nom),
+                  posteAffectations,
+                  benevoles
+                )
+              }
+            >
+              Imprimer la feuille de route
+            </button>
+          </div>
           {isAdmin && (
             <button
               className="text-sm px-3 py-1.5 border rounded text-red-600 hover:bg-red-50"
