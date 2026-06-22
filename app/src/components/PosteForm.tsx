@@ -24,6 +24,16 @@ function OsmAndIcon() {
   );
 }
 
+function OpenRunnerIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="5" fill="#E2641A" />
+      <path d="M5 17l4-5 3 3 4-7 3 4" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="19" cy="12" r="1.6" fill="white" />
+    </svg>
+  );
+}
+
 interface PosteFormProps {
   poste: Poste;
   parcours: Parcours[];
@@ -342,6 +352,15 @@ export default function PosteForm({
             >
               <OsmAndIcon />
               Accéder avec OsmAnd
+            </a>
+            <a
+              href={`geo:${poste.lat},${poste.lng}?q=${poste.lat},${poste.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 inline-flex items-center gap-1.5"
+            >
+              <OpenRunnerIcon />
+              Accéder avec OpenRunner
             </a>
             <button
               className="text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
