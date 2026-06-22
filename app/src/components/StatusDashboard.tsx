@@ -7,6 +7,8 @@ interface StatusDashboardProps {
   onSelectPoste: (id: string) => void;
 }
 
+const JOUR_REFERENCE_STORAGE_KEY = 'postes-signaleurs:jour-reference';
+
 function dateLocale(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -16,7 +18,12 @@ export default function StatusDashboard({ postes, affectations, onSelectPoste }:
     const now = new Date();
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   });
-  const [jourReference, setJourReference] = useState(() => dateLocale(new Date()));
+  const [jourReference, setJourReference] = useState(() => localStorage.getItem(JOUR_REFERENCE_STORAGE_KEY) ?? dateLocale(new Date()));
+
+  function handleJourReferenceChange(value: string) {
+    setJourReference(value);
+    localStorage.setItem(JOUR_REFERENCE_STORAGE_KEY, value);
+  }
 
   const estAujourdhui = jourReference === dateLocale(new Date());
 
@@ -66,7 +73,7 @@ export default function StatusDashboard({ postes, affectations, onSelectPoste }:
             <input
               type="date"
               value={jourReference}
-              onChange={(e) => setJourReference(e.target.value)}
+              onChange={(e) => handleJourReferenceChange(e.target.value)}
               className="border rounded px-2 py-1"
             />
           </label>
