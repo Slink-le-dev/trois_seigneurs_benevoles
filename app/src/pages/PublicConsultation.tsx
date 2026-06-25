@@ -31,7 +31,7 @@ export default function PublicConsultation() {
       <header className="bg-[#005F61] text-white px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
-          <h1 className="font-semibold">Postes Signaleurs — Course de montagne</h1>
+          <h1 className="font-semibold">Postes bénévoles — Trail du Pic des Trois Seigneurs</h1>
         </div>
         <a href="/admin" className="text-sm underline opacity-80 hover:opacity-100">
           Espace organisateur
