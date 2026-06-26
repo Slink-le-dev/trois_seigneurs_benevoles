@@ -1,5 +1,29 @@
 export type PosteTypeCode = 'signaleur' | 'medical' | 'eau' | 'nourriture';
 export type PosteStatut = 'desactive' | 'non_active' | 'en_place' | 'alerte' | 'ferme';
+export type PosteMaterielCode =
+  | 'defibrillateur'
+  | 'lot_a'
+  | 'lot_c'
+  | 'couverture_survie'
+  | 'pansements_compressifs'
+  | 'pansements'
+  | 'antiseptique'
+  | 'poche_froid'
+  | 'attelle'
+  | 'talkie_walkie';
+
+export const POSTE_MATERIELS: { code: PosteMaterielCode; label: string }[] = [
+  { code: 'defibrillateur', label: 'Défibrillateur' },
+  { code: 'lot_a', label: 'Lot A' },
+  { code: 'lot_c', label: 'Lot C' },
+  { code: 'couverture_survie', label: 'Couverture de survie' },
+  { code: 'pansements_compressifs', label: 'Pansements compressifs' },
+  { code: 'pansements', label: 'Pansements' },
+  { code: 'antiseptique', label: 'Antiseptique' },
+  { code: 'poche_froid', label: 'Poche de froid instantané' },
+  { code: 'attelle', label: 'Attelle' },
+  { code: 'talkie_walkie', label: 'Talkie-walkie' },
+];
 
 export const POSTE_TYPES: { code: PosteTypeCode; label: string; couleur: string; emoji: string }[] = [
   { code: 'signaleur', label: 'Signaleur', couleur: '#eab308', emoji: '🚩' },
@@ -33,6 +57,7 @@ export interface Poste {
   lat: number;
   lng: number;
   types: PosteTypeCode[];
+  materiel: PosteMaterielCode[];
   notes: string | null;
   statut: PosteStatut;
   statut_updated_at: string;

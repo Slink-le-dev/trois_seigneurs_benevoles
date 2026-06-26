@@ -22,6 +22,7 @@ create table postes (
   lat double precision not null,
   lng double precision not null,
   types text[] not null default '{}',
+  materiel text[] not null default '{}',
   notes text,
   statut text not null default 'non_active'
     check (statut in ('desactive', 'non_active', 'en_place', 'alerte', 'ferme')),

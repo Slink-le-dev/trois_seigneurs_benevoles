@@ -1,7 +1,19 @@
 import { useState } from 'react';
 import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
-import { Affectation, BENEVOLE_FORMATIONS, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
+import {
+  Affectation,
+  BENEVOLE_FORMATIONS,
+  Benevole,
+  Parcours,
+  POSTE_MATERIELS,
+  POSTE_STATUTS,
+  POSTE_TYPES,
+  Poste,
+  PosteMaterielCode,
+  PosteStatut,
+  PosteTypeCode,
+} from '../types';
 import NavButtons from './NavButtons';
 
 interface PosteFormProps {
@@ -45,6 +57,7 @@ export default function PosteForm({
   const [heureFin, setHeureFin] = useState('');
 
   const posteAffectations = affectations.filter((a) => a.poste_id === poste.id);
+  const materiel = poste.materiel ?? [];
   const statutInfo = POSTE_STATUTS.find((s) => s.code === poste.statut)!;
 
   async function handleAddBenevole() {
@@ -210,6 +223,37 @@ export default function PosteForm({
                   .map((c) => POSTE_TYPES.find((t) => t.code === c))
                   .filter(Boolean)
                   .map((t) => `${t!.emoji} ${t!.label}`)
+                  .join(', ') || '—'}
+              </span>
+            )}
+          </div>
+
+          <div>
+            <span className="text-gray-500">Matériel disponible : </span>
+            {isAdmin ? (
+              <span className="inline-flex gap-3 flex-wrap">
+                {POSTE_MATERIELS.map((m) => (
+                  <label key={m.code} className="inline-flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={materiel.includes(m.code)}
+                      onChange={() => {
+                        const next: PosteMaterielCode[] = materiel.includes(m.code)
+                          ? materiel.filter((c) => c !== m.code)
+                          : [...materiel, m.code];
+                        onUpdate?.({ materiel: next });
+                      }}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </span>
+            ) : (
+              <span>
+                {materiel
+                  .map((c) => POSTE_MATERIELS.find((m) => m.code === c))
+                  .filter(Boolean)
+                  .map((m) => m!.label)
                   .join(', ') || '—'}
               </span>
             )}
