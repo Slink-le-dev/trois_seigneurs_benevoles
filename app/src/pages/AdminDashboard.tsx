@@ -48,6 +48,7 @@ function AdminContent({
   const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(true);
+  const [onlyFormation, setOnlyFormation] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
   const [placingModeExtraction, setPlacingModeExtraction] = useState(false);
   const [manualLatExtraction, setManualLatExtraction] = useState('');
@@ -176,6 +177,8 @@ function AdminContent({
             setShowExtractions={setShowExtractions}
             searchBenevole={searchBenevole}
             setSearchBenevole={setSearchBenevole}
+            onlyFormation={onlyFormation}
+            setOnlyFormation={setOnlyFormation}
           />
           <div className="flex-1 flex overflow-hidden">
             <aside className="w-80 border-r overflow-y-auto p-3 space-y-4 hidden md:block">
@@ -261,6 +264,7 @@ function AdminContent({
                 filterParcoursIds={filterParcoursIds}
                 showPois={showPois}
                 searchBenevole={searchBenevole}
+                onlyFormation={onlyFormation}
                 pointsExtraction={data.pointsExtraction}
                 showExtractions={showExtractions}
                 selectedExtractionId={selectedExtractionId}

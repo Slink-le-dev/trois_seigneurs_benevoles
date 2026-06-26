@@ -17,6 +17,8 @@ interface FilterBarProps {
   setShowExtractions: (show: boolean) => void;
   searchBenevole: string;
   setSearchBenevole: (v: string) => void;
+  onlyFormation: boolean;
+  setOnlyFormation: (v: boolean) => void;
 }
 
 const ACCENT = '#005F61';
@@ -59,6 +61,8 @@ export default function FilterBar({
   setShowExtractions,
   searchBenevole,
   setSearchBenevole,
+  onlyFormation,
+  setOnlyFormation,
 }: FilterBarProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
@@ -67,6 +71,7 @@ export default function FilterBar({
   const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
   const [draftShowPois, setDraftShowPois] = useState(showPois);
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
+  const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
 
   const hasActiveFilters =
     filterParcoursIds.length > 0 ||
@@ -74,6 +79,7 @@ export default function FilterBar({
     filterStatuts.length > 0 ||
     showPois ||
     !showExtractions ||
+    onlyFormation ||
     parcours.some((p) => parcoursVisibility[p.id] === false);
 
   function openPopup() {
@@ -83,6 +89,7 @@ export default function FilterBar({
     setDraftVisibility(parcoursVisibility);
     setDraftShowPois(showPois);
     setDraftShowExtractions(showExtractions);
+    setDraftOnlyFormation(onlyFormation);
     setShowPopup(true);
   }
 
@@ -93,6 +100,7 @@ export default function FilterBar({
     setParcoursVisibility(draftVisibility);
     setShowPois(draftShowPois);
     setShowExtractions(draftShowExtractions);
+    setOnlyFormation(draftOnlyFormation);
     setShowPopup(false);
   }
 
@@ -103,6 +111,7 @@ export default function FilterBar({
     setParcoursVisibility({});
     setShowPois(false);
     setShowExtractions(true);
+    setOnlyFormation(false);
     setShowPopup(false);
   }
 
@@ -218,6 +227,20 @@ export default function FilterBar({
                       onChange={(e) => setDraftShowExtractions(e.target.checked)}
                     />
                     🚑 Points d'extraction
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Bénévoles</h3>
+                <div className="flex flex-wrap gap-3">
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={draftOnlyFormation}
+                      onChange={(e) => setDraftOnlyFormation(e.target.checked)}
+                    />
+                    Avec bénévole formé (médecin, infirmier, pompier, PSC1…)
                   </label>
                 </div>
               </div>

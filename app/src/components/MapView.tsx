@@ -23,6 +23,7 @@ interface MapViewProps {
   filterParcoursIds?: string[];
   showPois?: boolean;
   searchBenevole?: string;
+  onlyFormation?: boolean;
   pointsExtraction?: PointExtraction[];
   showExtractions?: boolean;
   selectedExtractionId?: string | null;
@@ -91,6 +92,7 @@ export default function MapView({
   filterParcoursIds,
   showPois = false,
   searchBenevole = '',
+  onlyFormation = false,
   pointsExtraction = [],
   showExtractions = true,
   selectedExtractionId = null,
@@ -111,6 +113,11 @@ export default function MapView({
       const aff = getAffectationsForPoste(p.id);
       const hasMatch = aff.some((a) => benevoles.find((b) => b.id === a.benevole_id)?.nom.toLowerCase().includes(query));
       if (!hasMatch) return false;
+    }
+    if (onlyFormation) {
+      const aff = getAffectationsForPoste(p.id);
+      const hasFormation = aff.some((a) => benevoles.find((b) => b.id === a.benevole_id)?.formation !== 'aucune');
+      if (!hasFormation) return false;
     }
     return true;
   });
