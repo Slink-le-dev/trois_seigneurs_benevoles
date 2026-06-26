@@ -44,10 +44,21 @@ export interface PosteParcours {
   parcours_id: string;
 }
 
+export type BenevoleFormation = 'medecin' | 'infirmier' | 'pompier' | 'psc1' | 'aucune';
+
+export const BENEVOLE_FORMATIONS: { code: BenevoleFormation; label: string }[] = [
+  { code: 'medecin', label: 'Médecin' },
+  { code: 'infirmier', label: 'Infirmier/Infirmière' },
+  { code: 'pompier', label: 'Pompier' },
+  { code: 'psc1', label: 'PSC1' },
+  { code: 'aucune', label: 'Pas de formation' },
+];
+
 export interface Benevole {
   id: string;
   nom: string;
   telephone: string | null;
+  formation: BenevoleFormation;
   created_at: string;
 }
 

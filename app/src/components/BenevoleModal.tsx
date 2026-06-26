@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatCreneau } from '../lib/format';
-import { Affectation, Benevole, Poste } from '../types';
+import { Affectation, BENEVOLE_FORMATIONS, Benevole, BenevoleFormation, Poste } from '../types';
 
 interface BenevoleModalProps {
   benevole: Benevole;
@@ -23,6 +23,7 @@ export default function BenevoleModal({
 }: BenevoleModalProps) {
   const [nom, setNom] = useState(benevole.nom);
   const [telephone, setTelephone] = useState(benevole.telephone ?? '');
+  const [formation, setFormation] = useState<BenevoleFormation>(benevole.formation);
   const [saving, setSaving] = useState(false);
   const [showAddAffectation, setShowAddAffectation] = useState(false);
   const [posteId, setPosteId] = useState('');
@@ -43,7 +44,7 @@ export default function BenevoleModal({
     }
     setSaving(true);
     try {
-      await onUpdate(benevole.id, { nom: nom.trim(), telephone: telephone.trim() || null });
+      await onUpdate(benevole.id, { nom: nom.trim(), telephone: telephone.trim() || null, formation });
       onClose();
     } finally {
       setSaving(false);
@@ -93,6 +94,18 @@ export default function BenevoleModal({
               value={telephone}
               onChange={(e) => setTelephone(e.target.value)}
             />
+          </label>
+          <label className="block">
+            Formation
+            <select
+              className="border rounded w-full px-2 py-1 mt-1"
+              value={formation}
+              onChange={(e) => setFormation(e.target.value as BenevoleFormation)}
+            >
+              {BENEVOLE_FORMATIONS.map((f) => (
+                <option key={f.code} value={f.code}>{f.label}</option>
+              ))}
+            </select>
           </label>
 
           <div>

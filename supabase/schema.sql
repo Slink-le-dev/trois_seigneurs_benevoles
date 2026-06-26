@@ -39,6 +39,8 @@ create table benevoles (
   id uuid primary key default gen_random_uuid(),
   nom text not null,
   telephone text,
+  formation text not null default 'aucune'
+    check (formation in ('medecin', 'infirmier', 'pompier', 'psc1', 'aucune')),
   created_at timestamptz not null default now()
 );
 

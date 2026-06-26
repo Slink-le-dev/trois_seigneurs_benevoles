@@ -49,6 +49,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
           id: b.id,
           nom: b.nom,
           telephone: b.telephone ?? null,
+          formation: b.formation ?? 'aucune',
           created_at: b.created_at,
         }))
       );

@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react';
 import { formatCreneau } from '../lib/format';
-import { Affectation, Benevole, Poste } from '../types';
+import { Affectation, BENEVOLE_FORMATIONS, Benevole, BenevoleFormation, Poste } from '../types';
 import BenevoleModal from './BenevoleModal';
 
-type SortColumn = 'nom' | 'telephone' | 'affectations';
+type SortColumn = 'nom' | 'telephone' | 'formation' | 'affectations';
+
+function formationLabel(code: BenevoleFormation): string {
+  return BENEVOLE_FORMATIONS.find((f) => f.code === code)?.label ?? code;
+}
 
 interface BenevolesTableProps {
   benevoles: Benevole[];
@@ -29,6 +33,7 @@ export default function BenevolesTable({
   const [showForm, setShowForm] = useState(false);
   const [nom, setNom] = useState('');
   const [telephone, setTelephone] = useState('');
+  const [formation, setFormation] = useState<BenevoleFormation>('aucune');
   const [posteId, setPosteId] = useState('');
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
@@ -66,6 +71,7 @@ export default function BenevolesTable({
     const sortValue = (b: Benevole) => {
       if (sortColumn === 'nom') return b.nom;
       if (sortColumn === 'telephone') return b.telephone ?? '';
+      if (sortColumn === 'formation') return formationLabel(b.formation);
       return affectationsLabel(b.id);
     };
     const sorted = [...benevoles].sort((a, b) => sortValue(a).localeCompare(sortValue(b), 'fr', { sensitivity: 'base' }));
@@ -79,7 +85,7 @@ export default function BenevolesTable({
       alert('Le nom est obligatoire.');
       return;
     }
-    const benevole = await onCreateBenevole({ nom: nom.trim(), telephone: telephone.trim() || null });
+    const benevole = await onCreateBenevole({ nom: nom.trim(), telephone: telephone.trim() || null, formation });
     if (posteId) {
       await onCreateAffectation({
         benevole_id: benevole.id,
@@ -90,6 +96,7 @@ export default function BenevolesTable({
     }
     setNom('');
     setTelephone('');
+    setFormation('aucune');
     setPosteId('');
     setShowForm(false);
   }
@@ -112,6 +119,15 @@ export default function BenevolesTable({
             value={telephone}
             onChange={(e) => setTelephone(e.target.value)}
           />
+          <select
+            className="border rounded px-2 py-1 w-full"
+            value={formation}
+            onChange={(e) => setFormation(e.target.value as BenevoleFormation)}
+          >
+            {BENEVOLE_FORMATIONS.map((f) => (
+              <option key={f.code} value={f.code}>{f.label}</option>
+            ))}
+          </select>
           <select className="border rounded px-2 py-1 w-full" value={posteId} onChange={(e) => setPosteId(e.target.value)}>
             <option value="">— Poste affecté (optionnel) —</option>
             {postes.map((p) => (
@@ -147,6 +163,9 @@ export default function BenevolesTable({
             <th className="cursor-pointer select-none hover:text-blue-700" onClick={() => handleSort('telephone')}>
               Téléphone{sortIndicator('telephone')}
             </th>
+            <th className="cursor-pointer select-none hover:text-blue-700" onClick={() => handleSort('formation')}>
+              Formation{sortIndicator('formation')}
+            </th>
             <th className="cursor-pointer select-none hover:text-blue-700" onClick={() => handleSort('affectations')}>
               Affectations{sortIndicator('affectations')}
             </th>
@@ -160,6 +179,7 @@ export default function BenevolesTable({
               <tr key={b.id} className="border-b align-top">
                 <td className="py-1">{b.nom}</td>
                 <td>{b.telephone ?? <span className="text-gray-400">—</span>}</td>
+                <td>{b.formation === 'aucune' ? <span className="text-gray-400">—</span> : formationLabel(b.formation)}</td>
                 <td>
                   {affs.length === 0 ? (
                     <span className="text-gray-400">aucune</span>
