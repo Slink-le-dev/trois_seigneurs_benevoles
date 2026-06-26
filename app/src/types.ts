@@ -77,6 +77,7 @@ export type BenevoleFormation =
   | 'kinesitherapeute'
   | 'pharmacien'
   | 'osteopathe'
+  | 'sst'
   | 'aucune';
 
 export const BENEVOLE_FORMATIONS: { code: BenevoleFormation; label: string }[] = [
@@ -87,6 +88,7 @@ export const BENEVOLE_FORMATIONS: { code: BenevoleFormation; label: string }[] =
   { code: 'kinesitherapeute', label: 'Kinésithérapeute' },
   { code: 'pharmacien', label: 'Pharmacien' },
   { code: 'osteopathe', label: 'Ostéopathe' },
+  { code: 'sst', label: 'Sauveteur Secouriste du Travail' },
   { code: 'aucune', label: 'Pas de formation' },
 ];
 

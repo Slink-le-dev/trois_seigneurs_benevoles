@@ -41,7 +41,7 @@ create table benevoles (
   nom text not null,
   telephone text,
   formation text not null default 'aucune'
-    check (formation in ('medecin', 'infirmier', 'pompier', 'psc1', 'kinesitherapeute', 'pharmacien', 'osteopathe', 'aucune')),
+    check (formation in ('medecin', 'infirmier', 'pompier', 'psc1', 'kinesitherapeute', 'pharmacien', 'osteopathe', 'sst', 'aucune')),
   created_at timestamptz not null default now()
 );
 
