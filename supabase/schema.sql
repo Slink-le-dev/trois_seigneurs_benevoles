@@ -119,7 +119,7 @@ create table main_courante_commentaires (
 -- pas au niveau ligne) - c'est l'effet recherche : la liste des benevoles reste publique,
 -- seul le telephone est cache.
 create view benevoles_public as
-  select id, nom, created_at from benevoles;
+  select id, nom, created_at, formation from benevoles;
 
 -- ============================================================
 -- Row Level Security
