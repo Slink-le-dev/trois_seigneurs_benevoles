@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
-import { Affectation, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
+import { Affectation, BENEVOLE_FORMATIONS, Benevole, Parcours, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
 import NavButtons from './NavButtons';
 
 interface PosteFormProps {
@@ -283,12 +283,15 @@ export default function PosteForm({
                 {posteAffectations.map((a) => {
                   const b = benevoles.find((x) => x.id === a.benevole_id);
                   const creneau = formatCreneau(a.heure_debut, a.heure_fin);
+                  const formationLabel =
+                    b && b.formation !== 'aucune' ? BENEVOLE_FORMATIONS.find((f) => f.code === b.formation)?.label : null;
                   return (
                     <li key={a.id} className="flex items-center justify-between">
                       <span>
                         {b?.nom ?? '?'}
                         {isAdmin && b?.telephone ? ` — ${b.telephone}` : ''}
                         {creneau ? ` (${creneau})` : ''}
+                        {formationLabel ? ` — ${formationLabel}` : ''}
                       </span>
                       {isAdmin && (
                         <button className="text-red-500 text-xs" onClick={() => onDeleteAffectation?.(a.id)}>
