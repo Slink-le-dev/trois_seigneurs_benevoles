@@ -44,7 +44,15 @@ export interface PosteParcours {
   parcours_id: string;
 }
 
-export type BenevoleFormation = 'medecin' | 'infirmier' | 'pompier' | 'psc1' | 'kinesitherapeute' | 'pharmacien' | 'aucune';
+export type BenevoleFormation =
+  | 'medecin'
+  | 'infirmier'
+  | 'pompier'
+  | 'psc1'
+  | 'kinesitherapeute'
+  | 'pharmacien'
+  | 'osteopathe'
+  | 'aucune';
 
 export const BENEVOLE_FORMATIONS: { code: BenevoleFormation; label: string }[] = [
   { code: 'medecin', label: 'Médecin' },
@@ -53,6 +61,7 @@ export const BENEVOLE_FORMATIONS: { code: BenevoleFormation; label: string }[] =
   { code: 'psc1', label: 'PSC1' },
   { code: 'kinesitherapeute', label: 'Kinésithérapeute' },
   { code: 'pharmacien', label: 'Pharmacien' },
+  { code: 'osteopathe', label: 'Ostéopathe' },
   { code: 'aucune', label: 'Pas de formation' },
 ];
 
