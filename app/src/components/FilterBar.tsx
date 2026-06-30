@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Parcours, POSTE_STATUTS, POSTE_TYPES, PosteStatut, PosteTypeCode } from '../types';
+import { Parcours, POSTE_MATERIELS, POSTE_STATUTS, POSTE_TYPES, PosteMaterielCode, PosteStatut, PosteTypeCode } from '../types';
 
 interface FilterBarProps {
   parcours: Parcours[];
@@ -9,6 +9,8 @@ interface FilterBarProps {
   setFilterTypes: (types: PosteTypeCode[]) => void;
   filterStatuts: PosteStatut[];
   setFilterStatuts: (statuts: PosteStatut[]) => void;
+  filterMateriel: PosteMaterielCode[];
+  setFilterMateriel: (materiel: PosteMaterielCode[]) => void;
   parcoursVisibility: Record<string, boolean>;
   setParcoursVisibility: (v: Record<string, boolean>) => void;
   showPois: boolean;
@@ -53,6 +55,8 @@ export default function FilterBar({
   setFilterTypes,
   filterStatuts,
   setFilterStatuts,
+  filterMateriel,
+  setFilterMateriel,
   parcoursVisibility,
   setParcoursVisibility,
   showPois,
@@ -68,6 +72,7 @@ export default function FilterBar({
   const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
   const [draftTypes, setDraftTypes] = useState(filterTypes);
   const [draftStatuts, setDraftStatuts] = useState(filterStatuts);
+  const [draftMateriel, setDraftMateriel] = useState(filterMateriel);
   const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
   const [draftShowPois, setDraftShowPois] = useState(showPois);
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
@@ -77,6 +82,7 @@ export default function FilterBar({
     filterParcoursIds.length > 0 ||
     filterTypes.length > 0 ||
     filterStatuts.length > 0 ||
+    filterMateriel.length > 0 ||
     showPois ||
     showExtractions ||
     onlyFormation ||
@@ -86,6 +92,7 @@ export default function FilterBar({
     setDraftParcoursIds(filterParcoursIds);
     setDraftTypes(filterTypes);
     setDraftStatuts(filterStatuts);
+    setDraftMateriel(filterMateriel);
     setDraftVisibility(parcoursVisibility);
     setDraftShowPois(showPois);
     setDraftShowExtractions(showExtractions);
@@ -97,6 +104,7 @@ export default function FilterBar({
     setFilterParcoursIds(draftParcoursIds);
     setFilterTypes(draftTypes);
     setFilterStatuts(draftStatuts);
+    setFilterMateriel(draftMateriel);
     setParcoursVisibility(draftVisibility);
     setShowPois(draftShowPois);
     setShowExtractions(draftShowExtractions);
@@ -108,6 +116,7 @@ export default function FilterBar({
     setFilterParcoursIds([]);
     setFilterTypes([]);
     setFilterStatuts([]);
+    setFilterMateriel([]);
     setParcoursVisibility({});
     setShowPois(false);
     setShowExtractions(false);
@@ -242,6 +251,22 @@ export default function FilterBar({
                     />
                     Avec bénévole formé (médecin, infirmier, pompier, PSC1…)
                   </label>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Matériel</h3>
+                <div className="flex flex-wrap gap-3">
+                  {POSTE_MATERIELS.map((m) => (
+                    <label key={m.code} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={draftMateriel.includes(m.code)}
+                        onChange={() => setDraftMateriel(toggle(draftMateriel, m.code))}
+                      />
+                      {m.label}
+                    </label>
+                  ))}
                 </div>
               </div>
 

@@ -3,7 +3,18 @@ import { useEffect, useRef } from 'react';
 import { GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { formatCreneau } from '../lib/format';
 import { extractionIcon, posteIcon } from '../lib/icons';
-import { Affectation, Benevole, Parcours, PointExtraction, POSTE_STATUTS, POSTE_TYPES, Poste, PosteStatut, PosteTypeCode } from '../types';
+import {
+  Affectation,
+  Benevole,
+  Parcours,
+  PointExtraction,
+  POSTE_STATUTS,
+  POSTE_TYPES,
+  Poste,
+  PosteMaterielCode,
+  PosteStatut,
+  PosteTypeCode,
+} from '../types';
 
 interface MapViewProps {
   parcours: Parcours[];
@@ -21,6 +32,7 @@ interface MapViewProps {
   filterTypes?: PosteTypeCode[];
   filterStatuts?: PosteStatut[];
   filterParcoursIds?: string[];
+  filterMateriel?: PosteMaterielCode[];
   showPois?: boolean;
   searchBenevole?: string;
   onlyFormation?: boolean;
@@ -90,6 +102,7 @@ export default function MapView({
   filterTypes,
   filterStatuts,
   filterParcoursIds,
+  filterMateriel,
   showPois = false,
   searchBenevole = '',
   onlyFormation = false,
@@ -109,6 +122,7 @@ export default function MapView({
       const ids = getParcoursIdsForPoste(p.id);
       if (!ids.some((id) => filterParcoursIds.includes(id))) return false;
     }
+    if (filterMateriel?.length && !p.materiel?.some((m) => filterMateriel.includes(m))) return false;
     if (query) {
       const aff = getAffectationsForPoste(p.id);
       const hasMatch = aff.some((a) => benevoles.find((b) => b.id === a.benevole_id)?.nom.toLowerCase().includes(query));

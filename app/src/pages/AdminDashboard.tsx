@@ -10,7 +10,7 @@ import StatusDashboard from '../components/StatusDashboard';
 import MainCouranteTab from '../components/MainCouranteTab';
 import { useAppData } from '../lib/useAppData';
 import { useSession } from '../lib/useSession';
-import { PosteStatut, PosteTypeCode } from '../types';
+import { PosteMaterielCode, PosteStatut, PosteTypeCode } from '../types';
 import AdminLogin from './AdminLogin';
 
 const DEFAULT_COULEURS = ['#2563eb', '#16a34a', '#dc2626'];
@@ -45,6 +45,7 @@ function AdminContent({
   const [filterParcoursIds, setFilterParcoursIds] = useState<string[]>([]);
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
+  const [filterMateriel, setFilterMateriel] = useState<PosteMaterielCode[]>([]);
   const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(false);
@@ -172,6 +173,8 @@ function AdminContent({
               setFilterTypes={setFilterTypes}
               filterStatuts={filterStatuts}
               setFilterStatuts={setFilterStatuts}
+              filterMateriel={filterMateriel}
+              setFilterMateriel={setFilterMateriel}
               parcoursVisibility={parcoursVisibility}
               setParcoursVisibility={setParcoursVisibility}
               showPois={showPois}
@@ -275,6 +278,7 @@ function AdminContent({
                 filterTypes={filterTypes}
                 filterStatuts={filterStatuts}
                 filterParcoursIds={filterParcoursIds}
+                filterMateriel={filterMateriel}
                 showPois={showPois}
                 searchBenevole={searchBenevole}
                 onlyFormation={onlyFormation}
