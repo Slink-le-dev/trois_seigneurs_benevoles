@@ -16,7 +16,7 @@ export default function PublicConsultation() {
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
-  const [showExtractions, setShowExtractions] = useState(true);
+  const [showExtractions, setShowExtractions] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
   const [onlyFormation, setOnlyFormation] = useState(false);
 

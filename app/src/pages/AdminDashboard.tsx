@@ -47,7 +47,7 @@ function AdminContent({
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
-  const [showExtractions, setShowExtractions] = useState(true);
+  const [showExtractions, setShowExtractions] = useState(false);
   const [onlyFormation, setOnlyFormation] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
   const [placingModeExtraction, setPlacingModeExtraction] = useState(false);

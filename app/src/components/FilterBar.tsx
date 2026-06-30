@@ -78,7 +78,7 @@ export default function FilterBar({
     filterTypes.length > 0 ||
     filterStatuts.length > 0 ||
     showPois ||
-    !showExtractions ||
+    showExtractions ||
     onlyFormation ||
     parcours.some((p) => parcoursVisibility[p.id] === false);
 
@@ -110,7 +110,7 @@ export default function FilterBar({
     setFilterStatuts([]);
     setParcoursVisibility({});
     setShowPois(false);
-    setShowExtractions(true);
+    setShowExtractions(false);
     setOnlyFormation(false);
     setShowPopup(false);
   }

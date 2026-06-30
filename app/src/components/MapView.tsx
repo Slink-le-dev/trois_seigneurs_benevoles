@@ -94,7 +94,7 @@ export default function MapView({
   searchBenevole = '',
   onlyFormation = false,
   pointsExtraction = [],
-  showExtractions = true,
+  showExtractions = false,
   selectedExtractionId = null,
   onSelectExtraction,
   placingModeExtraction,
