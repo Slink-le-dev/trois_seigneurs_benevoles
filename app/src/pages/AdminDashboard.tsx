@@ -73,6 +73,8 @@ function AdminContent({
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
+  const radiosAttribuees = data.postes.filter((p) => p.materiel?.includes('radio')).length;
+  const troussesAttribuees = data.postes.filter((p) => p.materiel?.includes('trousse_soin')).length;
 
   async function handleMapClickCreate(lat: number, lng: number) {
     const poste = await data.createPoste({ nom: 'Nouveau poste', lat, lng, types: [], statut: 'non_active' }, []);
@@ -161,25 +163,36 @@ function AdminContent({
 
       {tab === 'carte' && (
         <>
-          <FilterBar
-            parcours={data.parcours}
-            filterParcoursIds={filterParcoursIds}
-            setFilterParcoursIds={setFilterParcoursIds}
-            filterTypes={filterTypes}
-            setFilterTypes={setFilterTypes}
-            filterStatuts={filterStatuts}
-            setFilterStatuts={setFilterStatuts}
-            parcoursVisibility={parcoursVisibility}
-            setParcoursVisibility={setParcoursVisibility}
-            showPois={showPois}
-            setShowPois={setShowPois}
-            showExtractions={showExtractions}
-            setShowExtractions={setShowExtractions}
-            searchBenevole={searchBenevole}
-            setSearchBenevole={setSearchBenevole}
-            onlyFormation={onlyFormation}
-            setOnlyFormation={setOnlyFormation}
-          />
+          <div className="flex items-center justify-between bg-white border-b flex-wrap">
+            <FilterBar
+              parcours={data.parcours}
+              filterParcoursIds={filterParcoursIds}
+              setFilterParcoursIds={setFilterParcoursIds}
+              filterTypes={filterTypes}
+              setFilterTypes={setFilterTypes}
+              filterStatuts={filterStatuts}
+              setFilterStatuts={setFilterStatuts}
+              parcoursVisibility={parcoursVisibility}
+              setParcoursVisibility={setParcoursVisibility}
+              showPois={showPois}
+              setShowPois={setShowPois}
+              showExtractions={showExtractions}
+              setShowExtractions={setShowExtractions}
+              searchBenevole={searchBenevole}
+              setSearchBenevole={setSearchBenevole}
+              onlyFormation={onlyFormation}
+              setOnlyFormation={setOnlyFormation}
+            />
+            <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
+              <span>
+                📻 Radios :{' '}
+                <strong className={radiosAttribuees > 25 ? 'text-red-600' : ''}>{radiosAttribuees}</strong>/25
+              </span>
+              <span>
+                🩹 Trousses de soin : <strong>{troussesAttribuees}</strong>
+              </span>
+            </div>
+          </div>
           <div className="flex-1 flex overflow-hidden">
             <aside className="w-80 border-r overflow-y-auto p-3 space-y-4 hidden md:block">
               <ParcoursPanel
