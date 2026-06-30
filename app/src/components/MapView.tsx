@@ -2,8 +2,9 @@ import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { formatCreneau } from '../lib/format';
-import { extractionIcon, posteIcon } from '../lib/icons';
+import { abriIcon, extractionIcon, posteIcon } from '../lib/icons';
 import {
+  AbriTemporaire,
   Affectation,
   Benevole,
   Parcours,
@@ -43,6 +44,13 @@ interface MapViewProps {
   placingModeExtraction?: boolean;
   onMapClickCreateExtraction?: (lat: number, lng: number) => void;
   onMoveExtraction?: (id: string, lat: number, lng: number) => void;
+  abrisTemporaires?: AbriTemporaire[];
+  showAbris?: boolean;
+  selectedAbriId?: string | null;
+  onSelectAbri?: (id: string) => void;
+  placingModeAbri?: boolean;
+  onMapClickCreateAbri?: (lat: number, lng: number) => void;
+  onMoveAbri?: (id: string, lat: number, lng: number) => void;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -113,6 +121,13 @@ export default function MapView({
   placingModeExtraction,
   onMapClickCreateExtraction,
   onMoveExtraction,
+  abrisTemporaires = [],
+  showAbris = false,
+  selectedAbriId = null,
+  onSelectAbri,
+  placingModeAbri,
+  onMapClickCreateAbri,
+  onMoveAbri,
 }: MapViewProps) {
   const query = searchBenevole.trim().toLowerCase();
   const visiblePostes = postes.filter((p) => {
@@ -149,7 +164,7 @@ export default function MapView({
       center={[45.9, 6.1]}
       zoom={11}
       style={{ height: '100%', width: '100%' }}
-      className={placingMode || placingModeExtraction ? 'cursor-crosshair' : ''}
+      className={placingMode || placingModeExtraction || placingModeAbri ? 'cursor-crosshair' : ''}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -159,6 +174,7 @@ export default function MapView({
       <FitToData parcours={parcours} postes={postes} />
       {placingMode && <MapClickHandler onClick={onMapClickCreate} />}
       {placingModeExtraction && <MapClickHandler onClick={onMapClickCreateExtraction} />}
+      {placingModeAbri && <MapClickHandler onClick={onMapClickCreateAbri} />}
 
       {parcours
         .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false)
@@ -242,6 +258,30 @@ export default function MapView({
             <Tooltip>
               <div className="text-xs leading-snug">
                 <span className="font-semibold">{point.lettre}.</span> {point.libelle}
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
+
+      {showAbris &&
+        abrisTemporaires.map((abri) => (
+          <Marker
+            key={abri.id}
+            position={[abri.lat, abri.lng]}
+            icon={abriIcon(abri.numero)}
+            draggable={isAdmin}
+            eventHandlers={{
+              click: () => onSelectAbri?.(abri.id),
+              dragend: (e) => {
+                const pos = (e.target as L.Marker).getLatLng();
+                onMoveAbri?.(abri.id, pos.lat, pos.lng);
+              },
+            }}
+            opacity={selectedAbriId === abri.id ? 1 : 0.95}
+          >
+            <Tooltip>
+              <div className="text-xs leading-snug">
+                <span className="font-semibold">N°{abri.numero}.</span> {abri.nom} ({abri.capacite} pers.)
               </div>
             </Tooltip>
           </Marker>

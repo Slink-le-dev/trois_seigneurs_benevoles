@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import logo from '../assets/logo.png';
+import AbriTemporaireForm from '../components/AbriTemporaireForm';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
 import PointExtractionForm from '../components/PointExtractionForm';
@@ -19,10 +20,13 @@ export default function PublicConsultation() {
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
+  const [showAbris, setShowAbris] = useState(false);
+  const [selectedAbriId, setSelectedAbriId] = useState<string | null>(null);
   const [onlyFormation, setOnlyFormation] = useState(false);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
+  const selectedAbri = data.abrisTemporaires.find((a) => a.id === selectedAbriId) ?? null;
 
   if (data.loading) {
     return <div className="p-6 text-center text-gray-500">Chargement…</div>;
@@ -56,6 +60,8 @@ export default function PublicConsultation() {
         setShowPois={setShowPois}
         showExtractions={showExtractions}
         setShowExtractions={setShowExtractions}
+        showAbris={showAbris}
+        setShowAbris={setShowAbris}
         searchBenevole={searchBenevole}
         setSearchBenevole={setSearchBenevole}
         onlyFormation={onlyFormation}
@@ -84,6 +90,10 @@ export default function PublicConsultation() {
           showExtractions={showExtractions}
           selectedExtractionId={selectedExtractionId}
           onSelectExtraction={setSelectedExtractionId}
+          abrisTemporaires={data.abrisTemporaires}
+          showAbris={showAbris}
+          selectedAbriId={selectedAbriId}
+          onSelectAbri={setSelectedAbriId}
         />
       </div>
 
@@ -101,6 +111,10 @@ export default function PublicConsultation() {
 
       {selectedExtraction && (
         <PointExtractionForm point={selectedExtraction} isAdmin={false} onClose={() => setSelectedExtractionId(null)} />
+      )}
+
+      {selectedAbri && (
+        <AbriTemporaireForm abri={selectedAbri} isAdmin={false} onClose={() => setSelectedAbriId(null)} />
       )}
     </div>
   );

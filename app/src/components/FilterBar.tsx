@@ -17,6 +17,8 @@ interface FilterBarProps {
   setShowPois: (show: boolean) => void;
   showExtractions: boolean;
   setShowExtractions: (show: boolean) => void;
+  showAbris: boolean;
+  setShowAbris: (show: boolean) => void;
   searchBenevole: string;
   setSearchBenevole: (v: string) => void;
   onlyFormation: boolean;
@@ -63,6 +65,8 @@ export default function FilterBar({
   setShowPois,
   showExtractions,
   setShowExtractions,
+  showAbris,
+  setShowAbris,
   searchBenevole,
   setSearchBenevole,
   onlyFormation,
@@ -76,6 +80,7 @@ export default function FilterBar({
   const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
   const [draftShowPois, setDraftShowPois] = useState(showPois);
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
+  const [draftShowAbris, setDraftShowAbris] = useState(showAbris);
   const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
 
   const hasActiveFilters =
@@ -85,6 +90,7 @@ export default function FilterBar({
     filterMateriel.length > 0 ||
     showPois ||
     showExtractions ||
+    showAbris ||
     onlyFormation ||
     parcours.some((p) => parcoursVisibility[p.id] === false);
 
@@ -96,6 +102,7 @@ export default function FilterBar({
     setDraftVisibility(parcoursVisibility);
     setDraftShowPois(showPois);
     setDraftShowExtractions(showExtractions);
+    setDraftShowAbris(showAbris);
     setDraftOnlyFormation(onlyFormation);
     setShowPopup(true);
   }
@@ -108,6 +115,7 @@ export default function FilterBar({
     setParcoursVisibility(draftVisibility);
     setShowPois(draftShowPois);
     setShowExtractions(draftShowExtractions);
+    setShowAbris(draftShowAbris);
     setOnlyFormation(draftOnlyFormation);
     setShowPopup(false);
   }
@@ -120,6 +128,7 @@ export default function FilterBar({
     setParcoursVisibility({});
     setShowPois(false);
     setShowExtractions(false);
+    setShowAbris(false);
     setOnlyFormation(false);
     setShowPopup(false);
   }
@@ -236,6 +245,14 @@ export default function FilterBar({
                       onChange={(e) => setDraftShowExtractions(e.target.checked)}
                     />
                     🚑 Points d'extraction
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={draftShowAbris}
+                      onChange={(e) => setDraftShowAbris(e.target.checked)}
+                    />
+                    🏠 Abris temporaires
                   </label>
                 </div>
               </div>

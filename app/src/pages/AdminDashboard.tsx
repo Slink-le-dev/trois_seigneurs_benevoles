@@ -4,6 +4,7 @@ import BenevolesTable from '../components/BenevolesTable';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
 import ParcoursPanel from '../components/ParcoursPanel';
+import AbriTemporaireForm from '../components/AbriTemporaireForm';
 import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
 import StatusDashboard from '../components/StatusDashboard';
@@ -54,6 +55,11 @@ function AdminContent({
   const [placingModeExtraction, setPlacingModeExtraction] = useState(false);
   const [manualLatExtraction, setManualLatExtraction] = useState('');
   const [manualLngExtraction, setManualLngExtraction] = useState('');
+  const [showAbris, setShowAbris] = useState(false);
+  const [selectedAbriId, setSelectedAbriId] = useState<string | null>(null);
+  const [placingModeAbri, setPlacingModeAbri] = useState(false);
+  const [manualLatAbri, setManualLatAbri] = useState('');
+  const [manualLngAbri, setManualLngAbri] = useState('');
 
   // Garantit l'existence des 3 parcours de la course (une seule fois)
   const seedingParcours = useRef(false);
@@ -74,6 +80,7 @@ function AdminContent({
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
+  const selectedAbri = data.abrisTemporaires.find((a) => a.id === selectedAbriId) ?? null;
   const radiosAttribuees = data.postes.filter((p) => p.materiel?.includes('radio')).length;
   const troussesAttribuees = data.postes.filter((p) => p.materiel?.includes('trousse_soin')).length;
 
@@ -98,12 +105,20 @@ function AdminContent({
 
   function togglePlacingMode() {
     setPlacingModeExtraction(false);
+    setPlacingModeAbri(false);
     setPlacingMode((v) => !v);
   }
 
   function togglePlacingModeExtraction() {
     setPlacingMode(false);
+    setPlacingModeAbri(false);
     setPlacingModeExtraction((v) => !v);
+  }
+
+  function togglePlacingModeAbri() {
+    setPlacingMode(false);
+    setPlacingModeExtraction(false);
+    setPlacingModeAbri((v) => !v);
   }
 
   async function handleMapClickCreateExtraction(lat: number, lng: number) {
@@ -123,6 +138,25 @@ function AdminContent({
     setManualLatExtraction('');
     setManualLngExtraction('');
     setSelectedExtractionId(point.id);
+  }
+
+  async function handleMapClickCreateAbri(lat: number, lng: number) {
+    const abri = await data.createAbriTemporaire({ nom: 'Nouvel abri', capacite: 1, lat, lng });
+    setPlacingModeAbri(false);
+    setSelectedAbriId(abri.id);
+  }
+
+  async function handleManualCreateAbri() {
+    const lat = Number(manualLatAbri);
+    const lng = Number(manualLngAbri);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      alert('Coordonnées GPS invalides.');
+      return;
+    }
+    const abri = await data.createAbriTemporaire({ nom: 'Nouvel abri', capacite: 1, lat, lng });
+    setManualLatAbri('');
+    setManualLngAbri('');
+    setSelectedAbriId(abri.id);
   }
 
   if (data.loading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
@@ -181,6 +215,8 @@ function AdminContent({
               setShowPois={setShowPois}
               showExtractions={showExtractions}
               setShowExtractions={setShowExtractions}
+              showAbris={showAbris}
+              setShowAbris={setShowAbris}
               searchBenevole={searchBenevole}
               setSearchBenevole={setSearchBenevole}
               onlyFormation={onlyFormation}
@@ -259,6 +295,33 @@ function AdminContent({
                   Créer via coordonnées
                 </button>
               </div>
+
+              <div className="border-t pt-3 space-y-2">
+                <h2 className="font-semibold text-sm uppercase text-gray-500">Nouveau abri temporaire</h2>
+                <button
+                  className={`w-full py-2 rounded text-sm ${placingModeAbri ? 'bg-violet-600 text-white' : 'border hover:bg-gray-50'}`}
+                  onClick={togglePlacingModeAbri}
+                >
+                  {placingModeAbri ? 'Cliquez sur la carte…' : '📍 Cliquer sur la carte'}
+                </button>
+                <div className="flex gap-2">
+                  <input
+                    className="border rounded px-2 py-1 w-full text-sm"
+                    placeholder="Latitude"
+                    value={manualLatAbri}
+                    onChange={(e) => setManualLatAbri(e.target.value)}
+                  />
+                  <input
+                    className="border rounded px-2 py-1 w-full text-sm"
+                    placeholder="Longitude"
+                    value={manualLngAbri}
+                    onChange={(e) => setManualLngAbri(e.target.value)}
+                  />
+                </div>
+                <button className="w-full py-2 rounded border text-sm hover:bg-gray-50" onClick={handleManualCreateAbri}>
+                  Créer via coordonnées
+                </button>
+              </div>
             </aside>
 
             <div className="flex-1 relative">
@@ -289,6 +352,13 @@ function AdminContent({
                 placingModeExtraction={placingModeExtraction}
                 onMapClickCreateExtraction={handleMapClickCreateExtraction}
                 onMoveExtraction={data.moveExtraction}
+                abrisTemporaires={data.abrisTemporaires}
+                showAbris={showAbris}
+                selectedAbriId={selectedAbriId}
+                onSelectAbri={setSelectedAbriId}
+                placingModeAbri={placingModeAbri}
+                onMapClickCreateAbri={handleMapClickCreateAbri}
+                onMoveAbri={data.moveAbriTemporaire}
               />
             </div>
           </div>
@@ -360,6 +430,16 @@ function AdminContent({
           onClose={() => setSelectedExtractionId(null)}
           onUpdate={(d) => data.updatePointExtraction(selectedExtraction.id, d)}
           onDelete={() => data.deletePointExtraction(selectedExtraction.id)}
+        />
+      )}
+
+      {selectedAbri && (
+        <AbriTemporaireForm
+          abri={selectedAbri}
+          isAdmin
+          onClose={() => setSelectedAbriId(null)}
+          onUpdate={(d) => data.updateAbriTemporaire(selectedAbri.id, d)}
+          onDelete={() => data.deleteAbriTemporaire(selectedAbri.id)}
         />
       )}
     </div>

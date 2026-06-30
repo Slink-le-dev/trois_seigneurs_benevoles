@@ -103,6 +103,16 @@ export interface PointExtraction {
   created_at: string;
 }
 
+export interface AbriTemporaire {
+  id: string;
+  numero: number;
+  nom: string;
+  capacite: number;
+  lat: number;
+  lng: number;
+  created_at: string;
+}
+
 export type MainCouranteStatus = 'prise en charge en cours' | 'pris en charge' | 'terminé' | 'abandonné';
 export type AppelantSpecial = 'coureur' | 'croix_rouge' | 'autre';
 

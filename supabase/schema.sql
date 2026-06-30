@@ -63,6 +63,16 @@ create table points_extraction (
   created_at timestamptz not null default now()
 );
 
+create table abris_temporaires (
+  id uuid primary key default gen_random_uuid(),
+  numero integer not null,
+  nom text not null,
+  capacite integer not null,
+  lat double precision not null,
+  lng double precision not null,
+  created_at timestamptz not null default now()
+);
+
 create table main_courante (
   id uuid primary key default gen_random_uuid(),
   numero integer generated always as identity unique,
@@ -132,6 +142,7 @@ alter table poste_parcours enable row level security;
 alter table benevoles enable row level security;
 alter table affectations enable row level security;
 alter table points_extraction enable row level security;
+alter table abris_temporaires enable row level security;
 alter table main_courante enable row level security;
 alter table main_courante_journal enable row level security;
 alter table main_courante_commentaires enable row level security;
@@ -142,6 +153,7 @@ create policy "lecture publique postes" on postes for select using (true);
 create policy "lecture publique poste_parcours" on poste_parcours for select using (true);
 create policy "lecture publique affectations" on affectations for select using (true);
 create policy "lecture publique points_extraction" on points_extraction for select using (true);
+create policy "lecture publique abris_temporaires" on abris_temporaires for select using (true);
 
 -- benevoles : lecture du telephone reservee aux organisateurs connectes.
 -- Le public doit utiliser la vue benevoles_public (qui n'expose pas le telephone).
@@ -162,6 +174,8 @@ create policy "ecriture organisateur benevoles" on benevoles for all
 create policy "ecriture organisateur affectations" on affectations for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "ecriture organisateur points_extraction" on points_extraction for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "ecriture organisateur abris_temporaires" on abris_temporaires for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "lecture organisateur main_courante" on main_courante for select
   using (auth.role() = 'authenticated');

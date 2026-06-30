@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 import {
+  AbriTemporaire,
   Affectation,
   Benevole,
   MainCouranteCommentaire,
@@ -21,6 +22,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   const [benevoles, setBenevoles] = useState<Benevole[]>([]);
   const [affectations, setAffectations] = useState<Affectation[]>([]);
   const [pointsExtraction, setPointsExtraction] = useState<PointExtraction[]>([]);
+  const [abrisTemporaires, setAbrisTemporaires] = useState<AbriTemporaire[]>([]);
   const [mainCourante, setMainCourante] = useState<MainCouranteEvent[]>([]);
   const [mainCouranteJournal, setMainCouranteJournal] = useState<MainCouranteJournalEntry[]>([]);
   const [mainCouranteCommentaires, setMainCouranteCommentaires] = useState<MainCouranteCommentaire[]>([]);
@@ -30,13 +32,23 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     setLoading(true);
     const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
 
-    const [parcoursRes, postesRes, posteParcoursRes, benevolesRes, affectationsRes, pointsExtractionRes, mainCouranteRes] = await Promise.all([
+    const [
+      parcoursRes,
+      postesRes,
+      posteParcoursRes,
+      benevolesRes,
+      affectationsRes,
+      pointsExtractionRes,
+      abrisTemporairesRes,
+      mainCouranteRes,
+    ] = await Promise.all([
       supabase.from('parcours').select('*').order('created_at'),
       supabase.from('postes').select('*').order('created_at'),
       supabase.from('poste_parcours').select('*'),
       supabase.from(benevolesTable).select('*').order('nom'),
       supabase.from('affectations').select('*'),
       supabase.from('points_extraction').select('*').order('created_at'),
+      supabase.from('abris_temporaires').select('*').order('created_at'),
       supabase.from('main_courante').select('*').is('deleted_at', null).order('date_evenement', { ascending: false }).order('created_at', { ascending: false }),
     ]);
 
@@ -56,6 +68,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     }
     if (affectationsRes.data) setAffectations(affectationsRes.data as Affectation[]);
     if (pointsExtractionRes.data) setPointsExtraction(pointsExtractionRes.data as PointExtraction[]);
+    if (abrisTemporairesRes.data) setAbrisTemporaires(abrisTemporairesRes.data as AbriTemporaire[]);
     if (mainCouranteRes.data) setMainCourante(mainCouranteRes.data as MainCouranteEvent[]);
 
     if (isAdmin) {
@@ -246,6 +259,33 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     await updatePointExtraction(id, { lat, lng });
   }
 
+  // ---- Abris temporaires ----
+
+  async function createAbriTemporaire(data: Partial<AbriTemporaire>) {
+    const numero = data.numero ?? (abrisTemporaires.length ? Math.max(...abrisTemporaires.map((a) => a.numero)) + 1 : 1);
+    const { data: row, error } = await supabase.from('abris_temporaires').insert({ ...data, numero }).select().single();
+    if (error) throw error;
+    const abri = row as AbriTemporaire;
+    setAbrisTemporaires((c) => [...c, abri]);
+    return abri;
+  }
+
+  async function updateAbriTemporaire(id: string, data: Partial<AbriTemporaire>) {
+    const { data: row, error } = await supabase.from('abris_temporaires').update(data).eq('id', id).select().single();
+    if (error) throw error;
+    setAbrisTemporaires((c) => c.map((a) => (a.id === id ? (row as AbriTemporaire) : a)));
+  }
+
+  async function deleteAbriTemporaire(id: string) {
+    const { error } = await supabase.from('abris_temporaires').delete().eq('id', id);
+    if (error) throw error;
+    setAbrisTemporaires((c) => c.filter((a) => a.id !== id));
+  }
+
+  async function moveAbriTemporaire(id: string, lat: number, lng: number) {
+    await updateAbriTemporaire(id, { lat, lng });
+  }
+
   async function createMainCourante(data: Partial<MainCouranteEvent>) {
     if (!currentUserId) throw new Error('Utilisateur non authentifié.');
     const { data: row, error } = await supabase
@@ -325,6 +365,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     benevoles,
     affectations,
     pointsExtraction,
+    abrisTemporaires,
     mainCourante,
     mainCouranteJournal,
     mainCouranteCommentaires,
@@ -351,6 +392,10 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     updatePointExtraction,
     deletePointExtraction,
     moveExtraction,
+    createAbriTemporaire,
+    updateAbriTemporaire,
+    deleteAbriTemporaire,
+    moveAbriTemporaire,
     createMainCourante,
     updateMainCourante,
     deleteMainCourante,
