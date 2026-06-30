@@ -51,6 +51,7 @@ function AdminContent({
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(false);
   const [onlyFormation, setOnlyFormation] = useState(false);
+  const [onlyPointPassage, setOnlyPointPassage] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
   const [placingModeExtraction, setPlacingModeExtraction] = useState(false);
   const [manualLatExtraction, setManualLatExtraction] = useState('');
@@ -221,6 +222,8 @@ function AdminContent({
               setSearchBenevole={setSearchBenevole}
               onlyFormation={onlyFormation}
               setOnlyFormation={setOnlyFormation}
+              onlyPointPassage={onlyPointPassage}
+              setOnlyPointPassage={setOnlyPointPassage}
             />
             <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
               <span>
@@ -345,6 +348,7 @@ function AdminContent({
                 showPois={showPois}
                 searchBenevole={searchBenevole}
                 onlyFormation={onlyFormation}
+                onlyPointPassage={onlyPointPassage}
                 pointsExtraction={data.pointsExtraction}
                 showExtractions={showExtractions}
                 selectedExtractionId={selectedExtractionId}

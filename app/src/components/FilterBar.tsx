@@ -23,6 +23,8 @@ interface FilterBarProps {
   setSearchBenevole: (v: string) => void;
   onlyFormation: boolean;
   setOnlyFormation: (v: boolean) => void;
+  onlyPointPassage: boolean;
+  setOnlyPointPassage: (v: boolean) => void;
 }
 
 const ACCENT = '#005F61';
@@ -71,6 +73,8 @@ export default function FilterBar({
   setSearchBenevole,
   onlyFormation,
   setOnlyFormation,
+  onlyPointPassage,
+  setOnlyPointPassage,
 }: FilterBarProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
@@ -82,6 +86,7 @@ export default function FilterBar({
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
   const [draftShowAbris, setDraftShowAbris] = useState(showAbris);
   const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
+  const [draftOnlyPointPassage, setDraftOnlyPointPassage] = useState(onlyPointPassage);
 
   const hasActiveFilters =
     filterParcoursIds.length > 0 ||
@@ -92,6 +97,7 @@ export default function FilterBar({
     showExtractions ||
     showAbris ||
     onlyFormation ||
+    onlyPointPassage ||
     parcours.some((p) => parcoursVisibility[p.id] === false);
 
   function openPopup() {
@@ -104,6 +110,7 @@ export default function FilterBar({
     setDraftShowExtractions(showExtractions);
     setDraftShowAbris(showAbris);
     setDraftOnlyFormation(onlyFormation);
+    setDraftOnlyPointPassage(onlyPointPassage);
     setShowPopup(true);
   }
 
@@ -117,6 +124,7 @@ export default function FilterBar({
     setShowExtractions(draftShowExtractions);
     setShowAbris(draftShowAbris);
     setOnlyFormation(draftOnlyFormation);
+    setOnlyPointPassage(draftOnlyPointPassage);
     setShowPopup(false);
   }
 
@@ -130,6 +138,7 @@ export default function FilterBar({
     setShowExtractions(false);
     setShowAbris(false);
     setOnlyFormation(false);
+    setOnlyPointPassage(false);
     setShowPopup(false);
   }
 
@@ -284,6 +293,20 @@ export default function FilterBar({
                       {m.label}
                     </label>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Caractéristiques</h3>
+                <div className="flex flex-wrap gap-3">
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={draftOnlyPointPassage}
+                      onChange={(e) => setDraftOnlyPointPassage(e.target.checked)}
+                    />
+                    Point de passage intermédiaire
+                  </label>
                 </div>
               </div>
 

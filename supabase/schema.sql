@@ -23,6 +23,7 @@ create table postes (
   lng double precision not null,
   types text[] not null default '{}',
   materiel text[] not null default '{}',
+  point_passage_intermediaire boolean not null default false,
   notes text,
   statut text not null default 'non_active'
     check (statut in ('desactive', 'non_active', 'en_place', 'alerte', 'ferme')),

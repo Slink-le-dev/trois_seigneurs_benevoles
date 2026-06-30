@@ -260,6 +260,25 @@ export default function PosteForm({
           </div>
 
           <div>
+            {isAdmin ? (
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={!!poste.point_passage_intermediaire}
+                  onChange={(e) => onUpdate?.({ point_passage_intermediaire: e.target.checked })}
+                />
+                <span className="text-gray-500">Point de passage intermédiaire</span>
+              </label>
+            ) : (
+              poste.point_passage_intermediaire && (
+                <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">
+                  📍 Point de passage intermédiaire
+                </span>
+              )
+            )}
+          </div>
+
+          <div>
             <span className="text-gray-500 block mb-1">Notes :</span>
             {isAdmin ? (
               <textarea

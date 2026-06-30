@@ -43,6 +43,7 @@ export interface Poste {
   lng: number;
   types: PosteTypeCode[];
   materiel: PosteMaterielCode[];
+  point_passage_intermediaire: boolean;
   notes: string | null;
   statut: PosteStatut;
   statut_updated_at: string;

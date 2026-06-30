@@ -37,6 +37,7 @@ interface MapViewProps {
   showPois?: boolean;
   searchBenevole?: string;
   onlyFormation?: boolean;
+  onlyPointPassage?: boolean;
   pointsExtraction?: PointExtraction[];
   showExtractions?: boolean;
   selectedExtractionId?: string | null;
@@ -114,6 +115,7 @@ export default function MapView({
   showPois = false,
   searchBenevole = '',
   onlyFormation = false,
+  onlyPointPassage = false,
   pointsExtraction = [],
   showExtractions = false,
   selectedExtractionId = null,
@@ -138,6 +140,7 @@ export default function MapView({
       if (!ids.some((id) => filterParcoursIds.includes(id))) return false;
     }
     if (filterMateriel?.length && !p.materiel?.some((m) => filterMateriel.includes(m))) return false;
+    if (onlyPointPassage && !p.point_passage_intermediaire) return false;
     if (query) {
       const aff = getAffectationsForPoste(p.id);
       const hasMatch = aff.some((a) => benevoles.find((b) => b.id === a.benevole_id)?.nom.toLowerCase().includes(query));
