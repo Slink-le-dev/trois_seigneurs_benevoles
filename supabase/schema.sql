@@ -26,7 +26,7 @@ create table postes (
   point_passage_intermediaire boolean not null default false,
   notes text,
   statut text not null default 'non_active'
-    check (statut in ('desactive', 'non_active', 'en_place', 'alerte', 'ferme')),
+    check (statut in ('desactive', 'non_active', 'en_place', 'libere', 'alerte', 'ferme')),
   statut_updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );

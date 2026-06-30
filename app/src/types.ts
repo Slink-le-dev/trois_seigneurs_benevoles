@@ -1,5 +1,5 @@
 export type PosteTypeCode = 'signaleur' | 'medical' | 'eau' | 'nourriture';
-export type PosteStatut = 'desactive' | 'non_active' | 'en_place' | 'alerte' | 'ferme';
+export type PosteStatut = 'desactive' | 'non_active' | 'en_place' | 'libere' | 'alerte' | 'ferme';
 export type PosteMaterielCode = 'radio' | 'defibrillateur' | 'lot_a' | 'lot_c' | 'trousse_soin';
 
 export const POSTE_MATERIELS: { code: PosteMaterielCode; label: string }[] = [
@@ -21,6 +21,7 @@ export const POSTE_STATUTS: { code: PosteStatut; label: string; couleur: string 
   { code: 'desactive', label: 'Désactivé', couleur: '#9ca3af' },
   { code: 'non_active', label: "En cours d'activation", couleur: '#f97316' },
   { code: 'en_place', label: 'En place', couleur: '#16a34a' },
+  { code: 'libere', label: 'Libéré', couleur: '#4ade80' },
   { code: 'alerte', label: 'Alerte', couleur: '#dc2626' },
   { code: 'ferme', label: 'Fermé', couleur: '#1f2937' },
 ];
