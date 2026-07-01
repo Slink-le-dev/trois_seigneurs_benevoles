@@ -125,49 +125,53 @@ export default function FilterBar({
   }
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-white border-b text-sm">
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Rechercher un bénévole par nom…"
-          value={searchBenevole}
-          onChange={(e) => setSearchBenevole(e.target.value)}
-          className="border rounded px-2 py-1 pr-7 text-sm w-56"
-        />
-        {searchBenevole && (
-          <button
-            type="button"
-            onClick={() => setSearchBenevole('')}
-            aria-label="Réinitialiser la recherche"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 leading-none"
-          >
-            ×
-          </button>
-        )}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 bg-white border-b text-sm">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="relative flex-1 sm:flex-none">
+          <input
+            type="text"
+            placeholder="Rechercher un bénévole par nom…"
+            value={searchBenevole}
+            onChange={(e) => setSearchBenevole(e.target.value)}
+            className="border rounded px-2 py-1 pr-7 text-sm w-full sm:w-56"
+          />
+          {searchBenevole && (
+            <button
+              type="button"
+              onClick={() => setSearchBenevole('')}
+              aria-label="Réinitialiser la recherche"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={openPopup}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded border hover:bg-gray-50 shrink-0"
+          style={hasActiveFilters ? { borderColor: ACCENT, color: ACCENT } : undefined}
+        >
+          <span className="relative inline-flex">
+            <FunnelIcon />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: ACCENT }} />
+            )}
+          </span>
+          Filtres
+        </button>
       </div>
 
-      <button
-        type="button"
-        onClick={openPopup}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded border hover:bg-gray-50"
-        style={hasActiveFilters ? { borderColor: ACCENT, color: ACCENT } : undefined}
-      >
-        <span className="relative inline-flex">
-          <FunnelIcon />
-          {hasActiveFilters && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: ACCENT }} />
-          )}
-        </span>
-        Filtres
-      </button>
-
-      <span className="text-gray-600 text-sm hidden sm:inline">N° téléphone PC Sécurité : 06 31 26 25 86</span>
-      <a
-        href="tel:0631262586"
-        className="flex items-center gap-1 px-3 py-1.5 rounded border text-sm hover:bg-gray-50"
-      >
-        📞 Appeler
-      </a>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-600 text-sm hidden sm:inline">N° téléphone PC Sécurité : 06 31 26 25 86</span>
+        <a
+          href="tel:0631262586"
+          className="flex items-center gap-1 px-3 py-1.5 rounded border text-sm hover:bg-gray-50 shrink-0"
+        >
+          📞 Appeler
+        </a>
+      </div>
 
       {showPopup && (
         <div
