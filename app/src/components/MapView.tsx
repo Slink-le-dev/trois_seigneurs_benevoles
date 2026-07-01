@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf';
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
@@ -57,6 +58,27 @@ const COULEUR_SANS_PARCOURS = '#6b7280';
 
 function withoutPois(fc: GeoJSON.FeatureCollection): GeoJSON.FeatureCollection {
   return { ...fc, features: fc.features.filter((f) => f.geometry?.type !== 'Point') };
+}
+
+function getKmMarkers(fc: GeoJSON.FeatureCollection): Array<{ position: [number, number]; km: number }> {
+  const allCoords: number[][] = [];
+  for (const f of fc.features) {
+    if (f.geometry?.type === 'LineString') {
+      allCoords.push(...(f.geometry as GeoJSON.LineString).coordinates);
+    } else if (f.geometry?.type === 'MultiLineString') {
+      for (const seg of (f.geometry as GeoJSON.MultiLineString).coordinates) allCoords.push(...seg);
+    }
+  }
+  if (allCoords.length < 2) return [];
+  const line = turf.lineString(allCoords as [number, number][]);
+  const totalKm = turf.length(line, { units: 'kilometers' });
+  const markers: Array<{ position: [number, number]; km: number }> = [];
+  for (let km = 1; km <= Math.floor(totalKm); km++) {
+    const pt = turf.along(line, km, { units: 'kilometers' });
+    const [lng, lat] = pt.geometry.coordinates;
+    markers.push({ position: [lat, lng], km });
+  }
+  return markers;
 }
 
 function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
@@ -186,6 +208,22 @@ export default function MapView({
             style={{ color: p.couleur, weight: 4, opacity: 0.85 }}
           />
         ))}
+
+      {parcours
+        .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false && (!filterParcoursIds?.length || filterParcoursIds.includes(p.id)))
+        .flatMap((p) =>
+          getKmMarkers(withoutPois(p.gpx_geojson!)).map(({ position, km }) => (
+            <Marker
+              key={`km-${p.id}-${km}`}
+              position={position}
+              icon={L.divIcon({
+                className: '',
+                html: `<div style="transform:translate(-50%,-50%);background:white;border:2px solid ${p.couleur};border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:${p.couleur};box-shadow:0 1px 2px rgba(0,0,0,0.2)">${km}</div>`,
+              })}
+              interactive={false}
+            />
+          ))
+        )}
 
       {visiblePostes.map((poste) => {
         const aff = getAffectationsForPoste(poste.id);
