@@ -66,6 +66,11 @@ export interface PosteParcours {
   parcours_id: string;
 }
 
+export interface PosteAbri {
+  poste_id: string;
+  abri_id: string;
+}
+
 export type BenevoleFormation =
   | 'medecin'
   | 'infirmier'

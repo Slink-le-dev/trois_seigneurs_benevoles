@@ -10,6 +10,7 @@ import {
   Parcours,
   PointExtraction,
   Poste,
+  PosteAbri,
   PosteParcours,
   PosteStatut,
   PosteTypeCode,
@@ -19,6 +20,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   const [parcours, setParcours] = useState<Parcours[]>([]);
   const [postes, setPostes] = useState<Poste[]>([]);
   const [posteParcours, setPosteParcoursState] = useState<PosteParcours[]>([]);
+  const [posteAbris, setPosteAbris] = useState<PosteAbri[]>([]);
   const [benevoles, setBenevoles] = useState<Benevole[]>([]);
   const [affectations, setAffectations] = useState<Affectation[]>([]);
   const [pointsExtraction, setPointsExtraction] = useState<PointExtraction[]>([]);
@@ -36,6 +38,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       parcoursRes,
       postesRes,
       posteParcoursRes,
+      posteAbrisRes,
       benevolesRes,
       affectationsRes,
       pointsExtractionRes,
@@ -45,6 +48,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       supabase.from('parcours').select('*').order('created_at'),
       supabase.from('postes').select('*').order('created_at'),
       supabase.from('poste_parcours').select('*'),
+      supabase.from('poste_abris').select('*'),
       supabase.from(benevolesTable).select('*').order('nom'),
       supabase.from('affectations').select('*'),
       supabase.from('points_extraction').select('*').order('created_at'),
@@ -55,6 +59,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     if (parcoursRes.data) setParcours(parcoursRes.data as Parcours[]);
     if (postesRes.data) setPostes(postesRes.data as Poste[]);
     if (posteParcoursRes.data) setPosteParcoursState(posteParcoursRes.data as PosteParcours[]);
+    if (posteAbrisRes.data) setPosteAbris(posteAbrisRes.data as PosteAbri[]);
     if (benevolesRes.data) {
       setBenevoles(
         (benevolesRes.data as any[]).map((b) => ({
@@ -120,6 +125,11 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     [affectations]
   );
 
+  const getAbriIdsForPoste = useCallback(
+    (posteId: string) => posteAbris.filter((pa) => pa.poste_id === posteId).map((pa) => pa.abri_id),
+    [posteAbris]
+  );
+
   // ---- Parcours ----
 
   async function createParcours(data: Partial<Parcours>) {
@@ -173,6 +183,17 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     setPosteParcoursState((c) => [
       ...c.filter((pp) => pp.poste_id !== posteId),
       ...parcoursIds.map((parcours_id) => ({ poste_id: posteId, parcours_id })),
+    ]);
+  }
+
+  async function setPosteAbrisLinks(posteId: string, abriIds: string[]) {
+    await supabase.from('poste_abris').delete().eq('poste_id', posteId);
+    if (abriIds.length) {
+      await supabase.from('poste_abris').insert(abriIds.map((abri_id) => ({ poste_id: posteId, abri_id })));
+    }
+    setPosteAbris((c) => [
+      ...c.filter((pa) => pa.poste_id !== posteId),
+      ...abriIds.map((abri_id) => ({ poste_id: posteId, abri_id })),
     ]);
   }
 
@@ -362,6 +383,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     parcours,
     postes,
     posteParcours,
+    posteAbris,
     benevoles,
     affectations,
     pointsExtraction,
@@ -373,6 +395,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     refreshAll,
     getParcoursIdsForPoste,
     getAffectationsForPoste,
+    getAbriIdsForPoste,
     createParcours,
     updateParcours,
     deleteParcoursGpx,
@@ -380,6 +403,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     updatePoste,
     deletePoste,
     setPosteParcoursLinks,
+    setPosteAbrisLinks,
     setPosteStatut,
     setPosteTypes,
     movePoste,

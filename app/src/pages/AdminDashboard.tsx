@@ -415,6 +415,8 @@ function AdminContent({
           poste={selectedPoste}
           parcours={data.parcours}
           selectedParcoursIds={data.getParcoursIdsForPoste(selectedPoste.id)}
+          abrisTemporaires={data.abrisTemporaires}
+          selectedAbriIds={data.getAbriIdsForPoste(selectedPoste.id)}
           affectations={data.affectations}
           benevoles={data.benevoles}
           isAdmin
@@ -422,6 +424,7 @@ function AdminContent({
           onUpdate={(d) => data.updatePoste(selectedPoste.id, d)}
           onDelete={() => data.deletePoste(selectedPoste.id)}
           onSetParcoursIds={(ids) => data.setPosteParcoursLinks(selectedPoste.id, ids)}
+          onSetAbriIds={(ids) => data.setPosteAbrisLinks(selectedPoste.id, ids)}
           onSetStatut={(s) => data.setPosteStatut(selectedPoste.id, s)}
           onCreateBenevole={data.createBenevole}
           onCreateAffectation={data.createAffectation}

@@ -3,6 +3,7 @@ import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
 import CopyCoords from './CopyCoords';
 import {
+  AbriTemporaire,
   Affectation,
   BENEVOLE_FORMATIONS,
   Benevole,
@@ -23,6 +24,8 @@ interface PosteFormProps {
   poste: Poste;
   parcours: Parcours[];
   selectedParcoursIds: string[];
+  abrisTemporaires: AbriTemporaire[];
+  selectedAbriIds: string[];
   affectations: Affectation[];
   benevoles: Benevole[];
   isAdmin: boolean;
@@ -30,6 +33,7 @@ interface PosteFormProps {
   onUpdate?: (data: Partial<Poste>) => Promise<void>;
   onDelete?: () => Promise<void>;
   onSetParcoursIds?: (ids: string[]) => Promise<void>;
+  onSetAbriIds?: (ids: string[]) => Promise<void>;
   onSetStatut?: (statut: PosteStatut) => Promise<void>;
   onCreateBenevole?: (data: Partial<Benevole>) => Promise<Benevole>;
   onCreateAffectation?: (data: Partial<Affectation>) => Promise<Affectation>;
@@ -40,6 +44,8 @@ export default function PosteForm({
   poste,
   parcours,
   selectedParcoursIds,
+  abrisTemporaires,
+  selectedAbriIds,
   affectations,
   benevoles,
   isAdmin,
@@ -47,6 +53,7 @@ export default function PosteForm({
   onUpdate,
   onDelete,
   onSetParcoursIds,
+  onSetAbriIds,
   onSetStatut,
   onCreateBenevole,
   onCreateAffectation,
@@ -313,6 +320,43 @@ export default function PosteForm({
                   📍 Point de passage intermédiaire
                 </span>
               )
+            )}
+          </div>
+
+          <div>
+            <span className="text-gray-500 block mb-1">Plan d'évacuation :</span>
+            <span className="text-gray-400 text-xs block mb-1">🏠 Abri temporaire</span>
+            {isAdmin ? (
+              abrisTemporaires.length === 0 ? (
+                <span className="text-gray-400 text-xs">Aucun abri temporaire créé.</span>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {abrisTemporaires.map((a) => (
+                    <label key={a.id} className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedAbriIds.includes(a.id)}
+                        onChange={() => {
+                          const next = selectedAbriIds.includes(a.id)
+                            ? selectedAbriIds.filter((id) => id !== a.id)
+                            : [...selectedAbriIds, a.id];
+                          onSetAbriIds?.(next);
+                        }}
+                      />
+                      N°{a.numero} — {a.nom}
+                    </label>
+                  ))}
+                </div>
+              )
+            ) : selectedAbriIds.length > 0 ? (
+              <ul className="list-disc list-inside space-y-0.5">
+                {selectedAbriIds.map((id) => {
+                  const a = abrisTemporaires.find((x) => x.id === id);
+                  return a ? <li key={id}>N°{a.numero} — {a.nom}</li> : null;
+                })}
+              </ul>
+            ) : (
+              <span className="text-gray-400">—</span>
             )}
           </div>
 
