@@ -51,7 +51,7 @@ function AdminContent({
   const [showExtractions, setShowExtractions] = useState(false);
   const [onlyFormation, setOnlyFormation] = useState(false);
   const [onlyPointPassage, setOnlyPointPassage] = useState(false);
-  const [showKmMarkers, setShowKmMarkers] = useState(true);
+  const [showKmMarkers, setShowKmMarkers] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
   const [placingModeExtraction, setPlacingModeExtraction] = useState(false);
   const [manualLatExtraction, setManualLatExtraction] = useState('');

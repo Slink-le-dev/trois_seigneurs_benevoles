@@ -22,7 +22,7 @@ export default function PublicConsultation() {
   const [selectedAbriId, setSelectedAbriId] = useState<string | null>(null);
   const [onlyFormation, setOnlyFormation] = useState(false);
   const [onlyPointPassage, setOnlyPointPassage] = useState(false);
-  const [showKmMarkers, setShowKmMarkers] = useState(true);
+  const [showKmMarkers, setShowKmMarkers] = useState(false);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;

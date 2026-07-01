@@ -128,7 +128,7 @@ export default function FilterBar({
     setShowAbris(false);
     setOnlyFormation(false);
     setOnlyPointPassage(false);
-    setShowKmMarkers(true);
+    setShowKmMarkers(false);
     setShowPopup(false);
   }
 
