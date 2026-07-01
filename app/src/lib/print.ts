@@ -77,6 +77,8 @@ export function printFeuilleDeRoute(
         <style>
           * { box-sizing: border-box; }
           body { font-family: sans-serif; padding: 28px; color: #111; font-size: 13px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; }
+          .pc-securite { font-size: 12px; color: #555; text-align: right; white-space: nowrap; }
           h1 { font-size: 22px; margin: 0 0 6px; }
           h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #555; margin: 18px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
           .row { display: flex; gap: 8px; padding: 3px 0; }
@@ -91,7 +93,10 @@ export function printFeuilleDeRoute(
         </style>
       </head>
       <body>
-        <h1>N°${poste.numero} — ${poste.nom}</h1>
+        <div class="header">
+          <h1>N°${poste.numero} — ${poste.nom}</h1>
+          <div class="pc-securite"><strong>N° téléphone PC Sécurité</strong><br>06 31 26 25 86</div>
+        </div>
 
         <h2>Informations</h2>
         <div class="row"><span class="lbl">Coordonnées GPS</span><span>${poste.lat.toFixed(5)}, ${poste.lng.toFixed(5)}</span></div>
