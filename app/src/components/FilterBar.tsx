@@ -161,6 +161,14 @@ export default function FilterBar({
         Filtres
       </button>
 
+      <span className="text-gray-600 text-sm hidden sm:inline">N° téléphone PC Sécurité : 06 31 26 25 86</span>
+      <a
+        href="tel:0631262586"
+        className="flex items-center gap-1 px-3 py-1.5 rounded border text-sm hover:bg-gray-50"
+      >
+        📞 Appeler
+      </a>
+
       {showPopup && (
         <div
           className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1000] p-4"
