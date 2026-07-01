@@ -6,7 +6,7 @@ import MapView from '../components/MapView';
 import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
 import { useAppData } from '../lib/useAppData';
-import { PosteMaterielCode, PosteStatut, PosteTypeCode } from '../types';
+import { PosteMaterielCode, PosteMissionCode, PosteStatut, PosteTypeCode } from '../types';
 
 export default function PublicConsultation() {
   const data = useAppData(false);
@@ -15,6 +15,7 @@ export default function PublicConsultation() {
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [filterMateriel, setFilterMateriel] = useState<PosteMaterielCode[]>([]);
+  const [filterMissions, setFilterMissions] = useState<PosteMissionCode[]>([]);
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
@@ -54,6 +55,8 @@ export default function PublicConsultation() {
         setFilterStatuts={setFilterStatuts}
         filterMateriel={filterMateriel}
         setFilterMateriel={setFilterMateriel}
+        filterMissions={filterMissions}
+        setFilterMissions={setFilterMissions}
         showExtractions={showExtractions}
         setShowExtractions={setShowExtractions}
         showAbris={showAbris}
@@ -82,6 +85,7 @@ export default function PublicConsultation() {
           filterStatuts={filterStatuts}
           filterParcoursIds={filterParcoursIds}
           filterMateriel={filterMateriel}
+          filterMissions={filterMissions}
           searchBenevole={searchBenevole}
           onlyFormation={onlyFormation}
           onlyPointPassage={onlyPointPassage}

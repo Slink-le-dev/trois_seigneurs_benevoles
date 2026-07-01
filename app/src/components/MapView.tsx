@@ -14,6 +14,7 @@ import {
   POSTE_TYPES,
   Poste,
   PosteMaterielCode,
+  PosteMissionCode,
   PosteStatut,
   PosteTypeCode,
 } from '../types';
@@ -35,6 +36,7 @@ interface MapViewProps {
   filterStatuts?: PosteStatut[];
   filterParcoursIds?: string[];
   filterMateriel?: PosteMaterielCode[];
+  filterMissions?: PosteMissionCode[];
   searchBenevole?: string;
   onlyFormation?: boolean;
   onlyPointPassage?: boolean;
@@ -134,6 +136,7 @@ export default function MapView({
   filterStatuts,
   filterParcoursIds,
   filterMateriel,
+  filterMissions,
   searchBenevole = '',
   onlyFormation = false,
   onlyPointPassage = false,
@@ -162,6 +165,7 @@ export default function MapView({
       if (!ids.some((id) => filterParcoursIds.includes(id))) return false;
     }
     if (filterMateriel?.length && !p.materiel?.some((m) => filterMateriel.includes(m))) return false;
+    if (filterMissions?.length && !(p.missions ?? []).some((m) => filterMissions.includes(m))) return false;
     if (onlyPointPassage && !p.point_passage_intermediaire) return false;
     if (query) {
       const aff = getAffectationsForPoste(p.id);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Parcours, POSTE_MATERIELS, POSTE_STATUTS, POSTE_TYPES, PosteMaterielCode, PosteStatut, PosteTypeCode } from '../types';
+import { Parcours, POSTE_MATERIELS, POSTE_MISSIONS, POSTE_STATUTS, POSTE_TYPES, PosteMaterielCode, PosteMissionCode, PosteStatut, PosteTypeCode } from '../types';
 
 interface FilterBarProps {
   parcours: Parcours[];
@@ -11,6 +11,8 @@ interface FilterBarProps {
   setFilterStatuts: (statuts: PosteStatut[]) => void;
   filterMateriel: PosteMaterielCode[];
   setFilterMateriel: (materiel: PosteMaterielCode[]) => void;
+  filterMissions: PosteMissionCode[];
+  setFilterMissions: (missions: PosteMissionCode[]) => void;
   showExtractions: boolean;
   setShowExtractions: (show: boolean) => void;
   showAbris: boolean;
@@ -59,6 +61,8 @@ export default function FilterBar({
   setFilterStatuts,
   filterMateriel,
   setFilterMateriel,
+  filterMissions,
+  setFilterMissions,
   showExtractions,
   setShowExtractions,
   showAbris,
@@ -77,6 +81,7 @@ export default function FilterBar({
   const [draftTypes, setDraftTypes] = useState(filterTypes);
   const [draftStatuts, setDraftStatuts] = useState(filterStatuts);
   const [draftMateriel, setDraftMateriel] = useState(filterMateriel);
+  const [draftMissions, setDraftMissions] = useState(filterMissions);
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
   const [draftShowAbris, setDraftShowAbris] = useState(showAbris);
   const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
@@ -88,6 +93,7 @@ export default function FilterBar({
     filterTypes.length > 0 ||
     filterStatuts.length > 0 ||
     filterMateriel.length > 0 ||
+    filterMissions.length > 0 ||
     showExtractions ||
     showAbris ||
     onlyFormation ||
@@ -98,6 +104,7 @@ export default function FilterBar({
     setDraftTypes(filterTypes);
     setDraftStatuts(filterStatuts);
     setDraftMateriel(filterMateriel);
+    setDraftMissions(filterMissions);
     setDraftShowExtractions(showExtractions);
     setDraftShowAbris(showAbris);
     setDraftOnlyFormation(onlyFormation);
@@ -111,6 +118,7 @@ export default function FilterBar({
     setFilterTypes(draftTypes);
     setFilterStatuts(draftStatuts);
     setFilterMateriel(draftMateriel);
+    setFilterMissions(draftMissions);
     setShowExtractions(draftShowExtractions);
     setShowAbris(draftShowAbris);
     setOnlyFormation(draftOnlyFormation);
@@ -124,6 +132,7 @@ export default function FilterBar({
     setFilterTypes([]);
     setFilterStatuts([]);
     setFilterMateriel([]);
+    setFilterMissions([]);
     setShowExtractions(false);
     setShowAbris(false);
     setOnlyFormation(false);
@@ -277,6 +286,22 @@ export default function FilterBar({
                         type="checkbox"
                         checked={draftMateriel.includes(m.code)}
                         onChange={() => setDraftMateriel(toggle(draftMateriel, m.code))}
+                      />
+                      {m.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Missions</h3>
+                <div className="flex flex-col gap-2">
+                  {POSTE_MISSIONS.map((m) => (
+                    <label key={m.code} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={draftMissions.includes(m.code)}
+                        onChange={() => setDraftMissions(toggle(draftMissions, m.code))}
                       />
                       {m.label}
                     </label>
