@@ -47,7 +47,6 @@ function AdminContent({
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [filterMateriel, setFilterMateriel] = useState<PosteMaterielCode[]>([]);
-  const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(false);
   const [onlyFormation, setOnlyFormation] = useState(false);
@@ -212,8 +211,6 @@ function AdminContent({
               setFilterMateriel={setFilterMateriel}
               parcoursVisibility={parcoursVisibility}
               setParcoursVisibility={setParcoursVisibility}
-              showPois={showPois}
-              setShowPois={setShowPois}
               showExtractions={showExtractions}
               setShowExtractions={setShowExtractions}
               showAbris={showAbris}
@@ -345,7 +342,6 @@ function AdminContent({
                 filterStatuts={filterStatuts}
                 filterParcoursIds={filterParcoursIds}
                 filterMateriel={filterMateriel}
-                showPois={showPois}
                 searchBenevole={searchBenevole}
                 onlyFormation={onlyFormation}
                 onlyPointPassage={onlyPointPassage}

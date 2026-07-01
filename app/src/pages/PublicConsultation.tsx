@@ -16,7 +16,6 @@ export default function PublicConsultation() {
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
   const [filterStatuts, setFilterStatuts] = useState<PosteStatut[]>([]);
   const [filterMateriel, setFilterMateriel] = useState<PosteMaterielCode[]>([]);
-  const [showPois, setShowPois] = useState(false);
   const [searchBenevole, setSearchBenevole] = useState('');
   const [showExtractions, setShowExtractions] = useState(false);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
@@ -57,8 +56,6 @@ export default function PublicConsultation() {
         setFilterMateriel={setFilterMateriel}
         parcoursVisibility={parcoursVisibility}
         setParcoursVisibility={setParcoursVisibility}
-        showPois={showPois}
-        setShowPois={setShowPois}
         showExtractions={showExtractions}
         setShowExtractions={setShowExtractions}
         showAbris={showAbris}
@@ -86,7 +83,6 @@ export default function PublicConsultation() {
           filterStatuts={filterStatuts}
           filterParcoursIds={filterParcoursIds}
           filterMateriel={filterMateriel}
-          showPois={showPois}
           searchBenevole={searchBenevole}
           onlyFormation={onlyFormation}
           onlyPointPassage={onlyPointPassage}

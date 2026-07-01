@@ -34,7 +34,6 @@ interface MapViewProps {
   filterStatuts?: PosteStatut[];
   filterParcoursIds?: string[];
   filterMateriel?: PosteMaterielCode[];
-  showPois?: boolean;
   searchBenevole?: string;
   onlyFormation?: boolean;
   onlyPointPassage?: boolean;
@@ -112,7 +111,6 @@ export default function MapView({
   filterStatuts,
   filterParcoursIds,
   filterMateriel,
-  showPois = false,
   searchBenevole = '',
   onlyFormation = false,
   onlyPointPassage = false,
@@ -183,8 +181,8 @@ export default function MapView({
         .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false)
         .map((p) => (
           <GeoJSON
-            key={`${p.id}-${p.couleur}-${showPois}`}
-            data={(showPois ? p.gpx_geojson! : withoutPois(p.gpx_geojson!)) as any}
+            key={`${p.id}-${p.couleur}`}
+            data={withoutPois(p.gpx_geojson!) as any}
             style={{ color: p.couleur, weight: 4, opacity: 0.85 }}
           />
         ))}

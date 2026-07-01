@@ -13,8 +13,6 @@ interface FilterBarProps {
   setFilterMateriel: (materiel: PosteMaterielCode[]) => void;
   parcoursVisibility: Record<string, boolean>;
   setParcoursVisibility: (v: Record<string, boolean>) => void;
-  showPois: boolean;
-  setShowPois: (show: boolean) => void;
   showExtractions: boolean;
   setShowExtractions: (show: boolean) => void;
   showAbris: boolean;
@@ -63,8 +61,6 @@ export default function FilterBar({
   setFilterMateriel,
   parcoursVisibility,
   setParcoursVisibility,
-  showPois,
-  setShowPois,
   showExtractions,
   setShowExtractions,
   showAbris,
@@ -82,7 +78,6 @@ export default function FilterBar({
   const [draftStatuts, setDraftStatuts] = useState(filterStatuts);
   const [draftMateriel, setDraftMateriel] = useState(filterMateriel);
   const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
-  const [draftShowPois, setDraftShowPois] = useState(showPois);
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
   const [draftShowAbris, setDraftShowAbris] = useState(showAbris);
   const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
@@ -93,7 +88,6 @@ export default function FilterBar({
     filterTypes.length > 0 ||
     filterStatuts.length > 0 ||
     filterMateriel.length > 0 ||
-    showPois ||
     showExtractions ||
     showAbris ||
     onlyFormation ||
@@ -106,7 +100,6 @@ export default function FilterBar({
     setDraftStatuts(filterStatuts);
     setDraftMateriel(filterMateriel);
     setDraftVisibility(parcoursVisibility);
-    setDraftShowPois(showPois);
     setDraftShowExtractions(showExtractions);
     setDraftShowAbris(showAbris);
     setDraftOnlyFormation(onlyFormation);
@@ -120,7 +113,6 @@ export default function FilterBar({
     setFilterStatuts(draftStatuts);
     setFilterMateriel(draftMateriel);
     setParcoursVisibility(draftVisibility);
-    setShowPois(draftShowPois);
     setShowExtractions(draftShowExtractions);
     setShowAbris(draftShowAbris);
     setOnlyFormation(draftOnlyFormation);
@@ -134,7 +126,6 @@ export default function FilterBar({
     setFilterStatuts([]);
     setFilterMateriel([]);
     setParcoursVisibility({});
-    setShowPois(false);
     setShowExtractions(false);
     setShowAbris(false);
     setOnlyFormation(false);
@@ -227,10 +218,6 @@ export default function FilterBar({
                       <span style={{ color: p.couleur }}>●</span> {p.nom}
                     </label>
                   ))}
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" checked={draftShowPois} onChange={(e) => setDraftShowPois(e.target.checked)} />
-                    Points d'intérêt (POI)
-                  </label>
                 </div>
               </div>
 
