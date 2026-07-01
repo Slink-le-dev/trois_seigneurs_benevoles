@@ -203,7 +203,7 @@ export default function FilterBar({
                     <label key={p.id} className="flex items-center gap-1">
                       <input
                         type="checkbox"
-                        checked={draftParcoursIds.length === 0 || draftParcoursIds.includes(p.id)}
+                        checked={draftParcoursIds.includes(p.id)}
                         onChange={() => setDraftParcoursIds(toggle(draftParcoursIds, p.id))}
                       />
                       <span style={{ color: p.couleur }}>●</span> {p.nom}
@@ -241,7 +241,7 @@ export default function FilterBar({
                     <label key={t.code} className="flex items-center gap-1">
                       <input
                         type="checkbox"
-                        checked={draftTypes.length === 0 || draftTypes.includes(t.code)}
+                        checked={draftTypes.includes(t.code)}
                         onChange={() => setDraftTypes(toggle(draftTypes, t.code))}
                       />
                       {t.emoji} {t.label}
@@ -317,7 +317,7 @@ export default function FilterBar({
                     <label key={s.code} className="flex items-center gap-1">
                       <input
                         type="checkbox"
-                        checked={draftStatuts.length === 0 || draftStatuts.includes(s.code)}
+                        checked={draftStatuts.includes(s.code)}
                         onChange={() => setDraftStatuts(toggle(draftStatuts, s.code))}
                       />
                       <span style={{ color: s.couleur }}>●</span> {s.label}
