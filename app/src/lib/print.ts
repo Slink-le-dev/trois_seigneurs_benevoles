@@ -49,7 +49,6 @@ export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affect
         <p class="meta"><strong>Parcours :</strong> ${parcoursNoms.join(', ') || '—'}</p>
         <p class="meta"><strong>Type(s) :</strong> ${types || '—'}</p>
         <p class="meta"><strong>Coordonnées GPS :</strong> ${poste.lat.toFixed(5)}, ${poste.lng.toFixed(5)}</p>
-        <p class="meta"><strong>Notes :</strong> ${poste.notes ?? '—'}</p>
         <table>
           <thead><tr><th>Bénévole</th><th>Téléphone</th><th>Créneau</th></tr></thead>
           <tbody>${benevolesRows || '<tr><td colspan="3">Aucun bénévole affecté</td></tr>'}</tbody>

@@ -56,7 +56,6 @@ export interface Poste {
   materiel: PosteMaterielCode[];
   missions: PosteMissionCode[];
   point_passage_intermediaire: boolean;
-  notes: string | null;
   statut: PosteStatut;
   statut_updated_at: string;
   created_at: string;

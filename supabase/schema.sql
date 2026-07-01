@@ -25,7 +25,6 @@ create table postes (
   materiel text[] not null default '{}',
   missions text[] not null default '{}',
   point_passage_intermediaire boolean not null default false,
-  notes text,
   statut text not null default 'non_active'
     check (statut in ('desactive', 'non_active', 'en_place', 'libere', 'alerte', 'ferme')),
   statut_updated_at timestamptz not null default now(),

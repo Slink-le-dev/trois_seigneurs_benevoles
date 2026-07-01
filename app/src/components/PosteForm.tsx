@@ -314,20 +314,6 @@ export default function PosteForm({
           </div>
 
           <div>
-            <span className="text-gray-500 block mb-1">Notes :</span>
-            {isAdmin ? (
-              <textarea
-                className="border rounded w-full px-2 py-1"
-                rows={2}
-                defaultValue={poste.notes ?? ''}
-                onBlur={(e) => e.target.value !== (poste.notes ?? '') && onUpdate?.({ notes: e.target.value })}
-              />
-            ) : (
-              <p>{poste.notes || '—'}</p>
-            )}
-          </div>
-
-          <div>
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Bénévoles affectés :</span>
               {isAdmin && (
