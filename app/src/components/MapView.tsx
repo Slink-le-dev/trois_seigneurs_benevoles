@@ -59,6 +59,22 @@ function withoutPois(fc: GeoJSON.FeatureCollection): GeoJSON.FeatureCollection {
   return { ...fc, features: fc.features.filter((f) => f.geometry?.type !== 'Point') };
 }
 
+function getMidpoint(fc: GeoJSON.FeatureCollection): [number, number] | null {
+  for (const f of fc.features) {
+    if (f.geometry?.type === 'LineString') {
+      const coords = (f.geometry as GeoJSON.LineString).coordinates;
+      const mid = coords[Math.floor(coords.length / 2)];
+      return [mid[1], mid[0]];
+    }
+    if (f.geometry?.type === 'MultiLineString') {
+      const all = (f.geometry as GeoJSON.MultiLineString).coordinates.flat();
+      const mid = all[Math.floor(all.length / 2)];
+      return [mid[1], mid[0]];
+    }
+  }
+  return null;
+}
+
 function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -179,13 +195,29 @@ export default function MapView({
 
       {parcours
         .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false && (!filterParcoursIds?.length || filterParcoursIds.includes(p.id)))
-        .map((p) => (
-          <GeoJSON
-            key={`${p.id}-${p.couleur}`}
-            data={withoutPois(p.gpx_geojson!) as any}
-            style={{ color: p.couleur, weight: 4, opacity: 0.85 }}
-          />
-        ))}
+        .map((p) => {
+          const midpoint = getMidpoint(p.gpx_geojson!);
+          return (
+            <>
+              <GeoJSON
+                key={`${p.id}-${p.couleur}`}
+                data={withoutPois(p.gpx_geojson!) as any}
+                style={{ color: p.couleur, weight: 4, opacity: 0.85 }}
+              />
+              {midpoint && p.distance_km != null && (
+                <Marker
+                  key={`label-${p.id}`}
+                  position={midpoint}
+                  icon={L.divIcon({
+                    className: '',
+                    html: `<div style="transform:translate(-50%,-50%);background:white;border:2px solid ${p.couleur};border-radius:9999px;padding:2px 7px;font-size:11px;font-weight:700;color:${p.couleur};white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.25)">${p.distance_km}km</div>`,
+                  })}
+                  interactive={false}
+                />
+              )}
+            </>
+          );
+        })}
 
       {visiblePostes.map((poste) => {
         const aff = getAffectationsForPoste(poste.id);
