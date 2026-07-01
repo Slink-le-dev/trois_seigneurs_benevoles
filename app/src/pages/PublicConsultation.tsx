@@ -108,6 +108,8 @@ export default function PublicConsultation() {
           selectedParcoursIds={data.getParcoursIdsForPoste(selectedPoste.id)}
           abrisTemporaires={data.abrisTemporaires}
           selectedAbriIds={data.getAbriIdsForPoste(selectedPoste.id)}
+          pointsExtraction={data.pointsExtraction}
+          selectedExtractionIds={data.getExtractionIdsForPoste(selectedPoste.id)}
           affectations={data.affectations}
           benevoles={data.benevoles}
           isAdmin={false}

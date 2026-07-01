@@ -5,6 +5,7 @@ import CopyCoords from './CopyCoords';
 import {
   AbriTemporaire,
   Affectation,
+  PointExtraction,
   BENEVOLE_FORMATIONS,
   Benevole,
   Parcours,
@@ -26,6 +27,8 @@ interface PosteFormProps {
   selectedParcoursIds: string[];
   abrisTemporaires: AbriTemporaire[];
   selectedAbriIds: string[];
+  pointsExtraction: PointExtraction[];
+  selectedExtractionIds: string[];
   affectations: Affectation[];
   benevoles: Benevole[];
   isAdmin: boolean;
@@ -34,6 +37,7 @@ interface PosteFormProps {
   onDelete?: () => Promise<void>;
   onSetParcoursIds?: (ids: string[]) => Promise<void>;
   onSetAbriIds?: (ids: string[]) => Promise<void>;
+  onSetExtractionIds?: (ids: string[]) => Promise<void>;
   onSetStatut?: (statut: PosteStatut) => Promise<void>;
   onCreateBenevole?: (data: Partial<Benevole>) => Promise<Benevole>;
   onCreateAffectation?: (data: Partial<Affectation>) => Promise<Affectation>;
@@ -46,6 +50,8 @@ export default function PosteForm({
   selectedParcoursIds,
   abrisTemporaires,
   selectedAbriIds,
+  pointsExtraction,
+  selectedExtractionIds,
   affectations,
   benevoles,
   isAdmin,
@@ -54,6 +60,7 @@ export default function PosteForm({
   onDelete,
   onSetParcoursIds,
   onSetAbriIds,
+  onSetExtractionIds,
   onSetStatut,
   onCreateBenevole,
   onCreateAffectation,
@@ -325,12 +332,13 @@ export default function PosteForm({
 
           <div>
             <span className="text-gray-500 block mb-1">Plan d'évacuation :</span>
+
             <span className="text-gray-400 text-xs block mb-1">🏠 Abri temporaire</span>
             {isAdmin ? (
               abrisTemporaires.length === 0 ? (
                 <span className="text-gray-400 text-xs">Aucun abri temporaire créé.</span>
               ) : (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 mb-2">
                   {abrisTemporaires.map((a) => (
                     <label key={a.id} className="inline-flex items-center gap-1">
                       <input
@@ -349,10 +357,44 @@ export default function PosteForm({
                 </div>
               )
             ) : selectedAbriIds.length > 0 ? (
-              <ul className="list-disc list-inside space-y-0.5">
+              <ul className="list-disc list-inside space-y-0.5 mb-2">
                 {selectedAbriIds.map((id) => {
                   const a = abrisTemporaires.find((x) => x.id === id);
                   return a ? <li key={id}>N°{a.numero} — {a.nom}</li> : null;
+                })}
+              </ul>
+            ) : (
+              <span className="text-gray-400 block mb-2">—</span>
+            )}
+
+            <span className="text-gray-400 text-xs block mb-1">🚑 Point d'extraction</span>
+            {isAdmin ? (
+              pointsExtraction.length === 0 ? (
+                <span className="text-gray-400 text-xs">Aucun point d'extraction créé.</span>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {pointsExtraction.map((e) => (
+                    <label key={e.id} className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedExtractionIds.includes(e.id)}
+                        onChange={() => {
+                          const next = selectedExtractionIds.includes(e.id)
+                            ? selectedExtractionIds.filter((id) => id !== e.id)
+                            : [...selectedExtractionIds, e.id];
+                          onSetExtractionIds?.(next);
+                        }}
+                      />
+                      {e.lettre} — {e.libelle}
+                    </label>
+                  ))}
+                </div>
+              )
+            ) : selectedExtractionIds.length > 0 ? (
+              <ul className="list-disc list-inside space-y-0.5">
+                {selectedExtractionIds.map((id) => {
+                  const e = pointsExtraction.find((x) => x.id === id);
+                  return e ? <li key={id}>{e.lettre} — {e.libelle}</li> : null;
                 })}
               </ul>
             ) : (

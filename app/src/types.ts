@@ -71,6 +71,11 @@ export interface PosteAbri {
   abri_id: string;
 }
 
+export interface PosteExtraction {
+  poste_id: string;
+  extraction_id: string;
+}
+
 export type BenevoleFormation =
   | 'medecin'
   | 'infirmier'
