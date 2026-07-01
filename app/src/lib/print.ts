@@ -9,7 +9,6 @@ import {
   MainCouranteJournalEntry,
   POSTE_MATERIELS,
   POSTE_MISSIONS,
-  POSTE_STATUTS,
   POSTE_TYPES,
   PointExtraction,
   Poste,
@@ -30,11 +29,6 @@ export function printFeuilleDeRoute(
 ) {
   const win = window.open('', '_blank', 'width=700,height=900');
   if (!win) return;
-
-  const statutInfo = POSTE_STATUTS.find((s) => s.code === poste.statut)!;
-  const statutUpdatedAt = poste.statut_updated_at
-    ? new Date(poste.statut_updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-    : null;
 
   const types = poste.types
     .map((t) => POSTE_TYPES.find((pt) => pt.code === t))
@@ -85,8 +79,6 @@ export function printFeuilleDeRoute(
           body { font-family: sans-serif; padding: 28px; color: #111; font-size: 13px; }
           h1 { font-size: 22px; margin: 0 0 6px; }
           h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #555; margin: 18px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
-          .statut { display: inline-block; padding: 3px 10px; border-radius: 4px; color: #fff; font-size: 13px; font-weight: 600; }
-          .statut-updated { font-size: 11px; color: #888; margin-left: 8px; }
           .row { display: flex; gap: 8px; padding: 3px 0; }
           .row .lbl { width: 180px; flex-shrink: 0; color: #555; }
           ul { margin: 0; padding-left: 18px; }
@@ -100,8 +92,6 @@ export function printFeuilleDeRoute(
       </head>
       <body>
         <h1>N°${poste.numero} — ${poste.nom}</h1>
-        <span class="statut" style="background-color:${statutInfo.couleur}">${statutInfo.label}</span>
-        ${statutUpdatedAt ? `<span class="statut-updated">maj ${statutUpdatedAt}</span>` : ''}
 
         <h2>Informations</h2>
         <div class="row"><span class="lbl">Coordonnées GPS</span><span>${poste.lat.toFixed(5)}, ${poste.lng.toFixed(5)}</span></div>
