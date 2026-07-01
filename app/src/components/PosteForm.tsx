@@ -489,7 +489,9 @@ export default function PosteForm({
                   poste,
                   parcours.filter((p) => selectedParcoursIds.includes(p.id)).map((p) => p.nom),
                   posteAffectations,
-                  benevoles
+                  benevoles,
+                  abrisTemporaires.filter((a) => selectedAbriIds.includes(a.id)),
+                  pointsExtraction.filter((e) => selectedExtractionIds.includes(e.id)),
                 )
               }
             >

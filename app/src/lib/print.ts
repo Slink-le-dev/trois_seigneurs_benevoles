@@ -1,11 +1,17 @@
 import { formatCreneau } from './format';
 import {
+  AbriTemporaire,
   Affectation,
+  BENEVOLE_FORMATIONS,
   Benevole,
   MainCouranteCommentaire,
   MainCouranteEvent,
   MainCouranteJournalEntry,
+  POSTE_MATERIELS,
+  POSTE_MISSIONS,
+  POSTE_STATUTS,
   POSTE_TYPES,
+  PointExtraction,
   Poste,
 } from '../types';
 import { JOURNAL_FIELD_LABELS, formatAppelant, formatJournalValue, formatPosteName } from './mainCourante';
@@ -14,9 +20,21 @@ function formatDatetime(value: string): string {
   return new Date(value).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affectations: Affectation[], benevoles: Benevole[]) {
-  const win = window.open('', '_blank', 'width=600,height=800');
+export function printFeuilleDeRoute(
+  poste: Poste,
+  parcoursNoms: string[],
+  affectations: Affectation[],
+  benevoles: Benevole[],
+  abrisEvacuation: AbriTemporaire[],
+  extractionsEvacuation: PointExtraction[],
+) {
+  const win = window.open('', '_blank', 'width=700,height=900');
   if (!win) return;
+
+  const statutInfo = POSTE_STATUTS.find((s) => s.code === poste.statut)!;
+  const statutUpdatedAt = poste.statut_updated_at
+    ? new Date(poste.statut_updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    : null;
 
   const types = poste.types
     .map((t) => POSTE_TYPES.find((pt) => pt.code === t))
@@ -24,10 +42,36 @@ export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affect
     .map((pt) => `${pt!.emoji} ${pt!.label}`)
     .join(', ');
 
+  const materielLabels = (poste.materiel ?? [])
+    .map((c) => POSTE_MATERIELS.find((m) => m.code === c)?.label)
+    .filter(Boolean)
+    .join(', ');
+
+  const missionsItems = (poste.missions ?? [])
+    .map((c) => POSTE_MISSIONS.find((m) => m.code === c)?.label)
+    .filter(Boolean)
+    .map((l) => `<li>${l}</li>`)
+    .join('');
+
+  const abrisItems = abrisEvacuation.length
+    ? abrisEvacuation.map((a) => `<li>N°${a.numero} — ${a.nom}</li>`).join('')
+    : '<li style="color:#999">—</li>';
+
+  const extractionsItems = extractionsEvacuation.length
+    ? extractionsEvacuation.map((e) => `<li>${e.lettre} — ${e.libelle}</li>`).join('')
+    : '<li style="color:#999">—</li>';
+
   const benevolesRows = affectations
     .map((a) => {
       const b = benevoles.find((x) => x.id === a.benevole_id);
-      return `<tr><td>${b?.nom ?? '?'}</td><td>${b?.telephone ?? ''}</td><td>${formatCreneau(a.heure_debut, a.heure_fin) ?? '—'}</td></tr>`;
+      const formation = BENEVOLE_FORMATIONS.find((f) => f.code === b?.formation)?.label ?? '—';
+      const creneau = formatCreneau(a.heure_debut, a.heure_fin) ?? '—';
+      return `<tr>
+        <td>${b?.nom ?? '?'}</td>
+        <td>${b?.telephone ?? '—'}</td>
+        <td>${formation}</td>
+        <td>${creneau}</td>
+      </tr>`;
     })
     .join('');
 
@@ -37,22 +81,52 @@ export function printFeuilleDeRoute(poste: Poste, parcoursNoms: string[], affect
         <meta charset="utf-8" />
         <title>Feuille de route — N°${poste.numero} ${poste.nom}</title>
         <style>
-          body { font-family: sans-serif; padding: 24px; color: #111; }
-          h1 { font-size: 20px; margin-bottom: 4px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-          td, th { border: 1px solid #ccc; padding: 6px 8px; text-align: left; font-size: 14px; }
-          .meta { font-size: 14px; margin: 4px 0; }
+          * { box-sizing: border-box; }
+          body { font-family: sans-serif; padding: 28px; color: #111; font-size: 13px; }
+          h1 { font-size: 22px; margin: 0 0 6px; }
+          h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #555; margin: 18px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+          .statut { display: inline-block; padding: 3px 10px; border-radius: 4px; color: #fff; font-size: 13px; font-weight: 600; }
+          .statut-updated { font-size: 11px; color: #888; margin-left: 8px; }
+          .row { display: flex; gap: 8px; padding: 3px 0; }
+          .row .lbl { width: 180px; flex-shrink: 0; color: #555; }
+          ul { margin: 0; padding-left: 18px; }
+          ul li { margin: 2px 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+          th { background: #f3f4f6; font-size: 12px; text-align: left; padding: 5px 8px; border: 1px solid #ddd; }
+          td { padding: 5px 8px; border: 1px solid #ddd; font-size: 12px; vertical-align: top; }
+          .evacuation-sub { font-size: 12px; font-weight: 600; margin: 8px 0 3px; color: #333; }
+          @media print { body { padding: 16px; } }
         </style>
       </head>
       <body>
         <h1>N°${poste.numero} — ${poste.nom}</h1>
-        <p class="meta"><strong>Parcours :</strong> ${parcoursNoms.join(', ') || '—'}</p>
-        <p class="meta"><strong>Type(s) :</strong> ${types || '—'}</p>
-        <p class="meta"><strong>Coordonnées GPS :</strong> ${poste.lat.toFixed(5)}, ${poste.lng.toFixed(5)}</p>
+        <span class="statut" style="background-color:${statutInfo.couleur}">${statutInfo.label}</span>
+        ${statutUpdatedAt ? `<span class="statut-updated">maj ${statutUpdatedAt}</span>` : ''}
+
+        <h2>Informations</h2>
+        <div class="row"><span class="lbl">Coordonnées GPS</span><span>${poste.lat.toFixed(5)}, ${poste.lng.toFixed(5)}</span></div>
+        <div class="row"><span class="lbl">Parcours</span><span>${parcoursNoms.join(', ') || '—'}</span></div>
+        <div class="row"><span class="lbl">Type(s)</span><span>${types || '—'}</span></div>
+        ${poste.point_passage_intermediaire ? '<div class="row"><span class="lbl">Point de passage interm.</span><span>📍 Oui</span></div>' : ''}
+
+        <h2>Matériel disponible</h2>
+        <p style="margin:2px 0">${materielLabels || '—'}</p>
+
+        <h2>Missions</h2>
+        ${missionsItems ? `<ul>${missionsItems}</ul>` : '<p style="margin:2px 0;color:#999">—</p>'}
+
+        <h2>Plan d'évacuation</h2>
+        <p class="evacuation-sub">🏠 Abri temporaire</p>
+        <ul>${abrisItems}</ul>
+        <p class="evacuation-sub">🚑 Point d'extraction</p>
+        <ul>${extractionsItems}</ul>
+
+        <h2>Bénévoles affectés</h2>
         <table>
-          <thead><tr><th>Bénévole</th><th>Téléphone</th><th>Créneau</th></tr></thead>
-          <tbody>${benevolesRows || '<tr><td colspan="3">Aucun bénévole affecté</td></tr>'}</tbody>
+          <thead><tr><th>Nom</th><th>Téléphone</th><th>Formation</th><th>Créneau</th></tr></thead>
+          <tbody>${benevolesRows || '<tr><td colspan="4" style="color:#999">Aucun bénévole affecté</td></tr>'}</tbody>
         </table>
+
         <script>window.onload = () => window.print();</script>
       </body>
     </html>
