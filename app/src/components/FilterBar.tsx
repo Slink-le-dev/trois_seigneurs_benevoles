@@ -260,6 +260,14 @@ export default function FilterBar({
                     />
                     🏠 Abris temporaires
                   </label>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={draftOnlyPointPassage}
+                      onChange={(e) => setDraftOnlyPointPassage(e.target.checked)}
+                    />
+                    📍 Point de passage intermédiaire
+                  </label>
                 </div>
               </div>
 
@@ -306,20 +314,6 @@ export default function FilterBar({
                       {m.label}
                     </label>
                   ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Caractéristiques</h3>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={draftOnlyPointPassage}
-                      onChange={(e) => setDraftOnlyPointPassage(e.target.checked)}
-                    />
-                    Point de passage intermédiaire
-                  </label>
                 </div>
               </div>
 
