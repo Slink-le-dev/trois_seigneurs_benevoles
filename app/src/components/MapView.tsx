@@ -19,7 +19,7 @@ import {
 
 interface MapViewProps {
   parcours: Parcours[];
-  parcoursVisibility: Record<string, boolean>;
+  parcoursVisibility?: Record<string, boolean>;
   postes: Poste[];
   benevoles: Benevole[];
   getParcoursIdsForPoste: (posteId: string) => string[];
@@ -96,7 +96,7 @@ function FitToData({ parcours, postes }: { parcours: Parcours[]; postes: Poste[]
 
 export default function MapView({
   parcours,
-  parcoursVisibility,
+  parcoursVisibility = {},
   postes,
   benevoles,
   getParcoursIdsForPoste,
@@ -178,7 +178,7 @@ export default function MapView({
       {placingModeAbri && <MapClickHandler onClick={onMapClickCreateAbri} />}
 
       {parcours
-        .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false)
+        .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false && (!filterParcoursIds?.length || filterParcoursIds.includes(p.id)))
         .map((p) => (
           <GeoJSON
             key={`${p.id}-${p.couleur}`}

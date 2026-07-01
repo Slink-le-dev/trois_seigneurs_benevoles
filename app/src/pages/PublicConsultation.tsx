@@ -10,7 +10,6 @@ import { PosteMaterielCode, PosteStatut, PosteTypeCode } from '../types';
 
 export default function PublicConsultation() {
   const data = useAppData(false);
-  const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [filterParcoursIds, setFilterParcoursIds] = useState<string[]>([]);
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
@@ -54,8 +53,6 @@ export default function PublicConsultation() {
         setFilterStatuts={setFilterStatuts}
         filterMateriel={filterMateriel}
         setFilterMateriel={setFilterMateriel}
-        parcoursVisibility={parcoursVisibility}
-        setParcoursVisibility={setParcoursVisibility}
         showExtractions={showExtractions}
         setShowExtractions={setShowExtractions}
         showAbris={showAbris}
@@ -71,7 +68,6 @@ export default function PublicConsultation() {
       <div className="flex-1 relative">
         <MapView
           parcours={data.parcours}
-          parcoursVisibility={parcoursVisibility}
           postes={data.postes}
           benevoles={data.benevoles}
           getParcoursIdsForPoste={data.getParcoursIdsForPoste}

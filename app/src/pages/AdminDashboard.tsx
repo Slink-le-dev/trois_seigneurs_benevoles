@@ -209,8 +209,6 @@ function AdminContent({
               setFilterStatuts={setFilterStatuts}
               filterMateriel={filterMateriel}
               setFilterMateriel={setFilterMateriel}
-              parcoursVisibility={parcoursVisibility}
-              setParcoursVisibility={setParcoursVisibility}
               showExtractions={showExtractions}
               setShowExtractions={setShowExtractions}
               showAbris={showAbris}

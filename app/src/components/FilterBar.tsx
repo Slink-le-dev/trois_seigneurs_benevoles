@@ -11,8 +11,6 @@ interface FilterBarProps {
   setFilterStatuts: (statuts: PosteStatut[]) => void;
   filterMateriel: PosteMaterielCode[];
   setFilterMateriel: (materiel: PosteMaterielCode[]) => void;
-  parcoursVisibility: Record<string, boolean>;
-  setParcoursVisibility: (v: Record<string, boolean>) => void;
   showExtractions: boolean;
   setShowExtractions: (show: boolean) => void;
   showAbris: boolean;
@@ -59,8 +57,6 @@ export default function FilterBar({
   setFilterStatuts,
   filterMateriel,
   setFilterMateriel,
-  parcoursVisibility,
-  setParcoursVisibility,
   showExtractions,
   setShowExtractions,
   showAbris,
@@ -77,7 +73,6 @@ export default function FilterBar({
   const [draftTypes, setDraftTypes] = useState(filterTypes);
   const [draftStatuts, setDraftStatuts] = useState(filterStatuts);
   const [draftMateriel, setDraftMateriel] = useState(filterMateriel);
-  const [draftVisibility, setDraftVisibility] = useState(parcoursVisibility);
   const [draftShowExtractions, setDraftShowExtractions] = useState(showExtractions);
   const [draftShowAbris, setDraftShowAbris] = useState(showAbris);
   const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
@@ -91,15 +86,13 @@ export default function FilterBar({
     showExtractions ||
     showAbris ||
     onlyFormation ||
-    onlyPointPassage ||
-    parcours.some((p) => parcoursVisibility[p.id] === false);
+    onlyPointPassage;
 
   function openPopup() {
     setDraftParcoursIds(filterParcoursIds);
     setDraftTypes(filterTypes);
     setDraftStatuts(filterStatuts);
     setDraftMateriel(filterMateriel);
-    setDraftVisibility(parcoursVisibility);
     setDraftShowExtractions(showExtractions);
     setDraftShowAbris(showAbris);
     setDraftOnlyFormation(onlyFormation);
@@ -112,7 +105,6 @@ export default function FilterBar({
     setFilterTypes(draftTypes);
     setFilterStatuts(draftStatuts);
     setFilterMateriel(draftMateriel);
-    setParcoursVisibility(draftVisibility);
     setShowExtractions(draftShowExtractions);
     setShowAbris(draftShowAbris);
     setOnlyFormation(draftOnlyFormation);
@@ -125,7 +117,6 @@ export default function FilterBar({
     setFilterTypes([]);
     setFilterStatuts([]);
     setFilterMateriel([]);
-    setParcoursVisibility({});
     setShowExtractions(false);
     setShowAbris(false);
     setOnlyFormation(false);
@@ -196,24 +187,6 @@ export default function FilterBar({
                         type="checkbox"
                         checked={draftParcoursIds.includes(p.id)}
                         onChange={() => setDraftParcoursIds(toggle(draftParcoursIds, p.id))}
-                      />
-                      <span style={{ color: p.couleur }}>●</span> {p.nom}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Traces GPX</h3>
-                <div className="flex flex-wrap gap-3">
-                  {parcours.map((p) => (
-                    <label key={p.id} className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        checked={draftVisibility[p.id] !== false}
-                        onChange={() =>
-                          setDraftVisibility({ ...draftVisibility, [p.id]: draftVisibility[p.id] === false })
-                        }
                       />
                       <span style={{ color: p.couleur }}>●</span> {p.nom}
                     </label>
