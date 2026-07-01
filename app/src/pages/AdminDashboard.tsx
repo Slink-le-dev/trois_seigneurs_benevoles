@@ -51,6 +51,7 @@ function AdminContent({
   const [showExtractions, setShowExtractions] = useState(false);
   const [onlyFormation, setOnlyFormation] = useState(false);
   const [onlyPointPassage, setOnlyPointPassage] = useState(false);
+  const [showKmMarkers, setShowKmMarkers] = useState(true);
   const [selectedExtractionId, setSelectedExtractionId] = useState<string | null>(null);
   const [placingModeExtraction, setPlacingModeExtraction] = useState(false);
   const [manualLatExtraction, setManualLatExtraction] = useState('');
@@ -219,6 +220,8 @@ function AdminContent({
               setOnlyFormation={setOnlyFormation}
               onlyPointPassage={onlyPointPassage}
               setOnlyPointPassage={setOnlyPointPassage}
+              showKmMarkers={showKmMarkers}
+              setShowKmMarkers={setShowKmMarkers}
             />
             <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
               <span>
@@ -343,6 +346,7 @@ function AdminContent({
                 searchBenevole={searchBenevole}
                 onlyFormation={onlyFormation}
                 onlyPointPassage={onlyPointPassage}
+                showKmMarkers={showKmMarkers}
                 pointsExtraction={data.pointsExtraction}
                 showExtractions={showExtractions}
                 selectedExtractionId={selectedExtractionId}

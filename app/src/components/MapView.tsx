@@ -52,6 +52,7 @@ interface MapViewProps {
   placingModeAbri?: boolean;
   onMapClickCreateAbri?: (lat: number, lng: number) => void;
   onMoveAbri?: (id: string, lat: number, lng: number) => void;
+  showKmMarkers?: boolean;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -150,6 +151,7 @@ export default function MapView({
   placingModeAbri,
   onMapClickCreateAbri,
   onMoveAbri,
+  showKmMarkers = true,
 }: MapViewProps) {
   const query = searchBenevole.trim().toLowerCase();
   const visiblePostes = postes.filter((p) => {
@@ -209,7 +211,7 @@ export default function MapView({
           />
         ))}
 
-      {parcours
+      {showKmMarkers && parcours
         .filter((p) => p.gpx_geojson && parcoursVisibility[p.id] !== false && (!filterParcoursIds?.length || filterParcoursIds.includes(p.id)))
         .flatMap((p) =>
           getKmMarkers(withoutPois(p.gpx_geojson!)).map(({ position, km }) => (

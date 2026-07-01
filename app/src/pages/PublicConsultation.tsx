@@ -22,6 +22,7 @@ export default function PublicConsultation() {
   const [selectedAbriId, setSelectedAbriId] = useState<string | null>(null);
   const [onlyFormation, setOnlyFormation] = useState(false);
   const [onlyPointPassage, setOnlyPointPassage] = useState(false);
+  const [showKmMarkers, setShowKmMarkers] = useState(true);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
@@ -63,6 +64,8 @@ export default function PublicConsultation() {
         setOnlyFormation={setOnlyFormation}
         onlyPointPassage={onlyPointPassage}
         setOnlyPointPassage={setOnlyPointPassage}
+        showKmMarkers={showKmMarkers}
+        setShowKmMarkers={setShowKmMarkers}
       />
 
       <div className="flex-1 relative">
@@ -82,6 +85,7 @@ export default function PublicConsultation() {
           searchBenevole={searchBenevole}
           onlyFormation={onlyFormation}
           onlyPointPassage={onlyPointPassage}
+          showKmMarkers={showKmMarkers}
           pointsExtraction={data.pointsExtraction}
           showExtractions={showExtractions}
           selectedExtractionId={selectedExtractionId}

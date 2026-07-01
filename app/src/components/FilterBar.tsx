@@ -21,6 +21,8 @@ interface FilterBarProps {
   setOnlyFormation: (v: boolean) => void;
   onlyPointPassage: boolean;
   setOnlyPointPassage: (v: boolean) => void;
+  showKmMarkers: boolean;
+  setShowKmMarkers: (v: boolean) => void;
 }
 
 const ACCENT = '#005F61';
@@ -67,6 +69,8 @@ export default function FilterBar({
   setOnlyFormation,
   onlyPointPassage,
   setOnlyPointPassage,
+  showKmMarkers,
+  setShowKmMarkers,
 }: FilterBarProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
@@ -77,6 +81,7 @@ export default function FilterBar({
   const [draftShowAbris, setDraftShowAbris] = useState(showAbris);
   const [draftOnlyFormation, setDraftOnlyFormation] = useState(onlyFormation);
   const [draftOnlyPointPassage, setDraftOnlyPointPassage] = useState(onlyPointPassage);
+  const [draftShowKmMarkers, setDraftShowKmMarkers] = useState(showKmMarkers);
 
   const hasActiveFilters =
     filterParcoursIds.length > 0 ||
@@ -97,6 +102,7 @@ export default function FilterBar({
     setDraftShowAbris(showAbris);
     setDraftOnlyFormation(onlyFormation);
     setDraftOnlyPointPassage(onlyPointPassage);
+    setDraftShowKmMarkers(showKmMarkers);
     setShowPopup(true);
   }
 
@@ -109,6 +115,7 @@ export default function FilterBar({
     setShowAbris(draftShowAbris);
     setOnlyFormation(draftOnlyFormation);
     setOnlyPointPassage(draftOnlyPointPassage);
+    setShowKmMarkers(draftShowKmMarkers);
     setShowPopup(false);
   }
 
@@ -121,6 +128,7 @@ export default function FilterBar({
     setShowAbris(false);
     setOnlyFormation(false);
     setOnlyPointPassage(false);
+    setShowKmMarkers(true);
     setShowPopup(false);
   }
 
@@ -203,6 +211,14 @@ export default function FilterBar({
                       <span style={{ color: p.couleur }}>●</span> {p.nom}
                     </label>
                   ))}
+                  <label className="flex items-center gap-1 w-full mt-1">
+                    <input
+                      type="checkbox"
+                      checked={draftShowKmMarkers}
+                      onChange={(e) => setDraftShowKmMarkers(e.target.checked)}
+                    />
+                    Afficher les bornes kilométriques
+                  </label>
                 </div>
               </div>
 
