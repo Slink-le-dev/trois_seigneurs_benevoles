@@ -495,7 +495,7 @@ export default function PosteForm({
                 )
               }
             >
-              Imprimer la feuille de route
+              Télécharger la fiche de mission
             </button>
           </div>
           {isAdmin && (
