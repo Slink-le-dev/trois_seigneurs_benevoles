@@ -1,4 +1,5 @@
 import { AbriTemporaire } from '../types';
+import CopyCoords from './CopyCoords';
 import NavButtons from './NavButtons';
 
 interface AbriTemporaireFormProps {
@@ -65,7 +66,7 @@ export default function AbriTemporaireForm({ abri, isAdmin, onClose, onUpdate, o
         <div className="text-sm mb-4">
           <span className="text-gray-500">Coordonnées GPS : </span>
           {isAdmin ? (
-            <span className="inline-flex gap-1">
+            <span className="inline-flex gap-1 items-center">
               <input
                 type="number"
                 step="0.00001"
@@ -80,10 +81,12 @@ export default function AbriTemporaireForm({ abri, isAdmin, onClose, onUpdate, o
                 defaultValue={abri.lng}
                 onBlur={(e) => onUpdate?.({ lng: Number(e.target.value) })}
               />
+              <CopyCoords lat={abri.lat} lng={abri.lng} />
             </span>
           ) : (
             <span>
               {abri.lat.toFixed(5)}, {abri.lng.toFixed(5)}
+              <CopyCoords lat={abri.lat} lng={abri.lng} />
             </span>
           )}
         </div>

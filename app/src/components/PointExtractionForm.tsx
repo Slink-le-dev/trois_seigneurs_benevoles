@@ -1,4 +1,5 @@
 import { PointExtraction } from '../types';
+import CopyCoords from './CopyCoords';
 import NavButtons from './NavButtons';
 
 interface PointExtractionFormProps {
@@ -43,7 +44,7 @@ export default function PointExtractionForm({ point, isAdmin, onClose, onUpdate,
         <div className="text-sm mb-4">
           <span className="text-gray-500">Coordonnées GPS : </span>
           {isAdmin ? (
-            <span className="inline-flex gap-1">
+            <span className="inline-flex gap-1 items-center">
               <input
                 type="number"
                 step="0.00001"
@@ -58,10 +59,12 @@ export default function PointExtractionForm({ point, isAdmin, onClose, onUpdate,
                 defaultValue={point.lng}
                 onBlur={(e) => onUpdate?.({ lng: Number(e.target.value) })}
               />
+              <CopyCoords lat={point.lat} lng={point.lng} />
             </span>
           ) : (
             <span>
               {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
+              <CopyCoords lat={point.lat} lng={point.lng} />
             </span>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
+import CopyCoords from './CopyCoords';
 import {
   Affectation,
   BENEVOLE_FORMATIONS,
@@ -152,7 +153,7 @@ export default function PosteForm({
           <div>
             <span className="text-gray-500">Coordonnées GPS : </span>
             {isAdmin ? (
-              <span className="inline-flex gap-1">
+              <span className="inline-flex gap-1 items-center">
                 <input
                   type="number"
                   step="0.00001"
@@ -167,10 +168,12 @@ export default function PosteForm({
                   defaultValue={poste.lng}
                   onBlur={(e) => onUpdate?.({ lng: Number(e.target.value) })}
                 />
+                <CopyCoords lat={poste.lat} lng={poste.lng} />
               </span>
             ) : (
               <span>
                 {poste.lat.toFixed(5)}, {poste.lng.toFixed(5)}
+                <CopyCoords lat={poste.lat} lng={poste.lng} />
               </span>
             )}
           </div>
