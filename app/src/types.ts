@@ -1,4 +1,13 @@
 export type PosteTypeCode = 'signaleur' | 'medical' | 'eau' | 'nourriture';
+export type PosteMissionCode = 'aiguillage' | 'sante' | 'ravitaillement' | 'circulation' | 'pointage_intermediaire';
+
+export const POSTE_MISSIONS: { code: PosteMissionCode; label: string }[] = [
+  { code: 'aiguillage', label: 'Aiguiller les coureurs' },
+  { code: 'sante', label: 'S\'assurer de la bonne santé des coureurs' },
+  { code: 'ravitaillement', label: 'Gérer le ravitaillement' },
+  { code: 'circulation', label: 'Gérer la circulation entre coureurs et véhicules' },
+  { code: 'pointage_intermediaire', label: 'Gérer le passage des coureurs sur le pointage intermédiaire' },
+];
 export type PosteStatut = 'desactive' | 'non_active' | 'en_place' | 'libere' | 'alerte' | 'ferme';
 export type PosteMaterielCode = 'radio' | 'defibrillateur' | 'lot_a' | 'lot_c' | 'trousse_soin';
 
@@ -44,6 +53,7 @@ export interface Poste {
   lng: number;
   types: PosteTypeCode[];
   materiel: PosteMaterielCode[];
+  missions: PosteMissionCode[];
   point_passage_intermediaire: boolean;
   notes: string | null;
   statut: PosteStatut;

@@ -7,10 +7,12 @@ import {
   Benevole,
   Parcours,
   POSTE_MATERIELS,
+  POSTE_MISSIONS,
   POSTE_STATUTS,
   POSTE_TYPES,
   Poste,
   PosteMaterielCode,
+  PosteMissionCode,
   PosteStatut,
   PosteTypeCode,
 } from '../types';
@@ -58,6 +60,7 @@ export default function PosteForm({
 
   const posteAffectations = affectations.filter((a) => a.poste_id === poste.id);
   const materiel = poste.materiel ?? [];
+  const missions = poste.missions ?? [];
   const statutInfo = POSTE_STATUTS.find((s) => s.code === poste.statut)!;
 
   async function handleAddBenevole() {
@@ -256,6 +259,38 @@ export default function PosteForm({
                   .map((m) => m!.label)
                   .join(', ') || '—'}
               </span>
+            )}
+          </div>
+
+          <div>
+            <span className="text-gray-500 block mb-1">Missions :</span>
+            {isAdmin ? (
+              <div className="flex flex-col gap-1">
+                {POSTE_MISSIONS.map((m) => (
+                  <label key={m.code} className="inline-flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={missions.includes(m.code)}
+                      onChange={() => {
+                        const next: PosteMissionCode[] = missions.includes(m.code)
+                          ? missions.filter((c) => c !== m.code)
+                          : [...missions, m.code];
+                        onUpdate?.({ missions: next });
+                      }}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            ) : missions.length > 0 ? (
+              <ul className="list-disc list-inside space-y-0.5">
+                {missions.map((c) => {
+                  const m = POSTE_MISSIONS.find((x) => x.code === c);
+                  return m ? <li key={c}>{m.label}</li> : null;
+                })}
+              </ul>
+            ) : (
+              <span className="text-gray-400">—</span>
             )}
           </div>
 
