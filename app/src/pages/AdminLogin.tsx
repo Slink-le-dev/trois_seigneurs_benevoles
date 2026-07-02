@@ -40,7 +40,7 @@ export default function AdminLogin() {
         <button type="submit" disabled={busy} className="bg-blue-600 text-white w-full py-2 rounded">
           {busy ? 'Connexion…' : 'Se connecter'}
         </button>
-        <a href="/" className="block text-center text-sm text-gray-500 underline">
+        <a href="/benevoles" className="block text-center text-sm text-gray-500 underline">
           Retour à la vue bénévole
         </a>
       </form>
