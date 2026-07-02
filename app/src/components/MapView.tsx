@@ -247,7 +247,7 @@ export default function MapView({
           <Marker
             key={poste.id}
             position={[poste.lat, poste.lng]}
-            icon={posteIcon(poste.numero, couleurPourPoste(poste.id), poste.statut, nonPourvu)}
+            icon={posteIcon(poste.numero, couleurPourPoste(poste.id), poste.statut, nonPourvu, hidePersonnelInfo)}
             draggable={isAdmin}
             eventHandlers={{
               click: () => onSelectPoste(poste.id),
