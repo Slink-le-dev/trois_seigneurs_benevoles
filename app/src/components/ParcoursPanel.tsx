@@ -10,8 +10,18 @@ interface ParcoursPanelProps {
   onRemoveGpx: (id: string) => Promise<void>;
 }
 
+const PRESET_COLORS = [
+  '#2563eb', '#0ea5e9', '#0891b2', '#1d4ed8',
+  '#16a34a', '#15803d', '#84cc16', '#65a30d',
+  '#dc2626', '#b91c1c', '#f97316', '#ea580c',
+  '#eab308', '#d97706', '#7c3aed', '#9333ea',
+  '#db2777', '#ec4899', '#374151', '#6b7280',
+];
+
 export default function ParcoursPanel({ parcours, visibility, onToggleVisibility, onUpdate, onRemoveGpx }: ParcoursPanelProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
+  const [hexInput, setHexInput] = useState('');
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function handleFile(p: Parcours, file: File) {
@@ -23,6 +33,23 @@ export default function ParcoursPanel({ parcours, visibility, onToggleVisibility
       alert(err.message ?? 'Erreur lors de la lecture du fichier GPX.');
     } finally {
       setBusyId(null);
+    }
+  }
+
+  function openPicker(p: Parcours) {
+    setPickerOpenId(p.id);
+    setHexInput(p.couleur);
+  }
+
+  function selectColor(p: Parcours, color: string) {
+    onUpdate(p.id, { couleur: color });
+    setPickerOpenId(null);
+  }
+
+  function handleHexChange(p: Parcours, value: string) {
+    setHexInput(value);
+    if (/^#[0-9a-fA-F]{6}$/.test(value)) {
+      onUpdate(p.id, { couleur: value });
     }
   }
 
@@ -42,12 +69,51 @@ export default function ParcoursPanel({ parcours, visibility, onToggleVisibility
         >
           <div className="flex items-center gap-2">
             <input type="checkbox" checked={visibility[p.id] !== false} onChange={() => onToggleVisibility(p.id)} />
-            <input
-              type="color"
-              value={p.couleur}
-              onChange={(e) => onUpdate(p.id, { couleur: e.target.value })}
-              className="w-7 h-7 border-0 p-0"
-            />
+
+            {/* Color swatch + picker */}
+            <div className="relative">
+              <button
+                type="button"
+                title="Changer la couleur"
+                className="w-7 h-7 rounded border border-gray-300 flex-shrink-0"
+                style={{ backgroundColor: p.couleur }}
+                onClick={() => pickerOpenId === p.id ? setPickerOpenId(null) : openPicker(p)}
+              />
+              {pickerOpenId === p.id && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setPickerOpenId(null)} />
+                  <div className="absolute left-0 top-9 z-20 bg-white border rounded-lg shadow-lg p-3 w-52">
+                    <div className="grid grid-cols-5 gap-1.5 mb-3">
+                      {PRESET_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          title={color}
+                          className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                          style={{
+                            backgroundColor: color,
+                            borderColor: p.couleur === color ? '#111' : 'transparent',
+                          }}
+                          onClick={() => selectColor(p, color)}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded border flex-shrink-0" style={{ backgroundColor: hexInput }} />
+                      <input
+                        type="text"
+                        value={hexInput}
+                        onChange={(e) => handleHexChange(p, e.target.value)}
+                        placeholder="#000000"
+                        maxLength={7}
+                        className="flex-1 border rounded px-1.5 py-0.5 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <input
               className="flex-1 border rounded px-2 py-1 text-sm"
               value={p.nom}
