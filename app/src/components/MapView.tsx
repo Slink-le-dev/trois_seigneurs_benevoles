@@ -55,6 +55,7 @@ interface MapViewProps {
   onMapClickCreateAbri?: (lat: number, lng: number) => void;
   onMoveAbri?: (id: string, lat: number, lng: number) => void;
   showKmMarkers?: boolean;
+  hidePersonnelInfo?: boolean;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -155,6 +156,7 @@ export default function MapView({
   onMapClickCreateAbri,
   onMoveAbri,
   showKmMarkers = true,
+  hidePersonnelInfo = false,
 }: MapViewProps) {
   const query = searchBenevole.trim().toLowerCase();
   const visiblePostes = postes.filter((p) => {
@@ -263,21 +265,25 @@ export default function MapView({
                 </div>
                 <div>Parcours : {parcoursNoms.join(', ') || '—'}</div>
                 <div>Type(s) : {typesLabels.join(', ') || '—'}</div>
-                <div>
-                  Statut : <span style={{ color: statutInfo.couleur }}>●</span> {statutInfo.label}
-                </div>
-                <div>
-                  Bénévoles :{' '}
-                  {aff.length === 0
-                    ? 'aucun'
-                    : aff
-                        .map((a) => {
-                          const b = benevoles.find((x) => x.id === a.benevole_id);
-                          const creneau = formatCreneau(a.heure_debut, a.heure_fin);
-                          return `${b?.nom ?? '?'}${creneau ? ` (${creneau})` : ''}`;
-                        })
-                        .join(', ')}
-                </div>
+                {!hidePersonnelInfo && (
+                  <>
+                    <div>
+                      Statut : <span style={{ color: statutInfo.couleur }}>●</span> {statutInfo.label}
+                    </div>
+                    <div>
+                      Bénévoles :{' '}
+                      {aff.length === 0
+                        ? 'aucun'
+                        : aff
+                            .map((a) => {
+                              const b = benevoles.find((x) => x.id === a.benevole_id);
+                              const creneau = formatCreneau(a.heure_debut, a.heure_fin);
+                              return `${b?.nom ?? '?'}${creneau ? ` (${creneau})` : ''}`;
+                            })
+                            .join(', ')}
+                    </div>
+                  </>
+                )}
               </div>
             </Tooltip>
           </Marker>

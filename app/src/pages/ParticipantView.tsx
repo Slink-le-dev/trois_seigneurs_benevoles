@@ -108,6 +108,7 @@ export default function ParticipantView() {
           isAdmin={false}
           selectedPosteId={selectedPosteId}
           onSelectPoste={(id) => setSelectedPosteId((prev) => (prev === id ? null : id))}
+          hidePersonnelInfo
         />
 
         {selectedPoste && (
