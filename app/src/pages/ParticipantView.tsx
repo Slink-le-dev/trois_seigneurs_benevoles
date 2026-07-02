@@ -34,7 +34,7 @@ export default function ParticipantView() {
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
 
   const ravitaillementPostes = data.postes.filter(
-    (p) => p.types.includes('eau') || p.types.includes('nourriture'),
+    (p) => p.types.includes('eau') || p.types.includes('nourriture') || p.types.includes('medical'),
   );
 
   const selectedPoste = ravitaillementPostes.find((p) => p.id === selectedPosteId) ?? null;
