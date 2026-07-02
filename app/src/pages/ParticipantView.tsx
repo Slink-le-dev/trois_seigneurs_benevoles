@@ -30,8 +30,12 @@ function PosteMiniCard({ poste, onClose }: { poste: Poste; onClose: () => void }
 
 export default function ParticipantView() {
   const data = useAppData(false);
-  const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
+  const [selectedParcoursId, setSelectedParcoursId] = useState<string | null>(null);
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
+
+  const parcoursVisibility: Record<string, boolean> = selectedParcoursId
+    ? Object.fromEntries(data.parcours.map((p) => [p.id, p.id === selectedParcoursId]))
+    : {};
 
   const ravitaillementPostes = data.postes.filter(
     (p) => p.types.includes('eau') || p.types.includes('nourriture') || p.types.includes('medical'),
@@ -39,9 +43,6 @@ export default function ParticipantView() {
 
   const selectedPoste = ravitaillementPostes.find((p) => p.id === selectedPosteId) ?? null;
 
-  function toggleParcours(id: string) {
-    setParcoursVisibility((v) => ({ ...v, [id]: v[id] === false }));
-  }
 
   if (data.loading) {
     return <div className="p-6 text-center text-gray-500">Chargement…</div>;
@@ -59,34 +60,38 @@ export default function ParticipantView() {
         </a>
       </header>
 
-      {/* Parcours legend */}
+      {/* Parcours selector */}
       {data.parcours.length > 0 && (
-        <div className="flex items-center gap-4 px-4 py-2 bg-white border-b text-sm flex-wrap">
+        <div className="flex items-center gap-2 px-4 py-2 bg-white border-b text-sm flex-wrap">
           <span className="text-xs text-gray-400 uppercase tracking-wide font-medium flex-shrink-0">
-            Parcours :
+            Mon parcours :
           </span>
           {data.parcours.map((p) => {
-            const visible = parcoursVisibility[p.id] !== false;
+            const active = selectedParcoursId === p.id;
             return (
-              <label key={p.id} className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={visible}
-                  onChange={() => toggleParcours(p.id)}
-                  className="accent-[#005F61]"
-                />
-                <span className="font-bold" style={{ color: p.couleur }}>
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedParcoursId(active ? null : p.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm transition-colors select-none ${
+                  active
+                    ? 'text-white border-transparent'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                }`}
+                style={active ? { backgroundColor: p.couleur, borderColor: p.couleur } : {}}
+              >
+                <span className="font-bold" style={{ color: active ? 'white' : p.couleur }}>
                   ●
                 </span>
-                <span className={visible ? '' : 'text-gray-400 line-through'}>{p.nom}</span>
+                <span>{p.nom}</span>
                 {(p.distance_km || p.denivele_m) && (
-                  <span className="text-gray-400 text-xs">
+                  <span className={active ? 'opacity-80 text-xs' : 'text-gray-400 text-xs'}>
                     {p.distance_km ? `${p.distance_km} km` : ''}
                     {p.distance_km && p.denivele_m ? ' / ' : ''}
                     {p.denivele_m ? `${p.denivele_m} m D+` : ''}
                   </span>
                 )}
-              </label>
+              </button>
             );
           })}
         </div>
