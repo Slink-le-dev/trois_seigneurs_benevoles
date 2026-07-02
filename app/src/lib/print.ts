@@ -175,7 +175,8 @@ export function printRavitaillement(
           table { width: 100%; border-collapse: collapse; }
           th { background: #f3f4f6; font-size: 12px; text-align: left; padding: 6px 8px; border: 1px solid #ccc; font-weight: 600; }
           td { padding: 6px 8px; border: 1px solid #ccc; font-size: 12px; vertical-align: top; }
-          .quantites { width: 140px; }
+          .benevoles { width: 160px; }
+          .quantites { width: 240px; }
           @media print { body { padding: 12px; } }
         </style>
       </head>
@@ -186,7 +187,7 @@ export function printRavitaillement(
             <tr>
               <th style="width:36px">N°</th>
               <th>Nom du poste</th>
-              <th>Bénévoles affectés</th>
+              <th class="benevoles">Bénévoles affectés</th>
               <th>Type</th>
               <th class="quantites">Quantités</th>
             </tr>
