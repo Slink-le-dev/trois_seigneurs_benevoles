@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AdminDashboard from './pages/AdminDashboard';
+import ParticipantView from './pages/ParticipantView';
 import PublicConsultation from './pages/PublicConsultation';
 
 export default function App() {
@@ -7,6 +8,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<PublicConsultation />} />
+        <Route path="/participant" element={<ParticipantView />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
