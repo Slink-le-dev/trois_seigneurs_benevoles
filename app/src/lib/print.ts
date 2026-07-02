@@ -129,6 +129,79 @@ export function printFeuilleDeRoute(
   win.document.close();
 }
 
+export function printRavitaillement(
+  postes: Poste[],
+  benevoles: Benevole[],
+  getAffectationsForPoste: (posteId: string) => Affectation[],
+) {
+  const win = window.open('', '_blank', 'width=820,height=600');
+  if (!win) return;
+
+  const ravPostes = postes
+    .filter((p) => p.types.includes('eau') || p.types.includes('nourriture'))
+    .sort((a, b) => a.numero - b.numero);
+
+  const rows = ravPostes
+    .map((p) => {
+      const aff = getAffectationsForPoste(p.id);
+      const benevolesNames = aff
+        .map((a) => benevoles.find((b) => b.id === a.benevole_id)?.nom ?? '?')
+        .join(', ');
+      const types = p.types
+        .filter((t) => t === 'eau' || t === 'nourriture')
+        .map((t) => POSTE_TYPES.find((pt) => pt.code === t))
+        .filter(Boolean)
+        .map((pt) => `${pt!.emoji} ${pt!.label}`)
+        .join(', ');
+      return `<tr>
+        <td>${p.numero}</td>
+        <td>${p.nom}</td>
+        <td>${benevolesNames || '—'}</td>
+        <td>${types}</td>
+        <td class="quantites"></td>
+      </tr>`;
+    })
+    .join('');
+
+  win.document.write(`
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Points de ravitaillement</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: sans-serif; padding: 24px; color: #111; }
+          h1 { font-size: 18px; margin-bottom: 16px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #f3f4f6; font-size: 12px; text-align: left; padding: 6px 8px; border: 1px solid #ccc; font-weight: 600; }
+          td { padding: 6px 8px; border: 1px solid #ccc; font-size: 12px; vertical-align: top; }
+          .quantites { width: 140px; }
+          @media print { body { padding: 12px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Points de ravitaillement</h1>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px">N°</th>
+              <th>Nom du poste</th>
+              <th>Bénévoles affectés</th>
+              <th>Type</th>
+              <th class="quantites">Quantités</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="5" style="color:#999;text-align:center;padding:12px">Aucun poste de ravitaillement</td></tr>'}
+          </tbody>
+        </table>
+        <script>window.onload = () => window.print();</script>
+      </body>
+    </html>
+  `);
+  win.document.close();
+}
+
 export function printMainCourante(
   events: MainCouranteEvent[],
   postes: Poste[],
