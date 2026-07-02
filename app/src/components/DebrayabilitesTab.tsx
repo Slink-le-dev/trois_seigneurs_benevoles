@@ -15,7 +15,17 @@ const TOGGLES: Toggle[] = [
   {
     key: 'show_denivele',
     label: 'Dénivelé positif',
-    description: 'Afficher le D+ cumulé et le D+ restant dans la section Parcours des fiches de poste',
+    description: 'Afficher le D+ cumulé et le D+ restant dans la section Parcours des fiches de poste (vues bénévole)',
+  },
+  {
+    key: 'show_gpx_download_benevoles',
+    label: 'Téléchargement GPX — Bénévoles',
+    description: 'Afficher le bouton de téléchargement de trace GPX sur la vue Bénévole',
+  },
+  {
+    key: 'show_gpx_download_participant',
+    label: 'Téléchargement GPX — Participants',
+    description: 'Afficher le bouton de téléchargement de trace GPX sur la vue Participant',
   },
 ];
 

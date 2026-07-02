@@ -78,6 +78,8 @@ export interface PosteExtraction {
 
 export interface AppSettings {
   show_denivele: boolean;
+  show_gpx_download_participant: boolean;
+  show_gpx_download_benevoles: boolean;
 }
 
 export type BenevoleFormation =

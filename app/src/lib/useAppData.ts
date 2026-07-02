@@ -31,7 +31,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   const [mainCourante, setMainCourante] = useState<MainCouranteEvent[]>([]);
   const [mainCouranteJournal, setMainCouranteJournal] = useState<MainCouranteJournalEntry[]>([]);
   const [mainCouranteCommentaires, setMainCouranteCommentaires] = useState<MainCouranteCommentaire[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ show_denivele: true });
+  const [settings, setSettings] = useState<AppSettings>({ show_denivele: true, show_gpx_download_participant: true, show_gpx_download_benevoles: true });
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {

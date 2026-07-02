@@ -3,6 +3,7 @@ import logo from '../assets/logo.png';
 import BenevolesTable from '../components/BenevolesTable';
 import DebrayabilitesTab from '../components/DebrayabilitesTab';
 import ExportTab from '../components/ExportTab';
+import GpxDownloadModal from '../components/GpxDownloadModal';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
 import ParcoursPanel from '../components/ParcoursPanel';
@@ -40,6 +41,7 @@ function AdminContent({
 }) {
   const data = useAppData(true, currentUserId, currentUserEmail);
   const [tab, setTab] = useState<Tab>('carte');
+  const [showGpxModal, setShowGpxModal] = useState(false);
   const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [placingMode, setPlacingMode] = useState(false);
@@ -173,6 +175,16 @@ function AdminContent({
           <h1 className="font-semibold">Espace organisateur</h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <button
+            type="button"
+            onClick={() => setShowGpxModal(true)}
+            className="flex items-center gap-1.5 opacity-80 hover:opacity-100"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Trace GPX
+          </button>
           <a href="/benevoles" className="underline opacity-80 hover:opacity-100">
             Vue bénévole
           </a>
@@ -181,6 +193,7 @@ function AdminContent({
           </button>
         </div>
       </header>
+      {showGpxModal && <GpxDownloadModal parcours={data.parcours} onClose={() => setShowGpxModal(false)} />}
 
       <nav className="flex border-b bg-white text-sm">
         {(['carte', 'benevoles', 'dashboard', 'maincourante', 'export', 'debrayabilites'] as Tab[]).map((t) => (

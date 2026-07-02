@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import logo from '../assets/logo.png';
+import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
 import { useAppData } from '../lib/useAppData';
 import { POSTE_TYPES, Poste } from '../types';
@@ -32,6 +33,7 @@ export default function ParticipantView() {
   const data = useAppData(false);
   const [selectedParcoursId, setSelectedParcoursId] = useState<string | null>(null);
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
+  const [showGpxModal, setShowGpxModal] = useState(false);
 
   const parcoursVisibility: Record<string, boolean> = selectedParcoursId
     ? Object.fromEntries(data.parcours.map((p) => [p.id, p.id === selectedParcoursId]))
@@ -55,7 +57,20 @@ export default function ParticipantView() {
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
           <h1 className="font-semibold">Trail du Pic des Trois Seigneurs — Vue participant</h1>
         </div>
+        {data.settings.show_gpx_download_participant && (
+          <button
+            type="button"
+            onClick={() => setShowGpxModal(true)}
+            className="text-sm flex items-center gap-1.5 opacity-80 hover:opacity-100"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Trace GPX
+          </button>
+        )}
       </header>
+      {showGpxModal && <GpxDownloadModal parcours={data.parcours} onClose={() => setShowGpxModal(false)} />}
 
       {/* Parcours selector */}
       {data.parcours.length > 0 && (

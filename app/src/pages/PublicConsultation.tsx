@@ -2,6 +2,7 @@ import { useState } from 'react';
 import logo from '../assets/logo.png';
 import AbriTemporaireForm from '../components/AbriTemporaireForm';
 import FilterBar from '../components/FilterBar';
+import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
 import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
@@ -24,6 +25,7 @@ export default function PublicConsultation() {
   const [onlyFormation, setOnlyFormation] = useState(false);
   const [onlyPointPassage, setOnlyPointPassage] = useState(false);
   const [showKmMarkers, setShowKmMarkers] = useState(false);
+  const [showGpxModal, setShowGpxModal] = useState(false);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
@@ -40,10 +42,25 @@ export default function PublicConsultation() {
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
           <h1 className="font-semibold">Postes bénévoles — Trail du Pic des Trois Seigneurs</h1>
         </div>
-        <a href="/admin" className="text-sm underline opacity-80 hover:opacity-100">
-          Espace organisateur
-        </a>
+        <div className="flex items-center gap-3 text-sm">
+          {data.settings.show_gpx_download_benevoles && (
+            <button
+              type="button"
+              onClick={() => setShowGpxModal(true)}
+              className="flex items-center gap-1.5 opacity-80 hover:opacity-100"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Trace GPX
+            </button>
+          )}
+          <a href="/admin" className="underline opacity-80 hover:opacity-100">
+            Espace organisateur
+          </a>
+        </div>
       </header>
+      {showGpxModal && <GpxDownloadModal parcours={data.parcours} onClose={() => setShowGpxModal(false)} />}
 
       <FilterBar
         parcours={data.parcours}
