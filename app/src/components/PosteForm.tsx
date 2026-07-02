@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf';
 import { useState } from 'react';
 import { formatCreneau } from '../lib/format';
 import { printFeuilleDeRoute } from '../lib/print';
@@ -21,6 +22,86 @@ import {
 } from '../types';
 import NavButtons from './NavButtons';
 
+interface ParcoursStats {
+  kmCumules: number;
+  kmRestants: number;
+  deniveleCumule: number | null;
+  deniveleRestant: number | null;
+  kmProchainRavitaillement: number | null;
+}
+
+function flattenGpxCoords(fc: GeoJSON.FeatureCollection): number[][] {
+  const all: number[][] = [];
+  for (const f of fc.features) {
+    if (f.geometry?.type === 'LineString') {
+      all.push(...(f.geometry as GeoJSON.LineString).coordinates);
+    } else if (f.geometry?.type === 'MultiLineString') {
+      for (const seg of (f.geometry as GeoJSON.MultiLineString).coordinates) all.push(...seg);
+    }
+  }
+  return all;
+}
+
+function computeParcoursStats(
+  poste: Poste,
+  parcours: Parcours,
+  allPostes: Poste[],
+  getParcoursIdsForPoste: (id: string) => string[],
+): ParcoursStats | null {
+  if (!parcours.gpx_geojson) return null;
+  const allCoords = flattenGpxCoords(parcours.gpx_geojson);
+  if (allCoords.length < 2) return null;
+
+  const coords2d = allCoords.map((c) => [c[0], c[1]] as [number, number]);
+  const line = turf.lineString(coords2d);
+  const postePoint = turf.point([poste.lng, poste.lat]);
+
+  const nearest = turf.nearestPointOnLine(line, postePoint, { units: 'kilometers' });
+  const location = nearest.properties.location ?? 0;
+  const totalKm = turf.length(line, { units: 'kilometers' });
+  const splitIndex = nearest.properties.index ?? 0;
+
+  const kmCumules = Math.round(location * 10) / 10;
+  const kmRestants = Math.round((totalKm - location) * 10) / 10;
+
+  const hasElevation = allCoords[0].length >= 3;
+  let deniveleCumule: number | null = null;
+  let deniveleRestant: number | null = null;
+  if (hasElevation) {
+    let cumGain = 0;
+    for (let i = 1; i <= splitIndex; i++) {
+      const diff = (allCoords[i][2] ?? 0) - (allCoords[i - 1][2] ?? 0);
+      if (diff > 0) cumGain += diff;
+    }
+    deniveleCumule = Math.round(cumGain);
+    let remGain = 0;
+    for (let i = splitIndex + 1; i < allCoords.length; i++) {
+      const diff = (allCoords[i][2] ?? 0) - (allCoords[i - 1][2] ?? 0);
+      if (diff > 0) remGain += diff;
+    }
+    deniveleRestant = Math.round(remGain);
+  }
+
+  let kmProchainRavitaillement: number | null = null;
+  const ravPostes = allPostes.filter(
+    (p) =>
+      p.id !== poste.id &&
+      (p.types.includes('eau') || p.types.includes('nourriture')) &&
+      getParcoursIdsForPoste(p.id).includes(parcours.id),
+  );
+  let minDist = Infinity;
+  for (const rp of ravPostes) {
+    const rpNearest = turf.nearestPointOnLine(line, turf.point([rp.lng, rp.lat]), { units: 'kilometers' });
+    const diff = (rpNearest.properties.location ?? 0) - location;
+    if (diff > 0.05 && diff < minDist) {
+      minDist = diff;
+      kmProchainRavitaillement = Math.round(diff * 10) / 10;
+    }
+  }
+
+  return { kmCumules, kmRestants, deniveleCumule, deniveleRestant, kmProchainRavitaillement };
+}
+
 interface PosteFormProps {
   poste: Poste;
   parcours: Parcours[];
@@ -42,6 +123,8 @@ interface PosteFormProps {
   onCreateBenevole?: (data: Partial<Benevole>) => Promise<Benevole>;
   onCreateAffectation?: (data: Partial<Affectation>) => Promise<Affectation>;
   onDeleteAffectation?: (id: string) => Promise<void>;
+  allPostes?: Poste[];
+  getParcoursIdsForPoste?: (id: string) => string[];
 }
 
 export default function PosteForm({
@@ -65,6 +148,8 @@ export default function PosteForm({
   onCreateBenevole,
   onCreateAffectation,
   onDeleteAffectation,
+  allPostes,
+  getParcoursIdsForPoste,
 }: PosteFormProps) {
   const [showAddBenevole, setShowAddBenevole] = useState(false);
   const [benevoleChoice, setBenevoleChoice] = useState('__new__');
@@ -193,9 +278,9 @@ export default function PosteForm({
           </div>
 
           <div>
-            <span className="text-gray-500">Parcours : </span>
-            {isAdmin ? (
-              <span className="inline-flex gap-3 flex-wrap">
+            <span className="text-gray-500">Parcours :</span>
+            {isAdmin && (
+              <span className="inline-flex gap-3 flex-wrap mt-1 ml-1">
                 {parcours.map((p) => (
                   <label key={p.id} className="inline-flex items-center gap-1">
                     <input
@@ -212,9 +297,59 @@ export default function PosteForm({
                   </label>
                 ))}
               </span>
-            ) : (
-              <span>{parcours.filter((p) => selectedParcoursIds.includes(p.id)).map((p) => p.nom).join(', ') || '—'}</span>
             )}
+            {!isAdmin && selectedParcoursIds.length === 0 && <span className="text-gray-400"> —</span>}
+            <div className="space-y-2 mt-2">
+              {parcours
+                .filter((p) => selectedParcoursIds.includes(p.id))
+                .map((p) => {
+                  const stats =
+                    allPostes && getParcoursIdsForPoste
+                      ? computeParcoursStats(poste, p, allPostes, getParcoursIdsForPoste)
+                      : null;
+                  return (
+                    <div key={p.id} className="rounded border p-2 bg-gray-50 text-xs">
+                      <div className="font-semibold mb-1.5" style={{ color: p.couleur ?? '#374151' }}>
+                        ● {p.nom}
+                      </div>
+                      {stats ? (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-gray-600">
+                          <div>
+                            Km cumulés : <strong>{stats.kmCumules} km</strong>
+                          </div>
+                          {stats.deniveleCumule !== null ? (
+                            <div>
+                              D+ cumulé : <strong>{stats.deniveleCumule} m</strong>
+                            </div>
+                          ) : (
+                            <div />
+                          )}
+                          <div>
+                            Km restants : <strong>{stats.kmRestants} km</strong>
+                          </div>
+                          {stats.deniveleRestant !== null ? (
+                            <div>
+                              D+ restant : <strong>{stats.deniveleRestant} m</strong>
+                            </div>
+                          ) : (
+                            <div />
+                          )}
+                          <div className="col-span-2">
+                            Prochain ravitaillement :{' '}
+                            {stats.kmProchainRavitaillement !== null ? (
+                              <strong>{stats.kmProchainRavitaillement} km</strong>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Trace GPX non disponible</span>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
           </div>
 
           <div>

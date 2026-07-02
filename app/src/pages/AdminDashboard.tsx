@@ -445,6 +445,8 @@ function AdminContent({
           onCreateBenevole={data.createBenevole}
           onCreateAffectation={data.createAffectation}
           onDeleteAffectation={data.deleteAffectation}
+          allPostes={data.postes}
+          getParcoursIdsForPoste={data.getParcoursIdsForPoste}
         />
       )}
 

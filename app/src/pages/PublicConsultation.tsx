@@ -114,6 +114,8 @@ export default function PublicConsultation() {
           benevoles={data.benevoles}
           isAdmin={false}
           onClose={() => setSelectedPosteId(null)}
+          allPostes={data.postes}
+          getParcoursIdsForPoste={data.getParcoursIdsForPoste}
         />
       )}
 
