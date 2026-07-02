@@ -1,5 +1,5 @@
 import { Affectation, Benevole, Poste } from '../types';
-import { printRavitaillement } from '../lib/print';
+import { printRadios, printRavitaillement } from '../lib/print';
 
 interface ExportTabProps {
   postes: Poste[];
@@ -15,6 +15,8 @@ export default function ExportTab({ postes, benevoles, affectations }: ExportTab
   const countRavitaillement = postes.filter(
     (p) => p.types.includes('eau') || p.types.includes('nourriture')
   ).length;
+
+  const countRadios = postes.filter((p) => (p.materiel ?? []).includes('radio')).length;
 
   return (
     <div className="p-6 max-w-2xl space-y-4">
@@ -33,6 +35,24 @@ export default function ExportTab({ postes, benevoles, affectations }: ExportTab
           <button
             className="shrink-0 text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
             onClick={() => printRavitaillement(postes, benevoles, getAffectationsForPoste)}
+          >
+            Imprimer
+          </button>
+        </div>
+      </div>
+      <div className="border rounded-lg p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-medium mb-1">Registre des radios</h3>
+            <p className="text-sm text-gray-500">
+              Tableau des postes équipés d'une radio 📻 avec les bénévoles affectés,
+              une colonne retrait et une colonne restitution à remplir à la main.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">{countRadios} poste{countRadios !== 1 ? 's' : ''} concerné{countRadios !== 1 ? 's' : ''}</p>
+          </div>
+          <button
+            className="shrink-0 text-sm px-3 py-1.5 border rounded hover:bg-gray-50"
+            onClick={() => printRadios(postes, benevoles, getAffectationsForPoste)}
           >
             Imprimer
           </button>

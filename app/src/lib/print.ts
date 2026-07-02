@@ -205,6 +205,76 @@ export function printRavitaillement(
   win.document.close();
 }
 
+export function printRadios(
+  postes: Poste[],
+  benevoles: Benevole[],
+  getAffectationsForPoste: (posteId: string) => Affectation[],
+) {
+  const win = window.open('', '_blank', 'width=900,height=600');
+  if (!win) return;
+
+  const radioPostes = postes
+    .filter((p) => (p.materiel ?? []).includes('radio'))
+    .sort((a, b) => a.numero - b.numero);
+
+  const rows = radioPostes
+    .map((p) => {
+      const aff = getAffectationsForPoste(p.id);
+      const benevolesNames = aff
+        .map((a) => benevoles.find((b) => b.id === a.benevole_id)?.nom ?? '?')
+        .join(', ');
+      return `<tr>
+        <td>${p.numero}</td>
+        <td>${p.nom}</td>
+        <td>${benevolesNames || '—'}</td>
+        <td class="signature"></td>
+        <td class="signature"></td>
+      </tr>`;
+    })
+    .join('');
+
+  win.document.write(`
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Registre des radios</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: sans-serif; padding: 24px; color: #111; }
+          h1 { font-size: 18px; margin-bottom: 16px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #f3f4f6; font-size: 12px; text-align: left; padding: 6px 8px; border: 1px solid #ccc; font-weight: 600; }
+          td { padding: 6px 8px; border: 1px solid #ccc; font-size: 12px; vertical-align: top; }
+          .num { width: 36px; }
+          .nom { width: 130px; }
+          .benevoles { width: 140px; }
+          .signature { width: 220px; }
+          @media print { body { padding: 12px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Registre des radios</h1>
+        <table>
+          <thead>
+            <tr>
+              <th class="num">N°</th>
+              <th class="nom">Nom du poste</th>
+              <th class="benevoles">Bénévoles affectés</th>
+              <th class="signature">Nom, date et heure du retrait</th>
+              <th class="signature">Nom, date et heure de restitution</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="5" style="color:#999;text-align:center;padding:12px">Aucun poste équipé d\'une radio</td></tr>'}
+          </tbody>
+        </table>
+        <script>window.onload = () => window.print();</script>
+      </body>
+    </html>
+  `);
+  win.document.close();
+}
+
 export function printMainCourante(
   events: MainCouranteEvent[],
   postes: Poste[],
