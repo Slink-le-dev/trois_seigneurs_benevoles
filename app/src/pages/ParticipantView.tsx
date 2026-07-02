@@ -55,9 +55,6 @@ export default function ParticipantView() {
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
           <h1 className="font-semibold">Trail du Pic des Trois Seigneurs — Vue participant</h1>
         </div>
-        <a href="/" className="text-sm underline opacity-80 hover:opacity-100">
-          Vue bénévole
-        </a>
       </header>
 
       {/* Parcours selector */}
