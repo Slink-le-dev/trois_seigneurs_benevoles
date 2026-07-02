@@ -184,8 +184,12 @@ export default function MapView({
 
   function couleurPourPoste(posteId: string): string {
     const ids = getParcoursIdsForPoste(posteId);
-    const candidats = parcours.filter((p) => ids.includes(p.id));
+    let candidats = parcours.filter((p) => ids.includes(p.id));
     if (!candidats.length) return COULEUR_SANS_PARCOURS;
+    if (filterParcoursIds?.length) {
+      const actifs = candidats.filter((p) => filterParcoursIds.includes(p.id));
+      if (actifs.length) candidats = actifs;
+    }
     const plusLong = candidats.reduce((max, p) => ((p.distance_km ?? 0) > (max.distance_km ?? 0) ? p : max));
     return plusLong.couleur;
   }

@@ -102,6 +102,7 @@ export default function ParticipantView() {
           benevoles={[]}
           getParcoursIdsForPoste={data.getParcoursIdsForPoste}
           getAffectationsForPoste={() => []}
+          filterParcoursIds={selectedParcoursId ? [selectedParcoursId] : []}
           isAdmin={false}
           selectedPosteId={selectedPosteId}
           onSelectPoste={(id) => setSelectedPosteId((prev) => (prev === id ? null : id))}
