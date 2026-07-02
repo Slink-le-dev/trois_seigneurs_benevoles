@@ -125,6 +125,7 @@ interface PosteFormProps {
   onDeleteAffectation?: (id: string) => Promise<void>;
   allPostes?: Poste[];
   getParcoursIdsForPoste?: (id: string) => string[];
+  showDenivele?: boolean;
 }
 
 export default function PosteForm({
@@ -150,6 +151,7 @@ export default function PosteForm({
   onDeleteAffectation,
   allPostes,
   getParcoursIdsForPoste,
+  showDenivele = true,
 }: PosteFormProps) {
   const [showAddBenevole, setShowAddBenevole] = useState(false);
   const [benevoleChoice, setBenevoleChoice] = useState('__new__');
@@ -317,7 +319,7 @@ export default function PosteForm({
                           <div>
                             Km cumulés : <strong>{stats.kmCumules} km</strong>
                           </div>
-                          {stats.deniveleCumule !== null ? (
+                          {stats.deniveleCumule !== null && showDenivele ? (
                             <div>
                               D+ cumulé : <strong>{stats.deniveleCumule} m</strong>
                             </div>
@@ -327,7 +329,7 @@ export default function PosteForm({
                           <div>
                             Km restants : <strong>{stats.kmRestants} km</strong>
                           </div>
-                          {stats.deniveleRestant !== null ? (
+                          {stats.deniveleRestant !== null && showDenivele ? (
                             <div>
                               D+ restant : <strong>{stats.deniveleRestant} m</strong>
                             </div>

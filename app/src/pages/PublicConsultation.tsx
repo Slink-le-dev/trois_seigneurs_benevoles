@@ -116,6 +116,7 @@ export default function PublicConsultation() {
           onClose={() => setSelectedPosteId(null)}
           allPostes={data.postes}
           getParcoursIdsForPoste={data.getParcoursIdsForPoste}
+          showDenivele={data.settings.show_denivele}
         />
       )}
 

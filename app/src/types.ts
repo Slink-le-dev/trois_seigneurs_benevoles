@@ -76,6 +76,10 @@ export interface PosteExtraction {
   extraction_id: string;
 }
 
+export interface AppSettings {
+  show_denivele: boolean;
+}
+
 export type BenevoleFormation =
   | 'medecin'
   | 'infirmier'

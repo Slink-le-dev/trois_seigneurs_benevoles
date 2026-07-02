@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import logo from '../assets/logo.png';
 import BenevolesTable from '../components/BenevolesTable';
+import DebrayabilitesTab from '../components/DebrayabilitesTab';
 import ExportTab from '../components/ExportTab';
 import FilterBar from '../components/FilterBar';
 import MapView from '../components/MapView';
@@ -17,7 +18,7 @@ import AdminLogin from './AdminLogin';
 
 const DEFAULT_COULEURS = ['#2563eb', '#16a34a', '#dc2626'];
 
-type Tab = 'carte' | 'benevoles' | 'dashboard' | 'maincourante' | 'export';
+type Tab = 'carte' | 'benevoles' | 'dashboard' | 'maincourante' | 'export' | 'debrayabilites';
 
 export default function AdminDashboard() {
   const { session, loading: sessionLoading, signOut } = useSession();
@@ -182,7 +183,7 @@ function AdminContent({
       </header>
 
       <nav className="flex border-b bg-white text-sm">
-        {(['carte', 'benevoles', 'dashboard', 'maincourante', 'export'] as Tab[]).map((t) => (
+        {(['carte', 'benevoles', 'dashboard', 'maincourante', 'export', 'debrayabilites'] as Tab[]).map((t) => (
           <button
             key={t}
             className={`px-4 py-2 ${tab === t ? 'border-b-2 border-[#F3EA5D] font-medium' : 'text-gray-500'}`}
@@ -196,7 +197,9 @@ function AdminContent({
               ? 'Tableau de bord'
               : t === 'maincourante'
               ? 'Main courante'
-              : 'Export'}
+              : t === 'export'
+              ? 'Export'
+              : 'Débrayabilités'}
           </button>
         ))}
       </nav>
@@ -420,6 +423,12 @@ function AdminContent({
             benevoles={data.benevoles}
             affectations={data.affectations}
           />
+        </div>
+      )}
+
+      {tab === 'debrayabilites' && (
+        <div className="flex-1 overflow-y-auto">
+          <DebrayabilitesTab settings={data.settings} onUpdateSettings={data.updateSettings} />
         </div>
       )}
 

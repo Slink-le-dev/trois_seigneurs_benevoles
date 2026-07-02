@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import {
   AbriTemporaire,
   Affectation,
+  AppSettings,
   Benevole,
   MainCouranteCommentaire,
   MainCouranteEvent,
@@ -30,6 +31,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   const [mainCourante, setMainCourante] = useState<MainCouranteEvent[]>([]);
   const [mainCouranteJournal, setMainCouranteJournal] = useState<MainCouranteJournalEntry[]>([]);
   const [mainCouranteCommentaires, setMainCouranteCommentaires] = useState<MainCouranteCommentaire[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({ show_denivele: true });
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {
@@ -47,6 +49,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       pointsExtractionRes,
       abrisTemporairesRes,
       mainCouranteRes,
+      settingsRes,
     ] = await Promise.all([
       supabase.from('parcours').select('*').order('created_at'),
       supabase.from('postes').select('*').order('created_at'),
@@ -58,6 +61,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       supabase.from('points_extraction').select('*').order('created_at'),
       supabase.from('abris_temporaires').select('*').order('created_at'),
       supabase.from('main_courante').select('*').is('deleted_at', null).order('date_evenement', { ascending: false }).order('created_at', { ascending: false }),
+      supabase.from('app_settings').select('*').single(),
     ]);
 
     if (parcoursRes.data) setParcours(parcoursRes.data as Parcours[]);
@@ -80,6 +84,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     if (pointsExtractionRes.data) setPointsExtraction(pointsExtractionRes.data as PointExtraction[]);
     if (abrisTemporairesRes.data) setAbrisTemporaires(abrisTemporairesRes.data as AbriTemporaire[]);
     if (mainCouranteRes.data) setMainCourante(mainCouranteRes.data as MainCouranteEvent[]);
+    if (settingsRes.data) setSettings(settingsRes.data as AppSettings);
 
     if (isAdmin) {
       const [journalRes, commentairesRes] = await Promise.all([
@@ -387,6 +392,13 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     return commentaire;
   }
 
+  async function updateSettings(partial: Partial<AppSettings>) {
+    const next = { ...settings, ...partial };
+    const { error } = await supabase.from('app_settings').update(next).eq('id', 1);
+    if (error) throw error;
+    setSettings(next);
+  }
+
   async function deleteMainCourante(id: string) {
     if (!currentUserId) throw new Error('Utilisateur non authentifié.');
     const { data: row, error } = await supabase
@@ -448,6 +460,8 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     updateMainCourante,
     deleteMainCourante,
     createMainCouranteCommentaire,
+    settings,
+    updateSettings,
   };
 }
 
