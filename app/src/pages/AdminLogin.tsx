@@ -41,7 +41,7 @@ export default function AdminLogin() {
           {busy ? 'Connexion…' : 'Se connecter'}
         </button>
         <a href="/" className="block text-center text-sm text-gray-500 underline">
-          Retour à la vue consultation
+          Retour à la vue bénévole
         </a>
       </form>
     </div>

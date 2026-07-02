@@ -174,7 +174,7 @@ function AdminContent({
         </div>
         <div className="flex items-center gap-3 text-sm">
           <a href="/" className="underline opacity-80 hover:opacity-100">
-            Vue consultation
+            Vue bénévole
           </a>
           <button onClick={onSignOut} className="underline opacity-80 hover:opacity-100">
             Déconnexion
