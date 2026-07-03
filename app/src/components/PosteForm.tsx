@@ -1,7 +1,7 @@
 import * as turf from '@turf/turf';
 import { useState } from 'react';
 import { formatCreneau } from '../lib/format';
-import { printFeuilleDeRoute } from '../lib/print';
+import { ParcoursInfoPrint, printFeuilleDeRoute } from '../lib/print';
 import CopyCoords from './CopyCoords';
 import {
   AbriTemporaire,
@@ -624,7 +624,24 @@ export default function PosteForm({
               onClick={() =>
                 printFeuilleDeRoute(
                   poste,
-                  parcours.filter((p) => selectedParcoursIds.includes(p.id)).map((p) => p.nom),
+                  parcours
+                    .filter((p) => selectedParcoursIds.includes(p.id))
+                    .map((p): ParcoursInfoPrint => {
+                      const s =
+                        allPostes && getParcoursIdsForPoste
+                          ? computeParcoursStats(poste, p, allPostes, getParcoursIdsForPoste)
+                          : null;
+                      return {
+                        nom: p.nom,
+                        stats: s
+                          ? {
+                              kmCumules: s.kmCumules,
+                              kmRestants: s.kmRestants,
+                              kmProchainRavitaillement: s.kmProchainRavitaillement,
+                            }
+                          : undefined,
+                      };
+                    }),
                   posteAffectations,
                   benevoles,
                   abrisTemporaires.filter((a) => selectedAbriIds.includes(a.id)),

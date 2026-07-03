@@ -19,9 +19,14 @@ function formatDatetime(value: string): string {
   return new Date(value).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+export interface ParcoursInfoPrint {
+  nom: string;
+  stats?: { kmCumules: number; kmRestants: number; kmProchainRavitaillement: number | null };
+}
+
 export function printFeuilleDeRoute(
   poste: Poste,
-  parcoursNoms: string[],
+  parcoursData: ParcoursInfoPrint[],
   affectations: Affectation[],
   benevoles: Benevole[],
   abrisEvacuation: AbriTemporaire[],
@@ -100,7 +105,19 @@ export function printFeuilleDeRoute(
 
         <h2>Informations</h2>
         <div class="row"><span class="lbl">Coordonnées GPS</span><span>${poste.lat.toFixed(5)}, ${poste.lng.toFixed(5)}</span></div>
-        <div class="row"><span class="lbl">Parcours</span><span>${parcoursNoms.join(', ') || '—'}</span></div>
+        <div class="row"><span class="lbl">Parcours</span><span style="display:flex;flex-direction:column;gap:6px">${
+          parcoursData.length === 0
+            ? '—'
+            : parcoursData.map((p) => `
+              <div>
+                <div style="font-weight:600">${p.nom}</div>
+                ${p.stats ? `<div style="font-size:11px;color:#555;margin-top:2px;display:flex;gap:14px;flex-wrap:wrap">
+                  <span>Km cumulés : <strong>${p.stats.kmCumules} km</strong></span>
+                  <span>Km restants : <strong>${p.stats.kmRestants} km</strong></span>
+                  <span>Prochain ravitaillement : <strong>${p.stats.kmProchainRavitaillement !== null ? p.stats.kmProchainRavitaillement + ' km' : '—'}</strong></span>
+                </div>` : ''}
+              </div>`).join('')
+        }</span></div>
         <div class="row"><span class="lbl">Type(s)</span><span>${types || '—'}</span></div>
         ${poste.point_passage_intermediaire ? '<div class="row"><span class="lbl">Point de passage interm.</span><span>📍 Oui</span></div>' : ''}
 
