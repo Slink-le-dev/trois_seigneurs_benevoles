@@ -1,12 +1,13 @@
 # Postes Signaleurs — Course de montagne
 
-Application en ligne : **https://trois-seigneurs-benevoles.vercel.app**
+Application en ligne : **https://trail-trois-seigneurs.vercel.app)**
 
 Application de gestion des postes de signaleurs pour une course de montagne à 3 parcours,
 conforme au [cahier des charges](./Cahier_des_charges_Postes_Signaleurs.pdf).
 
 - Mode **organisateur** (`/admin`) : gestion complète (parcours, postes, bénévoles, statuts).
-- Mode **consultation** (`/`) : lecture libre, sans compte, sans numéros de téléphone.
+- Mode **benevole** (`/benevoles`) : lecture libre, sans compte, sans numéros de téléphone, avec le nom de chaque bénévole positionné sur les postes signaleurs.
+- Mode **participant** (`/participant`) : lecture libre, sans compte, sans numéros de téléphone et sans le nom des bénévoles.
 
 ## 1. Créer le backend Supabase (gratuit)
 
