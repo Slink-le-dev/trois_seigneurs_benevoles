@@ -2,14 +2,16 @@ import * as turf from '@turf/turf';
 import { useEffect, useRef, useState } from 'react';
 import { Parcours } from '../types';
 
-function getProfile(fc: GeoJSON.FeatureCollection): Array<{ dist: number; ele: number }> {
+interface ProfilePoint { dist: number; ele: number; lat: number; lng: number; }
+
+function getProfile(fc: GeoJSON.FeatureCollection): ProfilePoint[] {
   const coords: number[][] = [];
   for (const f of fc.features) {
     if (f.geometry?.type === 'LineString') coords.push(...(f.geometry as GeoJSON.LineString).coordinates);
     else if (f.geometry?.type === 'MultiLineString')
       for (const seg of (f.geometry as GeoJSON.MultiLineString).coordinates) coords.push(...seg);
   }
-  const profile: Array<{ dist: number; ele: number }> = [];
+  const profile: ProfilePoint[] = [];
   let cumDist = 0;
   for (let i = 0; i < coords.length; i++) {
     if (i > 0) {
@@ -19,12 +21,13 @@ function getProfile(fc: GeoJSON.FeatureCollection): Array<{ dist: number; ele: n
         { units: 'kilometers' },
       );
     }
-    if (coords[i].length >= 3) profile.push({ dist: cumDist, ele: coords[i][2] });
+    if (coords[i].length >= 3)
+      profile.push({ dist: cumDist, ele: coords[i][2], lat: coords[i][1], lng: coords[i][0] });
   }
   return profile;
 }
 
-function downsample(arr: Array<{ dist: number; ele: number }>, max = 500) {
+function downsample(arr: ProfilePoint[], max = 500): ProfilePoint[] {
   if (arr.length <= max) return arr;
   const step = (arr.length - 1) / (max - 1);
   return Array.from({ length: max }, (_, i) => arr[Math.min(arr.length - 1, Math.round(i * step))]);
@@ -40,10 +43,12 @@ function niceStep(range: number, ticks: number): number {
 export default function ElevationPanel({
   parcours,
   filterParcoursIds,
+  onHoverPosition,
   onClose,
 }: {
   parcours: Parcours[];
   filterParcoursIds?: string[];
+  onHoverPosition?: (pos: [number, number] | null) => void;
   onClose: () => void;
 }) {
   const available = parcours.filter((p) => p.gpx_geojson);
@@ -54,7 +59,9 @@ export default function ElevationPanel({
   const [selectedId, setSelectedId] = useState<string | null>(defaultId);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [chartPxW, setChartPxW] = useState(0);
+  const [hoverInfo, setHoverInfo] = useState<{ x: number; point: ProfilePoint } | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -74,21 +81,43 @@ export default function ElevationPanel({
   const cW = Math.max(chartPxW - padL - padR, 1);
   const cH = SVG_H - padT - padB;
 
+  const hasData = profile.length >= 2 && chartPxW > 0;
+  const minEle = hasData ? Math.min(...profile.map((p) => p.ele)) : 0;
+  const maxEle = hasData ? Math.max(...profile.map((p) => p.ele)) : 0;
+  const totalDist = hasData ? profile[profile.length - 1].dist : 1;
+  const eleRange = maxEle - minEle || 1;
+  const toX = (d: number) => padL + (d / totalDist) * cW;
+  const toY = (e: number) => padT + cH - ((e - minEle) / eleRange) * cH;
+
+  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    if (!hasData || !svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const rawX = e.clientX - rect.left;
+    const x = Math.max(padL, Math.min(padL + cW, rawX));
+    const dist = ((x - padL) / cW) * totalDist;
+    // Binary-ish: profile is sorted by dist, find nearest
+    let nearest = profile[0];
+    let minDiff = Infinity;
+    for (const pt of profile) {
+      const diff = Math.abs(pt.dist - dist);
+      if (diff < minDiff) { minDiff = diff; nearest = pt; }
+      else if (diff > minDiff + 0.5) break; // sorted, can stop early
+    }
+    setHoverInfo({ x, point: nearest });
+    onHoverPosition?.([nearest.lat, nearest.lng]);
+  }
+
+  function handleMouseLeave() {
+    setHoverInfo(null);
+    onHoverPosition?.(null);
+  }
+
   let chartEl: React.ReactNode = null;
-  if (profile.length >= 2 && chartPxW > 0) {
-    const eles = profile.map((p) => p.ele);
-    const minEle = Math.min(...eles);
-    const maxEle = Math.max(...eles);
-    const totalDist = profile[profile.length - 1].dist;
-    const eleRange = maxEle - minEle || 1;
-
-    const toX = (d: number) => padL + (d / totalDist) * cW;
-    const toY = (e: number) => padT + cH - ((e - minEle) / eleRange) * cH;
-
+  if (hasData) {
+    const col = selected!.couleur;
     const pts = profile.map((p) => `${toX(p.dist).toFixed(1)},${toY(p.ele).toFixed(1)}`).join(' L ');
     const areaPath = `M ${pts} L ${toX(totalDist)},${padT + cH} L ${padL},${padT + cH} Z`;
     const linePath = `M ${pts}`;
-    const col = selected!.couleur;
 
     const yStep = niceStep(eleRange, 4);
     const yStart = Math.ceil(minEle / yStep) * yStep;
@@ -101,8 +130,19 @@ export default function ElevationPanel({
     for (let d = xStep; d < totalDist - xStep * 0.3; d += xStep)
       xTicks.push({ x: toX(d), label: `${d.toFixed(0)} km` });
 
+    // Hover tooltip anchor: flip left if near right edge
+    const hx = hoverInfo?.x ?? 0;
+    const tooltipRight = hx > padL + cW * 0.6;
+
     chartEl = (
-      <svg width={chartPxW} height={SVG_H} style={{ display: 'block' }}>
+      <svg
+        ref={svgRef}
+        width={chartPxW}
+        height={SVG_H}
+        style={{ display: 'block', cursor: 'crosshair' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         {yGrids.map(({ y, label }) => (
           <g key={label}>
             <line x1={padL} y1={y} x2={padL + cW} y2={y} stroke="#e5e7eb" strokeWidth={1} />
@@ -116,6 +156,25 @@ export default function ElevationPanel({
         {xTicks.map(({ x, label }) => (
           <text key={label} x={x} y={padT + cH + 13} textAnchor="middle" fontSize={9} fill="#9ca3af">{label}</text>
         ))}
+
+        {hoverInfo && (() => {
+          const hx = hoverInfo.x;
+          const hy = toY(hoverInfo.point.ele);
+          const label1 = `${hoverInfo.point.dist.toFixed(1)} km`;
+          const label2 = `${Math.round(hoverInfo.point.ele)} m`;
+          const ttW = 68, ttH = 28, ttPad = 6;
+          const ttX = tooltipRight ? hx - ttW - ttPad : hx + ttPad;
+          const ttY = Math.max(padT, Math.min(hy - ttH / 2, padT + cH - ttH));
+          return (
+            <g>
+              <line x1={hx} y1={padT} x2={hx} y2={padT + cH} stroke="#6b7280" strokeWidth={1} strokeDasharray="3 2" />
+              <circle cx={hx} cy={hy} r={4} fill="white" stroke={col} strokeWidth={2} />
+              <rect x={ttX} y={ttY} width={ttW} height={ttH} rx={3} fill="white" stroke="#e5e7eb" strokeWidth={1} />
+              <text x={ttX + ttW / 2} y={ttY + 10} textAnchor="middle" fontSize={9} fill="#374151" fontWeight="600">{label1}</text>
+              <text x={ttX + ttW / 2} y={ttY + 21} textAnchor="middle" fontSize={9} fill="#6b7280">{label2}</text>
+            </g>
+          );
+        })()}
       </svg>
     );
   }
@@ -153,7 +212,7 @@ export default function ElevationPanel({
         </button>
       </div>
       <div ref={containerRef}>
-        {profile.length >= 2 ? (
+        {hasData ? (
           chartEl
         ) : (
           <div className="flex items-center justify-center h-[110px] text-sm text-gray-400">

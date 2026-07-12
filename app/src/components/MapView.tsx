@@ -86,6 +86,13 @@ function getKmMarkers(fc: GeoJSON.FeatureCollection): Array<{ position: [number,
   return markers;
 }
 
+const ELEVATION_HOVER_ICON = L.divIcon({
+  className: '',
+  html: `<div style="width:12px;height:12px;background:#f97316;border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+});
+
 const USER_LOCATION_ICON = L.divIcon({
   className: '',
   html: `<div style="width:16px;height:16px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.35),0 2px 6px rgba(0,0,0,0.25)"></div>`,
@@ -182,6 +189,7 @@ export default function MapView({
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [tracking, setTracking] = useState(false);
   const [showElevation, setShowElevation] = useState(false);
+  const [elevationHoverPos, setElevationHoverPos] = useState<[number, number] | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -278,6 +286,7 @@ export default function MapView({
       <FitToData parcours={parcours} postes={postes} />
       <MapPanner position={userPosition} />
       {userPosition && <Marker position={userPosition} icon={USER_LOCATION_ICON} interactive={false} />}
+      {elevationHoverPos && <Marker position={elevationHoverPos} icon={ELEVATION_HOVER_ICON} interactive={false} />}
       {placingMode && <MapClickHandler onClick={onMapClickCreate} />}
       {placingModeExtraction && <MapClickHandler onClick={onMapClickCreateExtraction} />}
       {placingModeAbri && <MapClickHandler onClick={onMapClickCreateAbri} />}
@@ -417,7 +426,8 @@ export default function MapView({
       <ElevationPanel
         parcours={parcours}
         filterParcoursIds={filterParcoursIds}
-        onClose={() => setShowElevation(false)}
+        onHoverPosition={setElevationHoverPos}
+        onClose={() => { setShowElevation(false); setElevationHoverPos(null); }}
       />
     )}
     </div>
