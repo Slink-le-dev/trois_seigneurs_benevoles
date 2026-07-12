@@ -1,6 +1,6 @@
 import * as turf from '@turf/turf';
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GeoJSON, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { formatCreneau } from '../lib/format';
 import { abriIcon, extractionIcon, posteIcon } from '../lib/icons';
@@ -85,6 +85,26 @@ function getKmMarkers(fc: GeoJSON.FeatureCollection): Array<{ position: [number,
   return markers;
 }
 
+const USER_LOCATION_ICON = L.divIcon({
+  className: '',
+  html: `<div style="width:16px;height:16px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.35),0 2px 6px rgba(0,0,0,0.25)"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+function MapPanner({ position }: { position: [number, number] | null }) {
+  const map = useMap();
+  const didPan = useRef(false);
+  useEffect(() => {
+    if (position && !didPan.current) {
+      map.setView(position, Math.max(map.getZoom(), 15));
+      didPan.current = true;
+    }
+    if (!position) didPan.current = false;
+  }, [position, map]);
+  return null;
+}
+
 function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -158,6 +178,30 @@ export default function MapView({
   showKmMarkers = true,
   hidePersonnelInfo = false,
 }: MapViewProps) {
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [tracking, setTracking] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => { if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current); };
+  }, []);
+
+  function toggleTracking() {
+    if (tracking) {
+      if (watchIdRef.current !== null) { navigator.geolocation.clearWatch(watchIdRef.current); watchIdRef.current = null; }
+      setTracking(false);
+      setUserPosition(null);
+    } else {
+      if (!navigator.geolocation) { alert('La géolocalisation n\'est pas disponible sur cet appareil.'); return; }
+      setTracking(true);
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => setUserPosition([pos.coords.latitude, pos.coords.longitude]),
+        () => { setTracking(false); setUserPosition(null); },
+        { enableHighAccuracy: true, maximumAge: 5000 },
+      );
+    }
+  }
+
   const query = searchBenevole.trim().toLowerCase();
   const visiblePostes = postes.filter((p) => {
     if (filterTypes?.length && !p.types.some((t) => filterTypes.includes(t))) return false;
@@ -195,6 +239,19 @@ export default function MapView({
   }
 
   return (
+    <div className="relative h-full w-full">
+    <button
+      type="button"
+      onClick={toggleTracking}
+      title="Ma position"
+      className={`absolute bottom-10 right-2.5 z-[1000] w-9 h-9 rounded shadow flex items-center justify-center border transition-colors ${tracking ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        <circle cx="12" cy="12" r="8" strokeDasharray="2 2" />
+      </svg>
+    </button>
     <MapContainer
       center={[45.9, 6.1]}
       zoom={11}
@@ -207,6 +264,8 @@ export default function MapView({
       />
 
       <FitToData parcours={parcours} postes={postes} />
+      <MapPanner position={userPosition} />
+      {userPosition && <Marker position={userPosition} icon={USER_LOCATION_ICON} interactive={false} />}
       {placingMode && <MapClickHandler onClick={onMapClickCreate} />}
       {placingModeExtraction && <MapClickHandler onClick={onMapClickCreateExtraction} />}
       {placingModeAbri && <MapClickHandler onClick={onMapClickCreateAbri} />}
@@ -342,5 +401,6 @@ export default function MapView({
           </Marker>
         ))}
     </MapContainer>
+    </div>
   );
 }
