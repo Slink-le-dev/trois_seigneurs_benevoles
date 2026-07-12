@@ -425,6 +425,8 @@ export default function MapView({
     {showElevation && (
       <ElevationPanel
         parcours={parcours}
+        postes={postes}
+        getParcoursIdsForPoste={getParcoursIdsForPoste}
         filterParcoursIds={filterParcoursIds}
         onHoverPosition={setElevationHoverPos}
         onClose={() => { setShowElevation(false); setElevationHoverPos(null); }}

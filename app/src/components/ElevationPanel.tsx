@@ -1,6 +1,6 @@
 import * as turf from '@turf/turf';
-import { useEffect, useRef, useState } from 'react';
-import { Parcours } from '../types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Parcours, Poste } from '../types';
 
 interface ProfilePoint { dist: number; ele: number; lat: number; lng: number; }
 
@@ -40,13 +40,19 @@ function niceStep(range: number, ticks: number): number {
   return mag * (n < 1.5 ? 1 : n < 3.5 ? 2 : n < 7.5 ? 5 : 10);
 }
 
+function fmt(n: number, dec = 1) { return n.toFixed(dec); }
+
 export default function ElevationPanel({
   parcours,
+  postes = [],
+  getParcoursIdsForPoste,
   filterParcoursIds,
   onHoverPosition,
   onClose,
 }: {
   parcours: Parcours[];
+  postes?: Poste[];
+  getParcoursIdsForPoste?: (id: string) => string[];
   filterParcoursIds?: string[];
   onHoverPosition?: (pos: [number, number] | null) => void;
   onClose: () => void;
@@ -54,14 +60,13 @@ export default function ElevationPanel({
   const available = parcours.filter((p) => p.gpx_geojson);
   const defaultId =
     filterParcoursIds?.find((id) => available.some((p) => p.id === id)) ??
-    available[0]?.id ??
-    null;
+    available[0]?.id ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(defaultId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [chartPxW, setChartPxW] = useState(0);
-  const [hoverInfo, setHoverInfo] = useState<{ x: number; point: ProfilePoint } | null>(null);
+  const [hoverInfo, setHoverInfo] = useState<{ x: number; index: number; point: ProfilePoint } | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -76,6 +81,42 @@ export default function ElevationPanel({
   const rawProfile = selected?.gpx_geojson ? getProfile(selected.gpx_geojson) : [];
   const profile = downsample(rawProfile);
 
+  // Suffix sums for D+/D- from each index to end
+  const suffixDeniv = useMemo(() => {
+    if (profile.length < 2) return null;
+    const dPlus = new Float64Array(profile.length);
+    const dMinus = new Float64Array(profile.length);
+    for (let i = profile.length - 2; i >= 0; i--) {
+      const diff = profile[i + 1].ele - profile[i].ele;
+      dPlus[i] = dPlus[i + 1] + Math.max(0, diff);
+      dMinus[i] = dMinus[i + 1] + Math.max(0, -diff);
+    }
+    return { dPlus, dMinus };
+  }, [profile]);
+
+  // Ravitaillement postes projected onto the trace (km from start)
+  const ravitaillementPositions = useMemo(() => {
+    if (!selected?.gpx_geojson || !getParcoursIdsForPoste) return [];
+    const coords: number[][] = [];
+    for (const f of selected.gpx_geojson.features) {
+      if (f.geometry?.type === 'LineString') coords.push(...(f.geometry as GeoJSON.LineString).coordinates);
+      else if (f.geometry?.type === 'MultiLineString')
+        for (const seg of (f.geometry as GeoJSON.MultiLineString).coordinates) coords.push(...seg);
+    }
+    if (coords.length < 2) return [];
+    const line = turf.lineString(coords.map((c) => c.slice(0, 2)) as [number, number][]);
+    return postes
+      .filter((p) =>
+        (p.types.includes('eau') || p.types.includes('nourriture')) &&
+        getParcoursIdsForPoste(p.id).includes(selected.id),
+      )
+      .map((p) => {
+        const nearest = turf.nearestPointOnLine(line, turf.point([p.lng, p.lat]), { units: 'kilometers' });
+        return nearest.properties.location ?? 0;
+      })
+      .sort((a, b) => a - b);
+  }, [selected, postes, getParcoursIdsForPoste]);
+
   const SVG_H = 110;
   const padL = 44, padR = 12, padT = 8, padB = 22;
   const cW = Math.max(chartPxW - padL - padR, 1);
@@ -89,7 +130,7 @@ export default function ElevationPanel({
   const toX = (d: number) => padL + (d / totalDist) * cW;
   const toY = (e: number) => padT + cH - ((e - minEle) / eleRange) * cH;
 
-  // Refs so touch listeners always use the latest computed values without being re-added
+  // Refs so touch listeners always use latest values
   const seekRef = useRef<(clientX: number) => void>(() => {});
   const clearRef = useRef<() => void>(() => {});
 
@@ -99,13 +140,14 @@ export default function ElevationPanel({
     const x = Math.max(padL, Math.min(padL + cW, clientX - rect.left));
     const dist = ((x - padL) / cW) * totalDist;
     let nearest = profile[0];
+    let nearestIdx = 0;
     let minDiff = Infinity;
-    for (const pt of profile) {
-      const diff = Math.abs(pt.dist - dist);
-      if (diff < minDiff) { minDiff = diff; nearest = pt; }
+    for (let i = 0; i < profile.length; i++) {
+      const diff = Math.abs(profile[i].dist - dist);
+      if (diff < minDiff) { minDiff = diff; nearest = profile[i]; nearestIdx = i; }
       else if (diff > minDiff + 0.5) break;
     }
-    setHoverInfo({ x, point: nearest });
+    setHoverInfo({ x, index: nearestIdx, point: nearest });
     onHoverPosition?.([nearest.lat, nearest.lng]);
   };
 
@@ -114,17 +156,11 @@ export default function ElevationPanel({
     onHoverPosition?.(null);
   };
 
-  // Attach non-passive touchmove so we can preventDefault (prevents page scroll while scrubbing)
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length > 0) seekRef.current(e.touches[0].clientX);
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      if (e.touches.length > 0) seekRef.current(e.touches[0].clientX);
-    };
+    const onTouchStart = (e: TouchEvent) => { if (e.touches.length > 0) seekRef.current(e.touches[0].clientX); };
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); if (e.touches.length > 0) seekRef.current(e.touches[0].clientX); };
     const onTouchEnd = () => clearRef.current();
     el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -134,14 +170,34 @@ export default function ElevationPanel({
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [hasData]); // re-attach when SVG mounts/unmounts
+  }, [hasData]);
 
-  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    seekRef.current(e.clientX);
-  }
-  function handleMouseLeave() {
-    clearRef.current();
-  }
+  // Compute stats for current hover position
+  const stats = useMemo(() => {
+    if (!hoverInfo || !suffixDeniv) return null;
+    const { index, point } = hoverInfo;
+    const kmCumul = point.dist;
+    const kmRestants = totalDist - point.dist;
+
+    // Gradient: slope over a window of ±10 profile points
+    const wStart = Math.max(0, index - 10);
+    const wEnd = Math.min(profile.length - 1, index + 10);
+    const deltaEle = profile[wEnd].ele - profile[wStart].ele;
+    const deltaDist = (profile[wEnd].dist - profile[wStart].dist) * 1000; // m
+    const pente = deltaDist > 1 ? (deltaEle / deltaDist) * 100 : 0;
+
+    // D+ and D- restants
+    const dPlusRestants = suffixDeniv.dPlus[index];
+    const dMinusRestants = suffixDeniv.dMinus[index];
+
+    // Next ravitaillement
+    const nextRavit = ravitaillementPositions.find((d) => d > point.dist + 0.05);
+    const kmRavit = nextRavit != null ? nextRavit - point.dist : null;
+
+    return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit };
+  }, [hoverInfo, suffixDeniv, profile, totalDist, ravitaillementPositions]);
+
+  const dash = '—';
 
   let chartEl: React.ReactNode = null;
   if (hasData) {
@@ -170,8 +226,8 @@ export default function ElevationPanel({
         width={chartPxW}
         height={SVG_H}
         style={{ display: 'block', cursor: 'crosshair', touchAction: 'none' }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onMouseMove={(e) => seekRef.current(e.clientX)}
+        onMouseLeave={() => clearRef.current()}
       >
         {yGrids.map(({ y, label }) => (
           <g key={label}>
@@ -186,7 +242,6 @@ export default function ElevationPanel({
         {xTicks.map(({ x, label }) => (
           <text key={label} x={x} y={padT + cH + 13} textAnchor="middle" fontSize={9} fill="#9ca3af">{label}</text>
         ))}
-
         {hoverInfo && (() => {
           const hx = hoverInfo.x;
           const hy = toY(hoverInfo.point.ele);
@@ -211,6 +266,7 @@ export default function ElevationPanel({
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-[1000]">
+      {/* Header: parcours selector */}
       <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100">
         <span className="text-sm font-semibold text-gray-700 flex-shrink-0">Profil d'élévation</span>
         <div className="flex gap-1.5 flex-1 overflow-x-auto">
@@ -241,6 +297,20 @@ export default function ElevationPanel({
           ×
         </button>
       </div>
+
+      {/* Stats row */}
+      {hasData && (
+        <div className="flex gap-x-4 gap-y-0 px-3 py-1.5 bg-gray-50 border-b border-gray-100 overflow-x-auto flex-nowrap text-xs">
+          <StatCell label="Km cumulés" value={stats ? `${fmt(stats.kmCumul)} km` : dash} />
+          <StatCell label="Km restants" value={stats ? `${fmt(stats.kmRestants)} km` : dash} />
+          <StatCell label="Prochain ravit." value={stats ? (stats.kmRavit != null ? `${fmt(stats.kmRavit)} km` : 'aucun') : dash} />
+          <StatCell label="Pente" value={stats ? `${stats.pente >= 0 ? '+' : ''}${fmt(stats.pente, 1)} %` : dash} highlight={stats ? (stats.pente > 10 ? 'up' : stats.pente < -10 ? 'down' : null) : null} />
+          <StatCell label="D+ restant" value={stats ? `${Math.round(stats.dPlusRestants)} m` : dash} />
+          <StatCell label="D− restant" value={stats ? `${Math.round(stats.dMinusRestants)} m` : dash} />
+        </div>
+      )}
+
+      {/* Chart */}
       <div ref={containerRef}>
         {hasData ? (
           chartEl
@@ -250,6 +320,19 @@ export default function ElevationPanel({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function StatCell({ label, value, highlight }: { label: string; value: string; highlight?: 'up' | 'down' | null }) {
+  const valueColor =
+    highlight === 'up' ? 'text-red-600' :
+    highlight === 'down' ? 'text-blue-600' :
+    'text-gray-800';
+  return (
+    <div className="flex-shrink-0 flex flex-col leading-tight">
+      <span className="text-gray-400 text-[10px]">{label}</span>
+      <span className={`font-semibold ${valueColor}`}>{value}</span>
     </div>
   );
 }
