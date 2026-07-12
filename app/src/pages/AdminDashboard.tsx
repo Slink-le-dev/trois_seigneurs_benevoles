@@ -185,7 +185,7 @@ function AdminContent({
             </svg>
             Trace GPX
           </button>
-          <a href="/benevoles" className="underline opacity-80 hover:opacity-100">
+          <a href="/benevoles" target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
             Vue bénévole
           </a>
           <a href="/participant" target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
