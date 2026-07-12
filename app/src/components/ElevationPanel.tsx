@@ -3,6 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Parcours, Poste } from '../types';
 
 interface ProfilePoint { dist: number; ele: number; lat: number; lng: number; }
+interface PosteMarker { dist: number; type: 'eau' | 'nourriture' | 'medical'; }
+
+const MARKER_COLOR: Record<string, string> = { eau: '#2563eb', nourriture: '#f97316', medical: '#dc2626' };
+const MARKER_LETTER: Record<string, string> = { eau: 'E', nourriture: 'N', medical: 'M' };
 
 function getProfile(fc: GeoJSON.FeatureCollection): ProfilePoint[] {
   const coords: number[][] = [];
@@ -94,8 +98,8 @@ export default function ElevationPanel({
     return { dPlus, dMinus };
   }, [profile]);
 
-  // Ravitaillement postes projected onto the trace (km from start)
-  const ravitaillementPositions = useMemo(() => {
+  // Postes (eau, nourriture, medical) projected onto the trace
+  const posteMarkers = useMemo((): PosteMarker[] => {
     if (!selected?.gpx_geojson || !getParcoursIdsForPoste) return [];
     const coords: number[][] = [];
     for (const f of selected.gpx_geojson.features) {
@@ -105,20 +109,21 @@ export default function ElevationPanel({
     }
     if (coords.length < 2) return [];
     const line = turf.lineString(coords.map((c) => c.slice(0, 2)) as [number, number][]);
-    return postes
-      .filter((p) =>
-        (p.types.includes('eau') || p.types.includes('nourriture')) &&
-        getParcoursIdsForPoste(p.id).includes(selected.id),
-      )
-      .map((p) => {
-        const nearest = turf.nearestPointOnLine(line, turf.point([p.lng, p.lat]), { units: 'kilometers' });
-        return nearest.properties.location ?? 0;
-      })
-      .sort((a, b) => a - b);
+    const TYPES = ['eau', 'nourriture', 'medical'] as const;
+    const markers: PosteMarker[] = [];
+    for (const p of postes) {
+      if (!getParcoursIdsForPoste(p.id).includes(selected.id)) continue;
+      const relevant = TYPES.filter((t) => p.types.includes(t));
+      if (!relevant.length) continue;
+      const nearest = turf.nearestPointOnLine(line, turf.point([p.lng, p.lat]), { units: 'kilometers' });
+      const dist = nearest.properties.location ?? 0;
+      for (const type of relevant) markers.push({ dist, type });
+    }
+    return markers.sort((a, b) => a.dist - b.dist);
   }, [selected, postes, getParcoursIdsForPoste]);
 
   const SVG_H = 110;
-  const padL = 44, padR = 12, padT = 8, padB = 22;
+  const padL = 44, padR = 12, padT = 8, padB = 26;
   const cW = Math.max(chartPxW - padL - padR, 1);
   const cH = SVG_H - padT - padB;
 
@@ -172,30 +177,25 @@ export default function ElevationPanel({
     };
   }, [hasData]);
 
-  // Compute stats for current hover position
+  // Stats for current hover position
   const stats = useMemo(() => {
     if (!hoverInfo || !suffixDeniv) return null;
     const { index, point } = hoverInfo;
     const kmCumul = point.dist;
     const kmRestants = totalDist - point.dist;
-
-    // Gradient: slope over a window of ±10 profile points
     const wStart = Math.max(0, index - 10);
     const wEnd = Math.min(profile.length - 1, index + 10);
     const deltaEle = profile[wEnd].ele - profile[wStart].ele;
-    const deltaDist = (profile[wEnd].dist - profile[wStart].dist) * 1000; // m
+    const deltaDist = (profile[wEnd].dist - profile[wStart].dist) * 1000;
     const pente = deltaDist > 1 ? (deltaEle / deltaDist) * 100 : 0;
-
-    // D+ and D- restants
     const dPlusRestants = suffixDeniv.dPlus[index];
     const dMinusRestants = suffixDeniv.dMinus[index];
-
-    // Next ravitaillement
-    const nextRavit = ravitaillementPositions.find((d) => d > point.dist + 0.05);
-    const kmRavit = nextRavit != null ? nextRavit - point.dist : null;
-
+    const nextRavit = posteMarkers
+      .filter((m) => m.type === 'eau' || m.type === 'nourriture')
+      .find((m) => m.dist > point.dist + 0.05);
+    const kmRavit = nextRavit != null ? nextRavit.dist - point.dist : null;
     return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit };
-  }, [hoverInfo, suffixDeniv, profile, totalDist, ravitaillementPositions]);
+  }, [hoverInfo, suffixDeniv, profile, totalDist, posteMarkers]);
 
   const dash = '—';
 
@@ -229,19 +229,42 @@ export default function ElevationPanel({
         onMouseMove={(e) => seekRef.current(e.clientX)}
         onMouseLeave={() => clearRef.current()}
       >
+        {/* Grid */}
         {yGrids.map(({ y, label }) => (
           <g key={label}>
             <line x1={padL} y1={y} x2={padL + cW} y2={y} stroke="#e5e7eb" strokeWidth={1} />
             <text x={padL - 4} y={y} dominantBaseline="middle" textAnchor="end" fontSize={9} fill="#9ca3af">{label}</text>
           </g>
         ))}
+
+        {/* Area + line */}
         <path d={areaPath} fill={col} fillOpacity={0.2} />
         <path d={linePath} fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
+
+        {/* Axes */}
         <line x1={padL} y1={padT} x2={padL} y2={padT + cH} stroke="#d1d5db" strokeWidth={1} />
         <line x1={padL} y1={padT + cH} x2={padL + cW} y2={padT + cH} stroke="#d1d5db" strokeWidth={1} />
+
+        {/* X labels */}
         {xTicks.map(({ x, label }) => (
-          <text key={label} x={x} y={padT + cH + 13} textAnchor="middle" fontSize={9} fill="#9ca3af">{label}</text>
+          <text key={label} x={x} y={padT + cH + 14} textAnchor="middle" fontSize={9} fill="#9ca3af">{label}</text>
         ))}
+
+        {/* Poste markers (eau / nourriture / medical) */}
+        {posteMarkers.map(({ dist, type }, i) => {
+          const x = toX(dist);
+          const color = MARKER_COLOR[type] ?? '#6b7280';
+          const letter = MARKER_LETTER[type] ?? '?';
+          return (
+            <g key={i}>
+              <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke={color} strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
+              <circle cx={x} cy={padT + cH + 6} r={5} fill={color} stroke="white" strokeWidth={1} />
+              <text x={x} y={padT + cH + 7} textAnchor="middle" dominantBaseline="middle" fontSize={5} fill="white" fontWeight="700">{letter}</text>
+            </g>
+          );
+        })}
+
+        {/* Hover indicator */}
         {hoverInfo && (() => {
           const hx = hoverInfo.x;
           const hy = toY(hoverInfo.point.ele);
@@ -289,6 +312,15 @@ export default function ElevationPanel({
             <span className="text-xs text-gray-400">Aucun parcours avec trace GPX</span>
           )}
         </div>
+        {/* Legend */}
+        <div className="hidden sm:flex items-center gap-2 flex-shrink-0 text-[10px] text-gray-400">
+          {(['eau', 'nourriture', 'medical'] as const).map((t) => (
+            <span key={t} className="flex items-center gap-0.5">
+              <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill={MARKER_COLOR[t]} /></svg>
+              {t === 'eau' ? 'Eau' : t === 'nourriture' ? 'Nourrit.' : 'Médical'}
+            </span>
+          ))}
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -300,7 +332,7 @@ export default function ElevationPanel({
 
       {/* Stats row */}
       {hasData && (
-        <div className="flex gap-x-4 gap-y-0 px-3 py-1.5 bg-gray-50 border-b border-gray-100 overflow-x-auto flex-nowrap text-xs">
+        <div className="flex gap-x-4 px-3 py-1.5 bg-gray-50 border-b border-gray-100 overflow-x-auto flex-nowrap text-xs">
           <StatCell label="Km cumulés" value={stats ? `${fmt(stats.kmCumul)} km` : dash} />
           <StatCell label="Km restants" value={stats ? `${fmt(stats.kmRestants)} km` : dash} />
           <StatCell label="Prochain ravit." value={stats ? (stats.kmRavit != null ? `${fmt(stats.kmRavit)} km` : 'aucun') : dash} />
@@ -325,10 +357,7 @@ export default function ElevationPanel({
 }
 
 function StatCell({ label, value, highlight }: { label: string; value: string; highlight?: 'up' | 'down' | null }) {
-  const valueColor =
-    highlight === 'up' ? 'text-red-600' :
-    highlight === 'down' ? 'text-blue-600' :
-    'text-gray-800';
+  const valueColor = highlight === 'up' ? 'text-red-600' : highlight === 'down' ? 'text-blue-600' : 'text-gray-800';
   return (
     <div className="flex-shrink-0 flex flex-col leading-tight">
       <span className="text-gray-400 text-[10px]">{label}</span>
