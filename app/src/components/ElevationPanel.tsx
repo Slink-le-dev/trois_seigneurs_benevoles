@@ -1,12 +1,16 @@
 import * as turf from '@turf/turf';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Parcours, Poste } from '../types';
+import { Parcours, Poste, POSTE_TYPES } from '../types';
 
 interface ProfilePoint { dist: number; ele: number; lat: number; lng: number; }
-interface PosteMarker { dist: number; type: 'eau' | 'nourriture' | 'medical'; }
+interface PosteMarker { dist: number; types: Array<'eau' | 'nourriture' | 'medical'>; }
 
-const MARKER_COLOR: Record<string, string> = { eau: '#2563eb', nourriture: '#f97316', medical: '#dc2626' };
-const MARKER_LETTER: Record<string, string> = { eau: 'E', nourriture: 'N', medical: 'M' };
+const RELEVANT_TYPES = ['eau', 'nourriture', 'medical'] as const;
+type RelevantType = typeof RELEVANT_TYPES[number];
+
+const EMOJI = Object.fromEntries(
+  POSTE_TYPES.filter((t) => (RELEVANT_TYPES as readonly string[]).includes(t.code)).map((t) => [t.code, t.emoji]),
+) as Record<RelevantType, string>;
 
 function getProfile(fc: GeoJSON.FeatureCollection): ProfilePoint[] {
   const coords: number[][] = [];
@@ -98,7 +102,7 @@ export default function ElevationPanel({
     return { dPlus, dMinus };
   }, [profile]);
 
-  // Postes (eau, nourriture, medical) projected onto the trace
+  // One marker per poste (grouped types) projected onto the trace
   const posteMarkers = useMemo((): PosteMarker[] => {
     if (!selected?.gpx_geojson || !getParcoursIdsForPoste) return [];
     const coords: number[][] = [];
@@ -109,21 +113,20 @@ export default function ElevationPanel({
     }
     if (coords.length < 2) return [];
     const line = turf.lineString(coords.map((c) => c.slice(0, 2)) as [number, number][]);
-    const TYPES = ['eau', 'nourriture', 'medical'] as const;
-    const markers: PosteMarker[] = [];
-    for (const p of postes) {
-      if (!getParcoursIdsForPoste(p.id).includes(selected.id)) continue;
-      const relevant = TYPES.filter((t) => p.types.includes(t));
-      if (!relevant.length) continue;
-      const nearest = turf.nearestPointOnLine(line, turf.point([p.lng, p.lat]), { units: 'kilometers' });
-      const dist = nearest.properties.location ?? 0;
-      for (const type of relevant) markers.push({ dist, type });
-    }
-    return markers.sort((a, b) => a.dist - b.dist);
+    return postes
+      .map((p) => {
+        const types = RELEVANT_TYPES.filter((t) => p.types.includes(t));
+        if (!types.length || !getParcoursIdsForPoste(p.id).includes(selected.id)) return null;
+        const nearest = turf.nearestPointOnLine(line, turf.point([p.lng, p.lat]), { units: 'kilometers' });
+        return { dist: nearest.properties.location ?? 0, types };
+      })
+      .filter((m): m is PosteMarker => m !== null)
+      .sort((a, b) => a.dist - b.dist);
   }, [selected, postes, getParcoursIdsForPoste]);
 
-  const SVG_H = 110;
-  const padL = 44, padR = 12, padT = 8, padB = 26;
+  // Chart constants — extra bottom padding to fit emoji below baseline
+  const SVG_H = 120;
+  const padL = 44, padR = 12, padT = 8, padB = 30;
   const cW = Math.max(chartPxW - padL - padR, 1);
   const cH = SVG_H - padT - padB;
 
@@ -191,7 +194,7 @@ export default function ElevationPanel({
     const dPlusRestants = suffixDeniv.dPlus[index];
     const dMinusRestants = suffixDeniv.dMinus[index];
     const nextRavit = posteMarkers
-      .filter((m) => m.type === 'eau' || m.type === 'nourriture')
+      .filter((m) => m.types.includes('eau') || m.types.includes('nourriture'))
       .find((m) => m.dist > point.dist + 0.05);
     const kmRavit = nextRavit != null ? nextRavit.dist - point.dist : null;
     return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit };
@@ -219,6 +222,7 @@ export default function ElevationPanel({
 
     const hx = hoverInfo?.x ?? 0;
     const tooltipRight = hx > padL + cW * 0.6;
+    const EMOJI_SPACING = 13; // px between emoji centers when multiple
 
     chartEl = (
       <svg
@@ -229,7 +233,7 @@ export default function ElevationPanel({
         onMouseMove={(e) => seekRef.current(e.clientX)}
         onMouseLeave={() => clearRef.current()}
       >
-        {/* Grid */}
+        {/* Gridlines */}
         {yGrids.map(({ y, label }) => (
           <g key={label}>
             <line x1={padL} y1={y} x2={padL + cW} y2={y} stroke="#e5e7eb" strokeWidth={1} />
@@ -245,21 +249,31 @@ export default function ElevationPanel({
         <line x1={padL} y1={padT} x2={padL} y2={padT + cH} stroke="#d1d5db" strokeWidth={1} />
         <line x1={padL} y1={padT + cH} x2={padL + cW} y2={padT + cH} stroke="#d1d5db" strokeWidth={1} />
 
-        {/* X labels */}
+        {/* X tick labels */}
         {xTicks.map(({ x, label }) => (
-          <text key={label} x={x} y={padT + cH + 14} textAnchor="middle" fontSize={9} fill="#9ca3af">{label}</text>
+          <text key={label} x={x} y={padT + cH + 22} textAnchor="middle" fontSize={9} fill="#c4c4c4">{label}</text>
         ))}
 
-        {/* Poste markers (eau / nourriture / medical) */}
-        {posteMarkers.map(({ dist, type }, i) => {
+        {/* Poste markers: one group per poste, emoji side by side */}
+        {posteMarkers.map(({ dist, types }, i) => {
           const x = toX(dist);
-          const color = MARKER_COLOR[type] ?? '#6b7280';
-          const letter = MARKER_LETTER[type] ?? '?';
+          const totalW = (types.length - 1) * EMOJI_SPACING;
+          const startX = x - totalW / 2;
           return (
             <g key={i}>
-              <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke={color} strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
-              <circle cx={x} cy={padT + cH + 6} r={5} fill={color} stroke="white" strokeWidth={1} />
-              <text x={x} y={padT + cH + 7} textAnchor="middle" dominantBaseline="middle" fontSize={5} fill="white" fontWeight="700">{letter}</text>
+              <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
+              {types.map((type, j) => (
+                <text
+                  key={type}
+                  x={startX + j * EMOJI_SPACING}
+                  y={padT + cH + 8}
+                  textAnchor="middle"
+                  dominantBaseline="hanging"
+                  fontSize={11}
+                >
+                  {EMOJI[type]}
+                </text>
+              ))}
             </g>
           );
         })}
@@ -289,7 +303,7 @@ export default function ElevationPanel({
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-[1000]">
-      {/* Header: parcours selector */}
+      {/* Header: parcours selector + legend */}
       <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100">
         <span className="text-sm font-semibold text-gray-700 flex-shrink-0">Profil d'élévation</span>
         <div className="flex gap-1.5 flex-1 overflow-x-auto">
@@ -314,9 +328,9 @@ export default function ElevationPanel({
         </div>
         {/* Legend */}
         <div className="hidden sm:flex items-center gap-2 flex-shrink-0 text-[10px] text-gray-400">
-          {(['eau', 'nourriture', 'medical'] as const).map((t) => (
+          {RELEVANT_TYPES.map((t) => (
             <span key={t} className="flex items-center gap-0.5">
-              <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill={MARKER_COLOR[t]} /></svg>
+              <span className="text-sm leading-none">{EMOJI[t]}</span>
               {t === 'eau' ? 'Eau' : t === 'nourriture' ? 'Nourrit.' : 'Médical'}
             </span>
           ))}
@@ -347,7 +361,7 @@ export default function ElevationPanel({
         {hasData ? (
           chartEl
         ) : (
-          <div className="flex items-center justify-center h-[110px] text-sm text-gray-400">
+          <div className="flex items-center justify-center h-[120px] text-sm text-gray-400">
             {selected ? "Pas de données d'élévation sur cette trace." : 'Sélectionnez un parcours.'}
           </div>
         )}
