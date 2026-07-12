@@ -12,13 +12,20 @@ const EMOJI = Object.fromEntries(
   POSTE_TYPES.filter((t) => (RELEVANT_TYPES as readonly string[]).includes(t.code)).map((t) => [t.code, t.emoji]),
 ) as Record<RelevantType, string>;
 
-function getProfile(fc: GeoJSON.FeatureCollection): ProfilePoint[] {
+const GPS_MAX_DIST_KM = 0.2; // 200 m
+
+function buildCoords(fc: GeoJSON.FeatureCollection): number[][] {
   const coords: number[][] = [];
   for (const f of fc.features) {
     if (f.geometry?.type === 'LineString') coords.push(...(f.geometry as GeoJSON.LineString).coordinates);
     else if (f.geometry?.type === 'MultiLineString')
       for (const seg of (f.geometry as GeoJSON.MultiLineString).coordinates) coords.push(...seg);
   }
+  return coords;
+}
+
+function getProfile(fc: GeoJSON.FeatureCollection): ProfilePoint[] {
+  const coords = buildCoords(fc);
   const profile: ProfilePoint[] = [];
   let cumDist = 0;
   for (let i = 0; i < coords.length; i++) {
@@ -48,13 +55,33 @@ function niceStep(range: number, ticks: number): number {
   return mag * (n < 1.5 ? 1 : n < 3.5 ? 2 : n < 7.5 ? 5 : 10);
 }
 
+function nearestProfilePoint(profile: ProfilePoint[], dist: number): ProfilePoint {
+  let nearest = profile[0];
+  let minDiff = Infinity;
+  for (const p of profile) {
+    const diff = Math.abs(p.dist - dist);
+    if (diff < minDiff) { minDiff = diff; nearest = p; }
+    else if (diff > minDiff + 0.5) break;
+  }
+  return nearest;
+}
+
 function fmt(n: number, dec = 1) { return n.toFixed(dec); }
+
+function slopeColor(pct: number): string {
+  if (pct <= 5)  return '#4ade80';
+  if (pct <= 10) return '#facc15';
+  if (pct <= 15) return '#fb923c';
+  if (pct <= 20) return '#f87171';
+  return '#78350f';
+}
 
 export default function ElevationPanel({
   parcours,
   postes = [],
   getParcoursIdsForPoste,
   filterParcoursIds,
+  userPosition,
   onHoverPosition,
   onClose,
 }: {
@@ -62,6 +89,7 @@ export default function ElevationPanel({
   postes?: Poste[];
   getParcoursIdsForPoste?: (id: string) => string[];
   filterParcoursIds?: string[];
+  userPosition?: [number, number] | null;
   onHoverPosition?: (pos: [number, number] | null) => void;
   onClose: () => void;
 }) {
@@ -89,7 +117,14 @@ export default function ElevationPanel({
   const rawProfile = selected?.gpx_geojson ? getProfile(selected.gpx_geojson) : [];
   const profile = downsample(rawProfile);
 
-  // Suffix sums for D+/D- from each index to end
+  // Shared trace line (2D) — used by posteMarkers and gpsOnTrace
+  const traceLine = useMemo(() => {
+    if (!selected?.gpx_geojson) return null;
+    const coords = buildCoords(selected.gpx_geojson).map((c) => c.slice(0, 2)) as [number, number][];
+    return coords.length >= 2 ? turf.lineString(coords) : null;
+  }, [selected]);
+
+  // Suffix sums for D+/D- restants
   const suffixDeniv = useMemo(() => {
     if (profile.length < 2) return null;
     const dPlus = new Float64Array(profile.length);
@@ -104,27 +139,30 @@ export default function ElevationPanel({
 
   // One marker per poste (grouped types) projected onto the trace
   const posteMarkers = useMemo((): PosteMarker[] => {
-    if (!selected?.gpx_geojson || !getParcoursIdsForPoste) return [];
-    const coords: number[][] = [];
-    for (const f of selected.gpx_geojson.features) {
-      if (f.geometry?.type === 'LineString') coords.push(...(f.geometry as GeoJSON.LineString).coordinates);
-      else if (f.geometry?.type === 'MultiLineString')
-        for (const seg of (f.geometry as GeoJSON.MultiLineString).coordinates) coords.push(...seg);
-    }
-    if (coords.length < 2) return [];
-    const line = turf.lineString(coords.map((c) => c.slice(0, 2)) as [number, number][]);
+    if (!traceLine || !selected || !getParcoursIdsForPoste) return [];
     return postes
       .map((p) => {
         const types = RELEVANT_TYPES.filter((t) => p.types.includes(t));
         if (!types.length || !getParcoursIdsForPoste(p.id).includes(selected.id)) return null;
-        const nearest = turf.nearestPointOnLine(line, turf.point([p.lng, p.lat]), { units: 'kilometers' });
+        const nearest = turf.nearestPointOnLine(traceLine, turf.point([p.lng, p.lat]), { units: 'kilometers' });
         return { dist: nearest.properties.location ?? 0, types };
       })
       .filter((m): m is PosteMarker => m !== null)
       .sort((a, b) => a.dist - b.dist);
-  }, [selected, postes, getParcoursIdsForPoste]);
+  }, [traceLine, selected, postes, getParcoursIdsForPoste]);
 
-  // Chart constants — extra bottom padding to fit emoji below baseline
+  // GPS position projected onto the trace (null if > 200 m away)
+  const gpsOnTrace = useMemo(() => {
+    if (!traceLine || !userPosition || profile.length < 2) return null;
+    const pt = turf.point([userPosition[1], userPosition[0]]);
+    const nearest = turf.nearestPointOnLine(traceLine, pt, { units: 'kilometers' });
+    if ((nearest.properties.dist ?? Infinity) > GPS_MAX_DIST_KM) return null;
+    const dist = nearest.properties.location ?? 0;
+    const ele = nearestProfilePoint(profile, dist).ele;
+    return { dist, ele };
+  }, [traceLine, userPosition, profile]);
+
+  // Chart layout constants
   const SVG_H = 120;
   const padL = 44, padR = 12, padT = 8, padB = 30;
   const cW = Math.max(chartPxW - padL - padR, 1);
@@ -206,8 +244,8 @@ export default function ElevationPanel({
   if (hasData) {
     const col = selected!.couleur;
     const pts = profile.map((p) => `${toX(p.dist).toFixed(1)},${toY(p.ele).toFixed(1)}`).join(' L ');
-    const areaPath = `M ${pts} L ${toX(totalDist)},${padT + cH} L ${padL},${padT + cH} Z`;
     const linePath = `M ${pts}`;
+    const baseline = padT + cH;
 
     const yStep = niceStep(eleRange, 4);
     const yStart = Math.ceil(minEle / yStep) * yStep;
@@ -217,12 +255,13 @@ export default function ElevationPanel({
 
     const xStep = niceStep(totalDist, Math.max(1, Math.floor(cW / 70)));
     const xTicks: Array<{ x: number; label: string }> = [];
-    for (let d = xStep; d < totalDist - xStep * 0.3; d += xStep)
-      xTicks.push({ x: toX(d), label: `${d.toFixed(0)} km` });
+    const xDecimals = xStep < 1 ? 1 : 0;
+    for (let d = xStep; toX(d) < padL + cW - 20; d += xStep)
+      xTicks.push({ x: toX(d), label: `${d.toFixed(xDecimals)} km` });
 
     const hx = hoverInfo?.x ?? 0;
     const tooltipRight = hx > padL + cW * 0.6;
-    const EMOJI_SPACING = 13; // px between emoji centers when multiple
+    const EMOJI_SPACING = 13;
 
     chartEl = (
       <svg
@@ -241,8 +280,26 @@ export default function ElevationPanel({
           </g>
         ))}
 
-        {/* Area + line */}
-        <path d={areaPath} fill={col} fillOpacity={0.2} />
+        {/* Slope-colored area segments — smoothed over ±5 points to reduce GPS elevation noise */}
+        {profile.slice(0, -1).map((pt, i) => {
+          const next = profile[i + 1];
+          const x1 = toX(pt.dist), y1 = toY(pt.ele);
+          const x2 = toX(next.dist), y2 = toY(next.ele);
+          const wStart = Math.max(0, i - 5);
+          const wEnd = Math.min(profile.length - 1, i + 6);
+          const deltaEle = Math.abs(profile[wEnd].ele - profile[wStart].ele);
+          const deltaDist = (profile[wEnd].dist - profile[wStart].dist) * 1000;
+          const slope = deltaDist > 0 ? deltaEle / deltaDist * 100 : 0;
+          return (
+            <polygon
+              key={i}
+              points={`${x1},${y1} ${x2},${y2} ${x2},${baseline} ${x1},${baseline}`}
+              style={{ fill: slopeColor(slope), fillOpacity: 0.65 }}
+            />
+          );
+        })}
+
+        {/* Elevation line (parcours colour) */}
         <path d={linePath} fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
 
         {/* Axes */}
@@ -254,7 +311,7 @@ export default function ElevationPanel({
           <text key={label} x={x} y={padT + cH + 22} textAnchor="middle" fontSize={9} fill="#c4c4c4">{label}</text>
         ))}
 
-        {/* Poste markers: one group per poste, emoji side by side */}
+        {/* Poste markers */}
         {posteMarkers.map(({ dist, types }, i) => {
           const x = toX(dist);
           const totalW = (types.length - 1) * EMOJI_SPACING;
@@ -263,14 +320,7 @@ export default function ElevationPanel({
             <g key={i}>
               <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
               {types.map((type, j) => (
-                <text
-                  key={type}
-                  x={startX + j * EMOJI_SPACING}
-                  y={padT + cH + 8}
-                  textAnchor="middle"
-                  dominantBaseline="hanging"
-                  fontSize={11}
-                >
+                <text key={type} x={startX + j * EMOJI_SPACING} y={padT + cH + 8} textAnchor="middle" dominantBaseline="hanging" fontSize={11}>
                   {EMOJI[type]}
                 </text>
               ))}
@@ -278,7 +328,19 @@ export default function ElevationPanel({
           );
         })}
 
-        {/* Hover indicator */}
+        {/* GPS position on trace */}
+        {gpsOnTrace && (() => {
+          const gx = toX(gpsOnTrace.dist);
+          const gy = toY(gpsOnTrace.ele);
+          return (
+            <g>
+              <line x1={gx} y1={padT} x2={gx} y2={padT + cH} stroke="#3b82f6" strokeWidth={1.5} />
+              <circle cx={gx} cy={gy} r={5} fill="#3b82f6" stroke="white" strokeWidth={2} />
+            </g>
+          );
+        })()}
+
+        {/* Hover indicator (on top of GPS) */}
         {hoverInfo && (() => {
           const hx = hoverInfo.x;
           const hy = toY(hoverInfo.point.ele);
@@ -303,7 +365,7 @@ export default function ElevationPanel({
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-[1000]">
-      {/* Header: parcours selector + legend */}
+      {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100">
         <span className="text-sm font-semibold text-gray-700 flex-shrink-0">Profil d'élévation</span>
         <div className="flex gap-1.5 flex-1 overflow-x-auto">

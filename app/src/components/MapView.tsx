@@ -428,6 +428,7 @@ export default function MapView({
         postes={postes}
         getParcoursIdsForPoste={getParcoursIdsForPoste}
         filterParcoursIds={filterParcoursIds}
+        userPosition={tracking ? userPosition : null}
         onHoverPosition={setElevationHoverPos}
         onClose={() => { setShowElevation(false); setElevationHoverPos(null); }}
       />

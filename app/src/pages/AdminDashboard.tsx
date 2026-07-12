@@ -188,6 +188,9 @@ function AdminContent({
           <a href="/benevoles" className="underline opacity-80 hover:opacity-100">
             Vue bénévole
           </a>
+          <a href="/participant" target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
+            Vue participant
+          </a>
           <button onClick={onSignOut} className="underline opacity-80 hover:opacity-100">
             Déconnexion
           </button>
