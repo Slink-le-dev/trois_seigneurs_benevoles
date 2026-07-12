@@ -8,6 +8,7 @@ interface ParcoursPanelProps {
   onToggleVisibility: (id: string) => void;
   onUpdate: (id: string, data: Partial<Parcours>) => Promise<void>;
   onRemoveGpx: (id: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   onCreate: () => Promise<void>;
 }
 
@@ -19,7 +20,7 @@ const PRESET_COLORS = [
   '#db2777', '#ec4899', '#374151', '#6b7280',
 ];
 
-export default function ParcoursPanel({ parcours, visibility, onToggleVisibility, onUpdate, onRemoveGpx, onCreate }: ParcoursPanelProps) {
+export default function ParcoursPanel({ parcours, visibility, onToggleVisibility, onUpdate, onRemoveGpx, onDelete, onCreate }: ParcoursPanelProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
@@ -166,10 +167,17 @@ export default function ParcoursPanel({ parcours, visibility, onToggleVisibility
               {busyId === p.id ? 'Import…' : p.gpx_geojson ? 'Remplacer le GPX' : 'Importer un GPX'}
             </button>
             {p.gpx_geojson && (
-              <button type="button" className="px-2 py-1 border rounded text-red-600 hover:bg-red-50" onClick={() => onRemoveGpx(p.id)}>
-                Supprimer
+              <button type="button" className="px-2 py-1 border rounded text-gray-500 hover:bg-gray-50 text-xs" onClick={() => onRemoveGpx(p.id)}>
+                Retirer le GPX
               </button>
             )}
+            <button
+              type="button"
+              className="px-2 py-1 border rounded text-red-600 hover:bg-red-50 ml-auto"
+              onClick={() => { if (window.confirm(`Supprimer le parcours « ${p.nom} » ?`)) onDelete(p.id); }}
+            >
+              Supprimer
+            </button>
           </div>
           <p className="text-xs text-gray-400">Glisser-déposer un fichier .gpx possible sur cette carte.</p>
         </div>

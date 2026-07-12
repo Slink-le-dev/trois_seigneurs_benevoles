@@ -164,6 +164,13 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     await updateParcours(id, { gpx_geojson: null, distance_km: null, denivele_m: null });
   }
 
+  async function deleteParcours(id: string) {
+    const { error } = await supabase.from('parcours').delete().eq('id', id);
+    if (error) throw error;
+    setParcours((c) => c.filter((p) => p.id !== id));
+    setPosteParcoursState((c) => c.filter((pp) => pp.parcours_id !== id));
+  }
+
   // ---- Postes ----
 
   async function createPoste(data: Partial<Poste>, parcoursIds: string[]) {
@@ -434,6 +441,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     createParcours,
     updateParcours,
     deleteParcoursGpx,
+    deleteParcours,
     createPoste,
     updatePoste,
     deletePoste,

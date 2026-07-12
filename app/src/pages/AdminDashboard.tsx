@@ -263,6 +263,7 @@ function AdminContent({
                 onToggleVisibility={(id) => setParcoursVisibility((v) => ({ ...v, [id]: v[id] === false }))}
                 onUpdate={data.updateParcours}
                 onRemoveGpx={data.deleteParcoursGpx}
+                onDelete={data.deleteParcours}
                 onCreate={async () => { await data.createParcours({ nom: 'Nouveau parcours', couleur: DEFAULT_COULEURS[data.parcours.length % DEFAULT_COULEURS.length] }); }}
               />
 
