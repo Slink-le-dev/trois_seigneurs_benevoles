@@ -166,11 +166,6 @@ export default function ParcoursPanel({ parcours, visibility, onToggleVisibility
             >
               {busyId === p.id ? 'Import…' : p.gpx_geojson ? 'Remplacer le GPX' : 'Importer un GPX'}
             </button>
-            {p.gpx_geojson && (
-              <button type="button" className="px-2 py-1 border rounded text-gray-500 hover:bg-gray-50 text-xs" onClick={() => onRemoveGpx(p.id)}>
-                Retirer le GPX
-              </button>
-            )}
             <button
               type="button"
               className="px-2 py-1 border rounded text-red-600 hover:bg-red-50 ml-auto"
