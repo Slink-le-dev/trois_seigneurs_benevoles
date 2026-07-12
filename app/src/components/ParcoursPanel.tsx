@@ -8,6 +8,7 @@ interface ParcoursPanelProps {
   onToggleVisibility: (id: string) => void;
   onUpdate: (id: string, data: Partial<Parcours>) => Promise<void>;
   onRemoveGpx: (id: string) => Promise<void>;
+  onCreate: () => Promise<void>;
 }
 
 const PRESET_COLORS = [
@@ -18,8 +19,9 @@ const PRESET_COLORS = [
   '#db2777', '#ec4899', '#374151', '#6b7280',
 ];
 
-export default function ParcoursPanel({ parcours, visibility, onToggleVisibility, onUpdate, onRemoveGpx }: ParcoursPanelProps) {
+export default function ParcoursPanel({ parcours, visibility, onToggleVisibility, onUpdate, onRemoveGpx, onCreate }: ParcoursPanelProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
   const [hexInput, setHexInput] = useState('');
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -172,6 +174,14 @@ export default function ParcoursPanel({ parcours, visibility, onToggleVisibility
           <p className="text-xs text-gray-400">Glisser-déposer un fichier .gpx possible sur cette carte.</p>
         </div>
       ))}
+      <button
+        type="button"
+        disabled={creating}
+        onClick={async () => { setCreating(true); try { await onCreate(); } finally { setCreating(false); } }}
+        className="w-full mt-1 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50"
+      >
+        {creating ? 'Création…' : '+ Ajouter un nouveau parcours'}
+      </button>
     </div>
   );
 }
