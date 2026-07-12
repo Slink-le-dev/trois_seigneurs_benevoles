@@ -89,27 +89,58 @@ export default function ElevationPanel({
   const toX = (d: number) => padL + (d / totalDist) * cW;
   const toY = (e: number) => padT + cH - ((e - minEle) / eleRange) * cH;
 
-  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+  // Refs so touch listeners always use the latest computed values without being re-added
+  const seekRef = useRef<(clientX: number) => void>(() => {});
+  const clearRef = useRef<() => void>(() => {});
+
+  seekRef.current = (clientX: number) => {
     if (!hasData || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const rawX = e.clientX - rect.left;
-    const x = Math.max(padL, Math.min(padL + cW, rawX));
+    const x = Math.max(padL, Math.min(padL + cW, clientX - rect.left));
     const dist = ((x - padL) / cW) * totalDist;
-    // Binary-ish: profile is sorted by dist, find nearest
     let nearest = profile[0];
     let minDiff = Infinity;
     for (const pt of profile) {
       const diff = Math.abs(pt.dist - dist);
       if (diff < minDiff) { minDiff = diff; nearest = pt; }
-      else if (diff > minDiff + 0.5) break; // sorted, can stop early
+      else if (diff > minDiff + 0.5) break;
     }
     setHoverInfo({ x, point: nearest });
     onHoverPosition?.([nearest.lat, nearest.lng]);
-  }
+  };
 
-  function handleMouseLeave() {
+  clearRef.current = () => {
     setHoverInfo(null);
     onHoverPosition?.(null);
+  };
+
+  // Attach non-passive touchmove so we can preventDefault (prevents page scroll while scrubbing)
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) seekRef.current(e.touches[0].clientX);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length > 0) seekRef.current(e.touches[0].clientX);
+    };
+    const onTouchEnd = () => clearRef.current();
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [hasData]); // re-attach when SVG mounts/unmounts
+
+  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    seekRef.current(e.clientX);
+  }
+  function handleMouseLeave() {
+    clearRef.current();
   }
 
   let chartEl: React.ReactNode = null;
@@ -130,7 +161,6 @@ export default function ElevationPanel({
     for (let d = xStep; d < totalDist - xStep * 0.3; d += xStep)
       xTicks.push({ x: toX(d), label: `${d.toFixed(0)} km` });
 
-    // Hover tooltip anchor: flip left if near right edge
     const hx = hoverInfo?.x ?? 0;
     const tooltipRight = hx > padL + cW * 0.6;
 
@@ -139,7 +169,7 @@ export default function ElevationPanel({
         ref={svgRef}
         width={chartPxW}
         height={SVG_H}
-        style={{ display: 'block', cursor: 'crosshair' }}
+        style={{ display: 'block', cursor: 'crosshair', touchAction: 'none' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
