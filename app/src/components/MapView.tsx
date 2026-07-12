@@ -244,7 +244,7 @@ export default function MapView({
       type="button"
       onClick={toggleTracking}
       title="Ma position"
-      className={`absolute bottom-10 right-2.5 z-[1000] w-9 h-9 rounded shadow flex items-center justify-center border transition-colors ${tracking ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+      className={`absolute top-[80px] left-[10px] z-[1000] w-[30px] h-[30px] rounded-sm shadow flex items-center justify-center border border-gray-400 transition-colors ${tracking ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
