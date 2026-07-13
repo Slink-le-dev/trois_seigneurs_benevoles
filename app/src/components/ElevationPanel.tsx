@@ -294,7 +294,7 @@ export default function ElevationPanel({
             <polygon
               key={i}
               points={`${x1},${y1} ${x2},${y2} ${x2},${baseline} ${x1},${baseline}`}
-              style={{ fill: slopeColor(slope), fillOpacity: 0.3 }}
+              style={{ fill: slopeColor(slope), fillOpacity: 0.5 }}
             />
           );
         })}
