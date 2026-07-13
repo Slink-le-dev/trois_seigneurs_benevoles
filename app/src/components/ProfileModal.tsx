@@ -79,6 +79,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
 
 export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [organisateurNom, setOrganisateurNom] = useState('');
+  const [telephonePcSecurite, setTelephonePcSecurite] = useState('');
   const [couleurPrincipale, setCouleurPrincipale] = useState('#00C389');
   const [couleurSecondaire, setCouleurSecondaire] = useState('#F3EA5D');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -97,11 +98,12 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_settings').select('organisateur_nom, couleur_principale, couleur_secondaire, logo_url').single()
+    supabase.from('app_settings').select('organisateur_nom, telephone_pc_securite, couleur_principale, couleur_secondaire, logo_url').single()
       .then(({ data }) => {
         if (!data) return;
         const d = data as any;
         setOrganisateurNom(d.organisateur_nom ?? '');
+        setTelephonePcSecurite(d.telephone_pc_securite ?? '');
         setCouleurPrincipale(d.couleur_principale ?? '#00C389');
         setCouleurSecondaire(d.couleur_secondaire ?? '#F3EA5D');
         setLogoUrl(d.logo_url ?? null);
@@ -136,6 +138,7 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
     setSaveSuccess(false);
     await supabase.from('app_settings').update({
       organisateur_nom: organisateurNom,
+      telephone_pc_securite: telephonePcSecurite,
       couleur_principale: couleurPrincipale,
       couleur_secondaire: couleurSecondaire,
     }).eq('id', 1);
@@ -199,6 +202,18 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
                 placeholder="Nom du club ou de l'organisation"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Numéro PC sécurité</label>
+              <input
+                type="tel"
+                value={telephonePcSecurite}
+                onChange={(e) => setTelephonePcSecurite(e.target.value)}
+                placeholder="06 00 00 00 00"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+              />
+              <p className="text-xs text-gray-400 mt-1">Affiché sur les vues Admin, Bénévoles et Participant</p>
             </div>
 
             <div>

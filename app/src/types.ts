@@ -86,6 +86,7 @@ export interface AppSettings {
   couleur_principale: string;
   couleur_secondaire: string;
   logo_url: string | null;
+  telephone_pc_securite: string;
 }
 
 export type BenevoleFormation =
