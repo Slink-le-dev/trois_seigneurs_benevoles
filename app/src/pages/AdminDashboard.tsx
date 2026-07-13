@@ -13,6 +13,7 @@ import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
 import StatusDashboard from '../components/StatusDashboard';
 import MainCouranteTab from '../components/MainCouranteTab';
+import ProfileModal from '../components/ProfileModal';
 import { useAppData } from '../lib/useAppData';
 import { supabase } from '../lib/supabaseClient';
 import { useSession } from '../lib/useSession';
@@ -60,6 +61,7 @@ function AdminContent({
   const [tab, setTab] = useState<Tab>('carte');
   const [showGpxModal, setShowGpxModal] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [placingMode, setPlacingMode] = useState(false);
@@ -199,6 +201,15 @@ function AdminContent({
             Vue participant
           </a>
           <button
+            onClick={() => setShowProfile(true)}
+            title="Profil"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors opacity-80 hover:opacity-100"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+          <button
             onClick={() => setShowSignOutConfirm(true)}
             title="Déconnexion"
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors opacity-80 hover:opacity-100"
@@ -209,6 +220,8 @@ function AdminContent({
           </button>
         </div>
       </header>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
 
       {showSignOutConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowSignOutConfirm(false)}>

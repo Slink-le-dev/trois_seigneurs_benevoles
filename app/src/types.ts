@@ -83,6 +83,8 @@ export interface AppSettings {
   show_gpx_download_participant: boolean;
   show_gpx_download_benevoles: boolean;
   organisateur_nom: string;
+  couleur_principale: string;
+  couleur_secondaire: string;
 }
 
 export type BenevoleFormation =
