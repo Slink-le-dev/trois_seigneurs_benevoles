@@ -157,7 +157,6 @@ export default function PosteFormParticipant({
     : linkedParcours;
 
   const types = POSTE_TYPES.filter((t) => poste.types.includes(t.code));
-  const mapsUrl = `https://www.google.com/maps?q=${poste.lat},${poste.lng}`;
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1000] p-4" onClick={onClose}>
@@ -188,26 +187,6 @@ export default function PosteFormParticipant({
               ))}
             </div>
           )}
-
-          {/* GPS + Google Maps */}
-          <div>
-            <div className="text-gray-500 mb-1 text-xs">Coordonnées GPS</div>
-            <div className="text-gray-800 font-mono text-xs mb-2">
-              {poste.lat.toFixed(5)}, {poste.lng.toFixed(5)}
-            </div>
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Accéder avec Google Maps
-            </a>
-          </div>
 
           {/* Parcours */}
           {displayedParcours.length > 0 && (
