@@ -57,6 +57,7 @@ interface MapViewProps {
   onMoveAbri?: (id: string, lat: number, lng: number) => void;
   showKmMarkers?: boolean;
   hidePersonnelInfo?: boolean;
+  alwaysShowElevation?: boolean;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -185,10 +186,11 @@ export default function MapView({
   onMoveAbri,
   showKmMarkers = true,
   hidePersonnelInfo = false,
+  alwaysShowElevation = false,
 }: MapViewProps) {
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [tracking, setTracking] = useState(false);
-  const [showElevation, setShowElevation] = useState(false);
+  const [showElevation, setShowElevation] = useState(alwaysShowElevation);
   const [elevationHoverPos, setElevationHoverPos] = useState<[number, number] | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
@@ -262,16 +264,18 @@ export default function MapView({
         <circle cx="12" cy="12" r="8" strokeDasharray="2 2" />
       </svg>
     </button>
-    <button
-      type="button"
-      onClick={() => setShowElevation((v) => !v)}
-      title="Profil d'élévation"
-      className={`absolute top-[118px] left-[10px] z-[1000] w-[30px] h-[30px] rounded-sm shadow flex items-center justify-center border border-gray-400 transition-colors ${showElevation ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    </button>
+    {!alwaysShowElevation && (
+      <button
+        type="button"
+        onClick={() => setShowElevation((v) => !v)}
+        title="Profil d'élévation"
+        className={`absolute top-[118px] left-[10px] z-[1000] w-[30px] h-[30px] rounded-sm shadow flex items-center justify-center border border-gray-400 transition-colors ${showElevation ? 'bg-blue-500 border-blue-400 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      </button>
+    )}
     <MapContainer
       center={[45.9, 6.1]}
       zoom={11}
