@@ -34,6 +34,23 @@ function formatDate(debut: string, fin?: string | null) {
   return d;
 }
 
+function EventCard({ evt, past }: { evt: Evenement; past?: boolean }) {
+  return (
+    <Link
+      to={`/admin/${evt.slug}`}
+      className={`flex items-center justify-between bg-white rounded-lg border px-5 py-4 hover:border-[#00C389] hover:shadow-sm transition-all group ${past ? 'border-gray-100 opacity-70 hover:opacity-100' : 'border-gray-200'}`}
+    >
+      <div>
+        <div className={`font-semibold group-hover:text-[#005F61] ${past ? 'text-gray-600' : 'text-gray-900'}`}>{evt.nom}</div>
+        <div className="text-sm text-gray-500 mt-0.5">{formatDate(evt.date_debut, evt.date_fin)}</div>
+      </div>
+      <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00C389] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </Link>
+  );
+}
+
 interface CreateForm {
   nom: string;
   date_debut: string;
@@ -51,11 +68,14 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const aVenir = evenements.filter((e) => e.date_debut >= today).sort((a, b) => a.date_debut.localeCompare(b.date_debut));
+  const passes = evenements.filter((e) => e.date_debut < today).sort((a, b) => b.date_debut.localeCompare(a.date_debut));
+
   function fetchEvenements() {
     supabase
       .from('evenements')
       .select('*')
-      .order('date_debut', { ascending: false })
       .then(({ data }) => {
         setEvenements(data ?? []);
         setLoading(false);
@@ -109,7 +129,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
 
       <main className="flex-1 p-6 max-w-2xl mx-auto w-full">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-gray-800">Mes évènements</h2>
+          <h2 className="text-xl font-bold text-gray-800">Mes évènements à venir</h2>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 bg-[#00C389] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00a874] transition-colors"
@@ -123,26 +143,29 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
 
         {loading ? (
           <div className="text-center text-gray-400 py-12">Chargement…</div>
-        ) : evenements.length === 0 ? (
-          <div className="text-center text-gray-400 py-12">Aucun évènement trouvé.</div>
         ) : (
-          <div className="space-y-3">
-            {evenements.map((evt) => (
-              <Link
-                key={evt.id}
-                to={`/admin/${evt.slug}`}
-                className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-5 py-4 hover:border-[#00C389] hover:shadow-sm transition-all group"
-              >
-                <div>
-                  <div className="font-semibold text-gray-900 group-hover:text-[#005F61]">{evt.nom}</div>
-                  <div className="text-sm text-gray-500 mt-0.5">{formatDate(evt.date_debut, evt.date_fin)}</div>
+          <>
+            {aVenir.length === 0 ? (
+              <div className="text-center text-gray-400 py-8 bg-white rounded-lg border border-gray-200">Aucun évènement à venir.</div>
+            ) : (
+              <div className="space-y-3">
+                {aVenir.map((evt) => (
+                  <EventCard key={evt.id} evt={evt} />
+                ))}
+              </div>
+            )}
+
+            {passes.length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-lg font-bold text-gray-500 mb-4">Mes évènements passés</h2>
+                <div className="space-y-3">
+                  {passes.map((evt) => (
+                    <EventCard key={evt.id} evt={evt} past />
+                  ))}
                 </div>
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00C389] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            ))}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
