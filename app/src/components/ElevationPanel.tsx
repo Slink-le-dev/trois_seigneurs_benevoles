@@ -164,6 +164,16 @@ export default function ElevationPanel({
     return { dist, ele };
   }, [traceLine, userPosition, profile]);
 
+  // Auto-position handle at GPS location when user is on the trace
+  useEffect(() => {
+    if (!gpsOnTrace || profile.length < 2) return;
+    const nearest = nearestProfilePoint(profile, gpsOnTrace.dist);
+    const nearestIdx = profile.indexOf(nearest);
+    setHoverInfo({ x: 0, index: nearestIdx, point: nearest });
+  // gpsOnTrace is the only trigger; profile is stable within the same parcours selection
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gpsOnTrace]);
+
   // Chart layout — padT enlarged to fit emoji + name above the chart
   const SVG_H = 150;
   const padL = 44, padR = 12, padT = 40, padB = 30;
