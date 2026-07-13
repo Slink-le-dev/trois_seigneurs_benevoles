@@ -398,7 +398,7 @@ export default function ElevationPanel({
           if (x < padL || x > padL + cW) return null;
           const totalW = (types.length - 1) * EMOJI_SPACING;
           const startX = x - totalW / 2;
-          const label = nom.length > 14 ? nom.slice(0, 13) + '…' : nom;
+          const label = nom.length > 90 ? nom.slice(0, 89) + '…' : nom;
           return (
             <g key={i}>
               <text x={x} y={padT - 20} textAnchor="middle" fontSize={8} fill="#6b7280">{label}</text>
