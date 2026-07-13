@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
+import { supabase } from '../lib/supabaseClient';
 import { useAppData } from '../lib/useAppData';
 import { POSTE_TYPES, Poste } from '../types';
 
@@ -30,7 +32,26 @@ function PosteMiniCard({ poste, onClose }: { poste: Poste; onClose: () => void }
 }
 
 export default function ParticipantView() {
-  const data = useAppData(false);
+  const { slug } = useParams<{ slug: string }>();
+  const [evenement, setEvenement] = useState<{ id: string; nom: string } | null>(null);
+  const [evenementLoading, setEvenementLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) { setEvenementLoading(false); return; }
+    supabase.from('evenements').select('id, nom').eq('slug', slug).single()
+      .then(({ data }) => {
+        setEvenement(data ? { id: data.id, nom: data.nom } : null);
+        setEvenementLoading(false);
+      });
+  }, [slug]);
+
+  if (evenementLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
+  if (!evenement) return <div className="p-6 text-center text-red-500">Évènement introuvable.</div>;
+  return <ParticipantViewContent evenement={evenement} />;
+}
+
+function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: string } }) {
+  const data = useAppData(false, null, null, evenement.id);
   const [selectedParcoursId, setSelectedParcoursId] = useState<string | null>(null);
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [showGpxModal, setShowGpxModal] = useState(false);
@@ -54,8 +75,8 @@ export default function ParticipantView() {
     <div className="h-screen flex flex-col">
       <header className="bg-[#005F61] text-white px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
-          <h1 className="font-semibold">Trail du Pic des Trois Seigneurs — Vue participant</h1>
+          <img src={data.settings.logo_url ?? logo} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+          <h1 className="font-semibold">{evenement.nom} — Vue participant</h1>
         </div>
         {data.settings.show_gpx_download_participant && (
           <button

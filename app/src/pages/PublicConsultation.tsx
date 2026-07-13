@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import AbriTemporaireForm from '../components/AbriTemporaireForm';
 import FilterBar from '../components/FilterBar';
@@ -6,11 +7,31 @@ import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
 import PointExtractionForm from '../components/PointExtractionForm';
 import PosteForm from '../components/PosteForm';
+import { supabase } from '../lib/supabaseClient';
 import { useAppData } from '../lib/useAppData';
 import { PosteMaterielCode, PosteMissionCode, PosteStatut, PosteTypeCode } from '../types';
 
 export default function PublicConsultation() {
-  const data = useAppData(false);
+  const { slug } = useParams<{ slug: string }>();
+  const [evenement, setEvenement] = useState<{ id: string; nom: string } | null>(null);
+  const [evenementLoading, setEvenementLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) { setEvenementLoading(false); return; }
+    supabase.from('evenements').select('id, nom').eq('slug', slug).single()
+      .then(({ data }) => {
+        setEvenement(data ? { id: data.id, nom: data.nom } : null);
+        setEvenementLoading(false);
+      });
+  }, [slug]);
+
+  if (evenementLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
+  if (!evenement) return <div className="p-6 text-center text-red-500">Évènement introuvable.</div>;
+  return <PublicConsultationContent evenement={evenement} slug={slug!} />;
+}
+
+function PublicConsultationContent({ evenement, slug }: { evenement: { id: string; nom: string }; slug: string }) {
+  const data = useAppData(false, null, null, evenement.id);
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [filterParcoursIds, setFilterParcoursIds] = useState<string[]>([]);
   const [filterTypes, setFilterTypes] = useState<PosteTypeCode[]>([]);
@@ -39,8 +60,8 @@ export default function PublicConsultation() {
     <div className="h-screen flex flex-col">
       <header className="bg-[#005F61] text-white px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
-          <h1 className="font-semibold">Postes bénévoles — Trail du Pic des Trois Seigneurs</h1>
+          <img src={data.settings.logo_url ?? logo} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+          <h1 className="font-semibold">Postes bénévoles — {evenement.nom}</h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
           {data.settings.show_gpx_download_benevoles && (
@@ -55,7 +76,7 @@ export default function PublicConsultation() {
               Trace GPX
             </button>
           )}
-          <a href="/admin" className="underline opacity-80 hover:opacity-100">
+          <a href={`/admin/${slug}`} className="underline opacity-80 hover:opacity-100">
             Espace organisateur
           </a>
         </div>

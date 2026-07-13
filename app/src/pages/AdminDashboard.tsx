@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   if (!session) return <AdminLogin />;
   if (!evenement) return <div className="p-6 text-center text-red-500">Évènement introuvable.</div>;
 
-  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} evenement={evenement} />;
+  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} evenement={evenement} slug={slug!} />;
 }
 
 function AdminContent({
@@ -51,11 +51,13 @@ function AdminContent({
   currentUserId,
   currentUserEmail,
   evenement,
+  slug,
 }: {
   onSignOut: () => void;
   currentUserId: string;
   currentUserEmail: string | null;
   evenement: { id: string; nom: string };
+  slug: string;
 }) {
   const data = useAppData(true, currentUserId, currentUserEmail, evenement.id);
   const [tab, setTab] = useState<Tab>('carte');
@@ -194,10 +196,10 @@ function AdminContent({
             </svg>
             Trace GPX
           </button>
-          <a href="/benevoles" target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
+          <a href={`/benevoles/${slug}`} target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
             Vue bénévole
           </a>
-          <a href="/participant" target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
+          <a href={`/participant/${slug}`} target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">
             Vue participant
           </a>
           <button
