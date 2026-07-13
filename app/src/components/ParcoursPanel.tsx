@@ -124,26 +124,16 @@ export default function ParcoursPanel({ parcours, visibility, onToggleVisibility
             />
           </div>
 
-          <div className="flex gap-2 text-sm">
-            <label className="flex items-center gap-1 flex-1">
-              Distance (km)
-              <input
-                type="number"
-                step="0.1"
-                className="w-20 border rounded px-1 py-0.5"
-                value={p.distance_km ?? ''}
-                onChange={(e) => onUpdate(p.id, { distance_km: e.target.value ? Number(e.target.value) : null })}
-              />
-            </label>
-            <label className="flex items-center gap-1 flex-1">
-              Dénivelé (m)
-              <input
-                type="number"
-                className="w-20 border rounded px-1 py-0.5"
-                value={p.denivele_m ?? ''}
-                onChange={(e) => onUpdate(p.id, { denivele_m: e.target.value ? Number(e.target.value) : null })}
-              />
-            </label>
+          <div className="flex gap-3 text-sm text-gray-600">
+            <span className="flex items-center gap-1">
+              <span className="text-gray-400">Distance</span>
+              <span className="font-medium">{p.distance_km != null ? `${p.distance_km} km` : '—'}</span>
+            </span>
+            <span className="text-gray-200">|</span>
+            <span className="flex items-center gap-1">
+              <span className="text-gray-400">Dénivelé</span>
+              <span className="font-medium">{p.denivele_m != null ? `${p.denivele_m} m` : '—'}</span>
+            </span>
           </div>
 
           <div className="flex items-center gap-2 text-sm">
