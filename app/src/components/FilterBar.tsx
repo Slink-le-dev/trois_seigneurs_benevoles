@@ -25,6 +25,7 @@ interface FilterBarProps {
   setOnlyPointPassage: (v: boolean) => void;
   showKmMarkers: boolean;
   setShowKmMarkers: (v: boolean) => void;
+  telephonePcSecurite?: string;
 }
 
 const ACCENT = '#005F61';
@@ -75,6 +76,7 @@ export default function FilterBar({
   setOnlyPointPassage,
   showKmMarkers,
   setShowKmMarkers,
+  telephonePcSecurite = '',
 }: FilterBarProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
@@ -181,13 +183,17 @@ export default function FilterBar({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-gray-600 text-sm hidden sm:inline">N° téléphone PC Sécurité : 06 31 26 25 86</span>
-        <a
-          href="tel:0631262586"
-          className="flex items-center gap-1 px-3 py-1.5 rounded border text-sm hover:bg-gray-50 shrink-0"
-        >
-          📞 Appeler
-        </a>
+        {telephonePcSecurite && (
+          <span className="text-gray-600 text-sm hidden sm:inline">N° téléphone PC Sécurité : {telephonePcSecurite}</span>
+        )}
+        {telephonePcSecurite && (
+          <a
+            href={`tel:${telephonePcSecurite.replace(/\s/g, '')}`}
+            className="flex items-center gap-1 px-3 py-1.5 rounded border text-sm hover:bg-gray-50 shrink-0"
+          >
+            📞 Appeler
+          </a>
+        )}
       </div>
 
       {showPopup && (

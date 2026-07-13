@@ -107,6 +107,7 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
         setOnlyPointPassage={setOnlyPointPassage}
         showKmMarkers={showKmMarkers}
         setShowKmMarkers={setShowKmMarkers}
+        telephonePcSecurite={data.settings.telephone_pc_securite}
       />
 
       <div className="flex-1 relative">

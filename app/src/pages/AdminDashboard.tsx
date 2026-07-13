@@ -297,6 +297,7 @@ function AdminContent({
               setOnlyPointPassage={setOnlyPointPassage}
               showKmMarkers={showKmMarkers}
               setShowKmMarkers={setShowKmMarkers}
+              telephonePcSecurite={data.settings.telephone_pc_securite}
             />
             <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
               <span>
