@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
-import PosteForm from '../components/PosteForm';
+import PosteFormParticipant from '../components/PosteFormParticipant';
 import { supabase } from '../lib/supabaseClient';
 import { useAppData } from '../lib/useAppData';
 
@@ -143,22 +143,14 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
       </div>
 
       {selectedPoste && (
-        <PosteForm
+        <PosteFormParticipant
           poste={selectedPoste}
           parcours={data.parcours}
-          selectedParcoursIds={data.getParcoursIdsForPoste(selectedPoste.id)}
-          abrisTemporaires={data.abrisTemporaires}
-          selectedAbriIds={data.getAbriIdsForPoste(selectedPoste.id)}
-          pointsExtraction={data.pointsExtraction}
-          selectedExtractionIds={data.getExtractionIdsForPoste(selectedPoste.id)}
-          affectations={data.affectations}
-          benevoles={data.benevoles}
-          isAdmin={false}
-          onClose={() => setSelectedPosteId(null)}
-          allPostes={data.postes}
+          selectedParcoursId={selectedParcoursId}
           getParcoursIdsForPoste={data.getParcoursIdsForPoste}
           getBarriereHoraireForPoste={(parcoursId) => data.getBarriereHoraireForPoste(selectedPoste.id, parcoursId)}
           showDenivele={data.settings.show_denivele}
+          onClose={() => setSelectedPosteId(null)}
         />
       )}
     </div>
