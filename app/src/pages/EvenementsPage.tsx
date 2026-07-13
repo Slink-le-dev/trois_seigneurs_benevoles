@@ -15,6 +15,15 @@ export default function EvenementsPage() {
   return <EvenementsContent onSignOut={signOut} />;
 }
 
+function toSlug(nom: string): string {
+  return nom
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 function formatDate(debut: string, fin?: string | null) {
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
   const d = new Date(debut + 'T12:00:00').toLocaleDateString('fr-FR', opts);
@@ -25,11 +34,24 @@ function formatDate(debut: string, fin?: string | null) {
   return d;
 }
 
+interface CreateForm {
+  nom: string;
+  date_debut: string;
+  date_fin: string;
+  slug: string;
+}
+
+const EMPTY_FORM: CreateForm = { nom: '', date_debut: '', date_fin: '', slug: '' };
+
 function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function fetchEvenements() {
     supabase
       .from('evenements')
       .select('*')
@@ -38,7 +60,40 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
         setEvenements(data ?? []);
         setLoading(false);
       });
-  }, []);
+  }
+
+  useEffect(() => { fetchEvenements(); }, []);
+
+  function handleNomChange(nom: string) {
+    setForm((f) => ({ ...f, nom, slug: toSlug(nom) }));
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.nom || !form.date_debut || !form.slug) return;
+    setSaving(true);
+    setError(null);
+    const { error: err } = await supabase.from('evenements').insert({
+      nom: form.nom,
+      date_debut: form.date_debut,
+      date_fin: form.date_fin || null,
+      slug: form.slug,
+    });
+    setSaving(false);
+    if (err) {
+      setError(err.message.includes('unique') ? 'Ce slug est déjà utilisé. Modifiez-le.' : err.message);
+      return;
+    }
+    setShowCreate(false);
+    setForm(EMPTY_FORM);
+    fetchEvenements();
+  }
+
+  function handleClose() {
+    setShowCreate(false);
+    setForm(EMPTY_FORM);
+    setError(null);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -53,7 +108,18 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
       </header>
 
       <main className="flex-1 p-6 max-w-2xl mx-auto w-full">
-        <h2 className="text-xl font-bold text-gray-800 mb-5">Mes évènements</h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-gray-800">Mes évènements</h2>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 bg-[#00C389] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00a874] transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvel évènement
+          </button>
+        </div>
 
         {loading ? (
           <div className="text-center text-gray-400 py-12">Chargement…</div>
@@ -79,6 +145,78 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
           </div>
         )}
       </main>
+
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-5">Nouvel évènement</h3>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'évènement</label>
+                <input
+                  autoFocus
+                  required
+                  type="text"
+                  value={form.nom}
+                  onChange={(e) => handleNomChange(e.target.value)}
+                  placeholder="Trail des Trois Seigneurs"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                  <input
+                    required
+                    type="date"
+                    value={form.date_debut}
+                    onChange={(e) => setForm((f) => ({ ...f, date_debut: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin <span className="text-gray-400 font-normal">(optionnelle)</span></label>
+                  <input
+                    type="date"
+                    value={form.date_fin}
+                    onChange={(e) => setForm((f) => ({ ...f, date_fin: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Identifiant URL</label>
+                <input
+                  required
+                  type="text"
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  placeholder="trail-des-trois-seigneurs"
+                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                />
+                <p className="text-xs text-gray-400 mt-1">Généré automatiquement · modifiable · doit être unique</p>
+              </div>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-[#00C389] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#00a874] disabled:opacity-60"
+                >
+                  {saving ? 'Création…' : 'Créer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
