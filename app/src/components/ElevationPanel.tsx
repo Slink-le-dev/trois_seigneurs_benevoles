@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Parcours, Poste, POSTE_TYPES } from '../types';
 
 interface ProfilePoint { dist: number; ele: number; lat: number; lng: number; }
-interface PosteMarker { dist: number; types: Array<'eau' | 'nourriture' | 'medical'>; }
+interface PosteMarker { dist: number; types: Array<'eau' | 'nourriture' | 'medical'>; nom: string; }
 
 const RELEVANT_TYPES = ['eau', 'nourriture', 'medical'] as const;
 type RelevantType = typeof RELEVANT_TYPES[number];
@@ -148,7 +148,7 @@ export default function ElevationPanel({
         const types = RELEVANT_TYPES.filter((t) => p.types.includes(t));
         if (!types.length || !getParcoursIdsForPoste(p.id).includes(selected.id)) return null;
         const nearest = turf.nearestPointOnLine(traceLine, turf.point([p.lng, p.lat]), { units: 'kilometers' });
-        return { dist: nearest.properties.location ?? 0, types };
+        return { dist: nearest.properties.location ?? 0, types, nom: p.nom };
       })
       .filter((m): m is PosteMarker => m !== null)
       .sort((a, b) => a.dist - b.dist);
@@ -164,9 +164,9 @@ export default function ElevationPanel({
     return { dist, ele };
   }, [traceLine, userPosition, profile]);
 
-  // Chart layout
-  const SVG_H = 120;
-  const padL = 44, padR = 12, padT = 8, padB = 30;
+  // Chart layout — padT enlarged to fit emoji + name above the chart
+  const SVG_H = 150;
+  const padL = 44, padR = 12, padT = 40, padB = 30;
   const cW = Math.max(chartPxW - padL - padR, 1);
   const cH = SVG_H - padT - padB;
 
@@ -386,23 +386,29 @@ export default function ElevationPanel({
           <text key={label} x={x} y={padT + cH + 22} textAnchor="middle" fontSize={9} fill="#c4c4c4">{label}</text>
         ))}
 
-        {/* Poste markers — lines clipped, emojis below the clip area */}
+        {/* Poste markers — dashed lines clipped, emoji + name above the chart */}
         <g clipPath={`url(#${clipId})`}>
           {posteMarkers.map(({ dist }, i) => {
             const x = toX(dist);
             return <line key={i} x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />;
           })}
         </g>
-        {posteMarkers.map(({ dist, types }, i) => {
+        {posteMarkers.map(({ dist, types, nom }, i) => {
           const x = toX(dist);
           if (x < padL || x > padL + cW) return null;
           const totalW = (types.length - 1) * EMOJI_SPACING;
           const startX = x - totalW / 2;
-          return types.map((type, j) => (
-            <text key={`${i}-${type}`} x={startX + j * EMOJI_SPACING} y={padT + cH + 8} textAnchor="middle" dominantBaseline="hanging" fontSize={11}>
-              {EMOJI[type]}
-            </text>
-          ));
+          const label = nom.length > 14 ? nom.slice(0, 13) + '…' : nom;
+          return (
+            <g key={i}>
+              <text x={x} y={padT - 20} textAnchor="middle" fontSize={8} fill="#6b7280">{label}</text>
+              {types.map((type, j) => (
+                <text key={type} x={startX + j * EMOJI_SPACING} y={padT - 6} textAnchor="middle" dominantBaseline="auto" fontSize={12}>
+                  {EMOJI[type]}
+                </text>
+              ))}
+            </g>
+          );
         })}
 
         {/* GPS position */}
