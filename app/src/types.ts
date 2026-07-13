@@ -182,6 +182,15 @@ export interface MainCouranteJournalEntry {
   nouvelle_valeur: string | null;
 }
 
+export interface Evenement {
+  id: string;
+  nom: string;
+  date_debut: string;
+  date_fin: string | null;
+  slug: string;
+  created_at: string;
+}
+
 export interface MainCouranteCommentaire {
   id: string;
   event_id: string;

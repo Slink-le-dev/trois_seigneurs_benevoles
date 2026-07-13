@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import BenevolesTable from '../components/BenevolesTable';
 import DebrayabilitesTab from '../components/DebrayabilitesTab';
@@ -13,6 +14,7 @@ import PosteForm from '../components/PosteForm';
 import StatusDashboard from '../components/StatusDashboard';
 import MainCouranteTab from '../components/MainCouranteTab';
 import { useAppData } from '../lib/useAppData';
+import { supabase } from '../lib/supabaseClient';
 import { useSession } from '../lib/useSession';
 import { PosteMaterielCode, PosteMissionCode, PosteStatut, PosteTypeCode } from '../types';
 import AdminLogin from './AdminLogin';
@@ -23,23 +25,33 @@ type Tab = 'carte' | 'benevoles' | 'dashboard' | 'maincourante' | 'export' | 'de
 
 export default function AdminDashboard() {
   const { session, loading: sessionLoading, signOut } = useSession();
+  const { slug } = useParams<{ slug: string }>();
 
   if (sessionLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
   if (!session) return <AdminLogin />;
 
-  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} />;
+  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} slug={slug ?? ''} />;
 }
 
 function AdminContent({
   onSignOut,
   currentUserId,
   currentUserEmail,
+  slug,
 }: {
   onSignOut: () => void;
   currentUserId: string;
   currentUserEmail: string | null;
+  slug: string;
 }) {
   const data = useAppData(true, currentUserId, currentUserEmail);
+  const [evenementNom, setEvenementNom] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    supabase.from('evenements').select('nom').eq('slug', slug).single()
+      .then(({ data: row }) => { if (row) setEvenementNom(row.nom); });
+  }, [slug]);
   const [tab, setTab] = useState<Tab>('carte');
   const [showGpxModal, setShowGpxModal] = useState(false);
   const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
@@ -172,7 +184,10 @@ function AdminContent({
       <header className="bg-[#00C389] text-white px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
-          <h1 className="font-semibold">Espace organisateur</h1>
+          <div>
+            <Link to="/admin" className="text-xs opacity-70 hover:opacity-100 hover:underline">← Mes évènements</Link>
+            <h1 className="font-semibold leading-tight">{evenementNom ?? 'Espace organisateur'}</h1>
+          </div>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <button
