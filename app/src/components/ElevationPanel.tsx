@@ -12,7 +12,7 @@ const EMOJI = Object.fromEntries(
   POSTE_TYPES.filter((t) => (RELEVANT_TYPES as readonly string[]).includes(t.code)).map((t) => [t.code, t.emoji]),
 ) as Record<RelevantType, string>;
 
-const GPS_MAX_DIST_KM = 0.2; // 200 m
+const GPS_MAX_DIST_KM = 0.2;
 
 function buildCoords(fc: GeoJSON.FeatureCollection): number[][] {
   const coords: number[][] = [];
@@ -76,6 +76,9 @@ function slopeColor(pct: number): string {
   return '#582900';
 }
 
+const ZOOM_FACTOR = 1.25;
+const MIN_SPAN_KM = 0.1;
+
 export default function ElevationPanel({
   parcours,
   postes = [],
@@ -98,11 +101,14 @@ export default function ElevationPanel({
     filterParcoursIds?.find((id) => available.some((p) => p.id === id)) ??
     available[0]?.id ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(defaultId);
+  const [zoomRange, setZoomRange] = useState<[number, number] | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [chartPxW, setChartPxW] = useState(0);
   const [hoverInfo, setHoverInfo] = useState<{ x: number; index: number; point: ProfilePoint } | null>(null);
+
+  useEffect(() => { setZoomRange(null); setHoverInfo(null); }, [selectedId]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -117,14 +123,12 @@ export default function ElevationPanel({
   const rawProfile = selected?.gpx_geojson ? getProfile(selected.gpx_geojson) : [];
   const profile = downsample(rawProfile);
 
-  // Shared trace line (2D) — used by posteMarkers and gpsOnTrace
   const traceLine = useMemo(() => {
     if (!selected?.gpx_geojson) return null;
     const coords = buildCoords(selected.gpx_geojson).map((c) => c.slice(0, 2)) as [number, number][];
     return coords.length >= 2 ? turf.lineString(coords) : null;
   }, [selected]);
 
-  // Suffix sums for D+/D- restants
   const suffixDeniv = useMemo(() => {
     if (profile.length < 2) return null;
     const dPlus = new Float64Array(profile.length);
@@ -137,7 +141,6 @@ export default function ElevationPanel({
     return { dPlus, dMinus };
   }, [profile]);
 
-  // One marker per poste (grouped types) projected onto the trace
   const posteMarkers = useMemo((): PosteMarker[] => {
     if (!traceLine || !selected || !getParcoursIdsForPoste) return [];
     return postes
@@ -151,7 +154,6 @@ export default function ElevationPanel({
       .sort((a, b) => a.dist - b.dist);
   }, [traceLine, selected, postes, getParcoursIdsForPoste]);
 
-  // GPS position projected onto the trace (null if > 200 m away)
   const gpsOnTrace = useMemo(() => {
     if (!traceLine || !userPosition || profile.length < 2) return null;
     const pt = turf.point([userPosition[1], userPosition[0]]);
@@ -162,7 +164,7 @@ export default function ElevationPanel({
     return { dist, ele };
   }, [traceLine, userPosition, profile]);
 
-  // Chart layout constants
+  // Chart layout
   const SVG_H = 120;
   const padL = 44, padR = 12, padT = 8, padB = 30;
   const cW = Math.max(chartPxW - padL - padR, 1);
@@ -173,10 +175,33 @@ export default function ElevationPanel({
   const maxEle = hasData ? Math.max(...profile.map((p) => p.ele)) : 0;
   const totalDist = hasData ? profile[profile.length - 1].dist : 1;
   const eleRange = maxEle - minEle || 1;
-  const toX = (d: number) => padL + (d / totalDist) * cW;
-  const toY = (e: number) => padT + cH - ((e - minEle) / eleRange) * cH;
 
-  // Refs so touch listeners always use latest values
+  // Visible range (zoom)
+  const zoomStart = zoomRange?.[0] ?? 0;
+  const zoomEnd = zoomRange?.[1] ?? totalDist;
+  const visibleSpan = Math.max(zoomEnd - zoomStart, MIN_SPAN_KM);
+  const isZoomed = zoomRange !== null;
+
+  const toX = (d: number) => padL + ((d - zoomStart) / visibleSpan) * cW;
+  const toY = (e: number) => padT + cH - ((e - minEle) / eleRange) * cH;
+  const toD = (x: number) => zoomStart + ((x - padL) / cW) * visibleSpan;
+
+  // ---- Zoom logic (shared between wheel and pinch) ----
+  const zoomRef = useRef<(centerClientX: number, factor: number) => void>(() => {});
+  zoomRef.current = (centerClientX: number, factor: number) => {
+    if (!hasData || !svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = Math.max(padL, Math.min(padL + cW, centerClientX - rect.left));
+    const dCenter = toD(x);
+    const newSpan = Math.min(totalDist, Math.max(MIN_SPAN_KM, visibleSpan * factor));
+    if (newSpan >= totalDist * 0.999) { setZoomRange(null); return; }
+    const ratio = (dCenter - zoomStart) / visibleSpan;
+    let newStart = dCenter - ratio * newSpan;
+    newStart = Math.max(0, Math.min(totalDist - newSpan, newStart));
+    setZoomRange([newStart, newStart + newSpan]);
+  };
+
+  // ---- Seek (hover) ----
   const seekRef = useRef<(clientX: number) => void>(() => {});
   const clearRef = useRef<() => void>(() => {});
 
@@ -184,7 +209,7 @@ export default function ElevationPanel({
     if (!hasData || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
     const x = Math.max(padL, Math.min(padL + cW, clientX - rect.left));
-    const dist = ((x - padL) / cW) * totalDist;
+    const dist = toD(x);
     let nearest = profile[0];
     let nearestIdx = 0;
     let minDiff = Infinity;
@@ -202,12 +227,51 @@ export default function ElevationPanel({
     onHoverPosition?.(null);
   };
 
+  // ---- Wheel zoom ----
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
-    const onTouchStart = (e: TouchEvent) => { if (e.touches.length > 0) seekRef.current(e.touches[0].clientX); };
-    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); if (e.touches.length > 0) seekRef.current(e.touches[0].clientX); };
-    const onTouchEnd = () => clearRef.current();
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
+      zoomRef.current(e.clientX, factor);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [hasData]);
+
+  // ---- Touch: seek (1 finger) + pinch zoom (2 fingers) ----
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    let lastPinchDist = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        seekRef.current(e.touches[0].clientX);
+      } else if (e.touches.length === 2) {
+        clearRef.current();
+        lastPinchDist = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        seekRef.current(e.touches[0].clientX);
+      } else if (e.touches.length === 2) {
+        const newDist = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        if (lastPinchDist > 0 && newDist > 0) {
+          zoomRef.current(midX, lastPinchDist / newDist);
+        }
+        lastPinchDist = newDist;
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      lastPinchDist = 0;
+      if (e.touches.length === 0) clearRef.current();
+    };
+
     el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     el.addEventListener('touchend', onTouchEnd, { passive: true });
@@ -218,7 +282,7 @@ export default function ElevationPanel({
     };
   }, [hasData]);
 
-  // Stats for current hover position
+  // ---- Stats ----
   const stats = useMemo(() => {
     if (!hoverInfo || !suffixDeniv) return null;
     const { index, point } = hoverInfo;
@@ -246,6 +310,7 @@ export default function ElevationPanel({
     const pts = profile.map((p) => `${toX(p.dist).toFixed(1)},${toY(p.ele).toFixed(1)}`).join(' L ');
     const linePath = `M ${pts}`;
     const baseline = padT + cH;
+    const clipId = 'elevation-chart-clip';
 
     const yStep = niceStep(eleRange, 4);
     const yStart = Math.ceil(minEle / yStep) * yStep;
@@ -253,11 +318,15 @@ export default function ElevationPanel({
     for (let e = yStart; e <= maxEle + 1; e += yStep)
       yGrids.push({ y: toY(e), label: `${Math.round(e)} m` });
 
-    const xStep = niceStep(totalDist, Math.max(1, Math.floor(cW / 70)));
+    const xStep = niceStep(visibleSpan, Math.max(1, Math.floor(cW / 70)));
     const xTicks: Array<{ x: number; label: string }> = [];
     const xDecimals = xStep < 1 ? 1 : 0;
-    for (let d = xStep; toX(d) < padL + cW - 20; d += xStep)
-      xTicks.push({ x: toX(d), label: `${d.toFixed(xDecimals)} km` });
+    const xTickStart = Math.ceil(zoomStart / xStep) * xStep;
+    for (let d = xTickStart; d <= zoomEnd; d += xStep) {
+      const x = toX(d);
+      if (x >= padL + 10 && x < padL + cW - 10)
+        xTicks.push({ x, label: `${d.toFixed(xDecimals)} km` });
+    }
 
     const hx = hoverInfo?.x ?? 0;
     const tooltipRight = hx > padL + cW * 0.6;
@@ -268,10 +337,16 @@ export default function ElevationPanel({
         ref={svgRef}
         width={chartPxW}
         height={SVG_H}
-        style={{ display: 'block', cursor: 'crosshair', touchAction: 'none' }}
+        style={{ display: 'block', cursor: isZoomed ? 'zoom-in' : 'crosshair', touchAction: 'none' }}
         onMouseMove={(e) => seekRef.current(e.clientX)}
         onMouseLeave={() => clearRef.current()}
       >
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={padL} y={padT - 2} width={cW} height={cH + 4} />
+          </clipPath>
+        </defs>
+
         {/* Gridlines */}
         {yGrids.map(({ y, label }) => (
           <g key={label}>
@@ -280,27 +355,27 @@ export default function ElevationPanel({
           </g>
         ))}
 
-        {/* Slope-colored area segments — smoothed over ±5 points to reduce GPS elevation noise */}
-        {profile.slice(0, -1).map((pt, i) => {
-          const next = profile[i + 1];
-          const x1 = toX(pt.dist), y1 = toY(pt.ele);
-          const x2 = toX(next.dist), y2 = toY(next.ele);
-          const wStart = Math.max(0, i - 5);
-          const wEnd = Math.min(profile.length - 1, i + 6);
-          const deltaEle = Math.abs(profile[wEnd].ele - profile[wStart].ele);
-          const deltaDist = (profile[wEnd].dist - profile[wStart].dist) * 1000;
-          const slope = deltaDist > 0 ? deltaEle / deltaDist * 100 : 0;
-          return (
-            <polygon
-              key={i}
-              points={`${x1},${y1} ${x2},${y2} ${x2},${baseline} ${x1},${baseline}`}
-              style={{ fill: slopeColor(slope), fillOpacity: 0.5 }}
-            />
-          );
-        })}
-
-        {/* Elevation line (parcours colour) */}
-        <path d={linePath} fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
+        {/* Slope-colored area + elevation line (clipped) */}
+        <g clipPath={`url(#${clipId})`}>
+          {profile.slice(0, -1).map((pt, i) => {
+            const next = profile[i + 1];
+            const x1 = toX(pt.dist), y1 = toY(pt.ele);
+            const x2 = toX(next.dist), y2 = toY(next.ele);
+            const wStart = Math.max(0, i - 5);
+            const wEnd = Math.min(profile.length - 1, i + 6);
+            const deltaEle = Math.abs(profile[wEnd].ele - profile[wStart].ele);
+            const deltaDist = (profile[wEnd].dist - profile[wStart].dist) * 1000;
+            const slope = deltaDist > 0 ? deltaEle / deltaDist * 100 : 0;
+            return (
+              <polygon
+                key={i}
+                points={`${x1},${y1} ${x2},${y2} ${x2},${baseline} ${x1},${baseline}`}
+                style={{ fill: slopeColor(slope), fillOpacity: 0.5 }}
+              />
+            );
+          })}
+          <path d={linePath} fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
+        </g>
 
         {/* Axes */}
         <line x1={padL} y1={padT} x2={padL} y2={padT + cH} stroke="#d1d5db" strokeWidth={1} />
@@ -311,36 +386,38 @@ export default function ElevationPanel({
           <text key={label} x={x} y={padT + cH + 22} textAnchor="middle" fontSize={9} fill="#c4c4c4">{label}</text>
         ))}
 
-        {/* Poste markers */}
-        {posteMarkers.map(({ dist, types }, i) => {
-          const x = toX(dist);
-          const totalW = (types.length - 1) * EMOJI_SPACING;
-          const startX = x - totalW / 2;
-          return (
-            <g key={i}>
-              <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
-              {types.map((type, j) => (
-                <text key={type} x={startX + j * EMOJI_SPACING} y={padT + cH + 8} textAnchor="middle" dominantBaseline="hanging" fontSize={11}>
-                  {EMOJI[type]}
-                </text>
-              ))}
-            </g>
-          );
-        })}
+        {/* Poste markers (clipped) */}
+        <g clipPath={`url(#${clipId})`}>
+          {posteMarkers.map(({ dist, types }, i) => {
+            const x = toX(dist);
+            const totalW = (types.length - 1) * EMOJI_SPACING;
+            const startX = x - totalW / 2;
+            return (
+              <g key={i}>
+                <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
+                {types.map((type, j) => (
+                  <text key={type} x={startX + j * EMOJI_SPACING} y={padT + cH + 8} textAnchor="middle" dominantBaseline="hanging" fontSize={11}>
+                    {EMOJI[type]}
+                  </text>
+                ))}
+              </g>
+            );
+          })}
+        </g>
 
-        {/* GPS position on trace */}
+        {/* GPS position */}
         {gpsOnTrace && (() => {
           const gx = toX(gpsOnTrace.dist);
           const gy = toY(gpsOnTrace.ele);
           return (
-            <g>
+            <g clipPath={`url(#${clipId})`}>
               <line x1={gx} y1={padT} x2={gx} y2={padT + cH} stroke="#3b82f6" strokeWidth={1.5} />
               <circle cx={gx} cy={gy} r={5} fill="#3b82f6" stroke="white" strokeWidth={2} />
             </g>
           );
         })()}
 
-        {/* Hover indicator (on top of GPS) */}
+        {/* Hover indicator */}
         {hoverInfo && (() => {
           const hx = hoverInfo.x;
           const hy = toY(hoverInfo.point.ele);
@@ -397,6 +474,16 @@ export default function ElevationPanel({
             </span>
           ))}
         </div>
+        {/* Reset zoom */}
+        {isZoomed && (
+          <button
+            type="button"
+            onClick={() => setZoomRange(null)}
+            className="flex-shrink-0 text-[10px] text-blue-500 hover:text-blue-700 underline whitespace-nowrap"
+          >
+            Réinitialiser zoom
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}
