@@ -218,6 +218,11 @@ export default function ElevationPanel({
   const isZoomedRef = useRef(false);
   isZoomedRef.current = isZoomed;
 
+  // Handle pixel-x updated every render so the touch handler always has the current position
+  const hoverXRef = useRef<number | null>(null);
+  const seekDragRef = useRef(false);
+  hoverXRef.current = hoverInfo ? toX(hoverInfo.point.dist) : null;
+
   // ---- Seek (hover) ----
   const seekRef = useRef<(clientX: number) => void>(() => {});
   const clearRef = useRef<() => void>(() => {});
@@ -257,7 +262,7 @@ export default function ElevationPanel({
     return () => el.removeEventListener('wheel', onWheel);
   }, [hasData]);
 
-  // ---- Touch: pan (1 finger zoomed) / seek (1 finger not zoomed) + pinch zoom (2 fingers) ----
+  // ---- Touch: drag handle (seek) / pan elsewhere + pinch zoom (2 fingers) ----
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
@@ -266,10 +271,20 @@ export default function ElevationPanel({
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
-        touchStartX = e.touches[0].clientX;
-        if (!isZoomedRef.current) seekRef.current(e.touches[0].clientX);
+        const touchX = e.touches[0].clientX;
+        const svgX = touchX - el.getBoundingClientRect().left;
+        const handleX = hoverXRef.current;
+        // No handle yet, or touch is on/near the handle → seek mode
+        if (handleX === null || Math.abs(svgX - handleX) < 24) {
+          seekDragRef.current = true;
+          seekRef.current(touchX);
+        } else {
+          // Touch elsewhere → pan mode
+          seekDragRef.current = false;
+          touchStartX = touchX;
+        }
       } else if (e.touches.length === 2) {
-        clearRef.current();
+        seekDragRef.current = false;
         lastPinchDist = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
       }
     };
@@ -277,11 +292,11 @@ export default function ElevationPanel({
       e.preventDefault();
       if (e.touches.length === 1) {
         const currentX = e.touches[0].clientX;
-        if (isZoomedRef.current) {
+        if (seekDragRef.current) {
+          seekRef.current(currentX);
+        } else if (isZoomedRef.current) {
           touchPanRef.current(currentX - touchStartX);
           touchStartX = currentX;
-        } else {
-          seekRef.current(currentX);
         }
       } else if (e.touches.length === 2) {
         const newDist = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
@@ -292,9 +307,10 @@ export default function ElevationPanel({
         lastPinchDist = newDist;
       }
     };
-    const onTouchEnd = (e: TouchEvent) => {
+    const onTouchEnd = () => {
       lastPinchDist = 0;
-      if (e.touches.length === 0) clearRef.current();
+      seekDragRef.current = false;
+      // Handle persists — do not clear hoverInfo on mobile
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -353,7 +369,7 @@ export default function ElevationPanel({
         xTicks.push({ x, label: `${d.toFixed(xDecimals)} km` });
     }
 
-    const hx = hoverInfo?.x ?? 0;
+    const hx = hoverInfo ? toX(hoverInfo.point.dist) : 0;
     const tooltipRight = hx > padL + cW * 0.6;
     const EMOJI_SPACING = 13;
 
@@ -451,19 +467,24 @@ export default function ElevationPanel({
           );
         })()}
 
-        {/* Hover indicator */}
+        {/* Selected position handle — orange bar with drag circle at top */}
         {hoverInfo && (() => {
-          const hx = hoverInfo.x;
           const hy = toY(hoverInfo.point.ele);
           const label1 = `${hoverInfo.point.dist.toFixed(1)} km`;
           const label2 = `${Math.round(hoverInfo.point.ele)} m`;
           const ttW = 68, ttH = 28, ttPad = 6;
           const ttX = tooltipRight ? hx - ttW - ttPad : hx + ttPad;
-          const ttY = Math.max(padT, Math.min(hy - ttH / 2, padT + cH - ttH));
+          const ttY = Math.max(padT + 10, Math.min(hy - ttH / 2, padT + cH - ttH));
+          const ORANGE = '#f97316';
           return (
             <g>
-              <line x1={hx} y1={padT} x2={hx} y2={padT + cH} stroke="#6b7280" strokeWidth={1} strokeDasharray="3 2" />
-              <circle cx={hx} cy={hy} r={4} fill="white" stroke={col} strokeWidth={2} />
+              {/* Solid orange vertical line clipped to chart area */}
+              <line x1={hx} y1={padT} x2={hx} y2={padT + cH} stroke={ORANGE} strokeWidth={1.5} clipPath={`url(#${clipId})`} />
+              {/* Drag handle circle at top — target for touch drag on mobile */}
+              <circle cx={hx} cy={padT} r={5} fill={ORANGE} stroke="white" strokeWidth={1.5} />
+              {/* Small dot on the elevation line */}
+              <circle cx={hx} cy={hy} r={3} fill="white" stroke={ORANGE} strokeWidth={1.5} clipPath={`url(#${clipId})`} />
+              {/* Tooltip */}
               <rect x={ttX} y={ttY} width={ttW} height={ttH} rx={3} fill="white" stroke="#e5e7eb" strokeWidth={1} />
               <text x={ttX + ttW / 2} y={ttY + 10} textAnchor="middle" fontSize={9} fill="#374151" fontWeight="600">{label1}</text>
               <text x={ttX + ttW / 2} y={ttY + 21} textAnchor="middle" fontSize={9} fill="#6b7280">{label2}</text>
