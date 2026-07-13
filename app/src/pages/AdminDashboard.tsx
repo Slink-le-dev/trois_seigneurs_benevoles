@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import BenevolesTable from '../components/BenevolesTable';
@@ -83,23 +83,6 @@ function AdminContent({
   const [placingModeAbri, setPlacingModeAbri] = useState(false);
   const [manualLatAbri, setManualLatAbri] = useState('');
   const [manualLngAbri, setManualLngAbri] = useState('');
-
-  // Garantit l'existence des 3 parcours de la course (une seule fois)
-  const seedingParcours = useRef(false);
-  useEffect(() => {
-    if (data.loading || seedingParcours.current) return;
-    const missing = 3 - data.parcours.length;
-    if (missing > 0) {
-      seedingParcours.current = true;
-      (async () => {
-        for (let i = 0; i < missing; i++) {
-          const index = data.parcours.length + i;
-          await data.createParcours({ nom: `Parcours ${index + 1}`, couleur: DEFAULT_COULEURS[index % 3] });
-        }
-      })();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.loading, data.parcours.length]);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
