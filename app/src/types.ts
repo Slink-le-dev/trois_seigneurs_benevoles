@@ -82,6 +82,7 @@ export interface AppSettings {
   show_denivele: boolean;
   show_gpx_download_participant: boolean;
   show_gpx_download_benevoles: boolean;
+  organisateur_nom: string;
 }
 
 export type BenevoleFormation =
