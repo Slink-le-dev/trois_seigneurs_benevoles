@@ -66,6 +66,7 @@ export interface Poste {
 export interface PosteParcours {
   poste_id: string;
   parcours_id: string;
+  barriere_horaire: string | null;
 }
 
 export interface PosteAbri {

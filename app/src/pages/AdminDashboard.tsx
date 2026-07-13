@@ -524,6 +524,9 @@ function AdminContent({
           onDeleteAffectation={data.deleteAffectation}
           allPostes={data.postes}
           getParcoursIdsForPoste={data.getParcoursIdsForPoste}
+          getBarriereHoraireForPoste={(parcoursId) => data.getBarriereHoraireForPoste(selectedPoste.id, parcoursId)}
+          onSetBarriereHoraire={(parcoursId, value) => data.setPosteParcoursBariereHoraire(selectedPoste.id, parcoursId, value)}
+          showDenivele={data.settings.show_denivele}
         />
       )}
 

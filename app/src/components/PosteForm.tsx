@@ -1,5 +1,5 @@
 import * as turf from '@turf/turf';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatCreneau } from '../lib/format';
 import { ParcoursInfoPrint, printFeuilleDeRoute } from '../lib/print';
 import CopyCoords from './CopyCoords';
@@ -135,6 +135,8 @@ interface PosteFormProps {
   onDeleteAffectation?: (id: string) => Promise<void>;
   allPostes?: Poste[];
   getParcoursIdsForPoste?: (id: string) => string[];
+  getBarriereHoraireForPoste?: (parcoursId: string) => string | null;
+  onSetBarriereHoraire?: (parcoursId: string, value: string | null) => Promise<void>;
   showDenivele?: boolean;
 }
 
@@ -161,6 +163,8 @@ export default function PosteForm({
   onDeleteAffectation,
   allPostes,
   getParcoursIdsForPoste,
+  getBarriereHoraireForPoste,
+  onSetBarriereHoraire,
   showDenivele = true,
 }: PosteFormProps) {
   const [showAddBenevole, setShowAddBenevole] = useState(false);
@@ -169,6 +173,54 @@ export default function PosteForm({
   const [telephone, setTelephone] = useState('');
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
+
+  function parseBarriere(v: string | null): { jour: string; heure: string } {
+    if (!v) return { jour: '', heure: '' };
+    const [jour, heure] = v.split(' ');
+    return { jour: jour ?? '', heure: heure ?? '' };
+  }
+
+  const [barrieresEdit, setBarrieresEdit] = useState<Record<string, { jour: string; heure: string }>>(() => {
+    const init: Record<string, { jour: string; heure: string }> = {};
+    for (const pid of selectedParcoursIds) {
+      init[pid] = parseBarriere(getBarriereHoraireForPoste?.(pid) ?? null);
+    }
+    return init;
+  });
+  const [barriereSaving, setBarriereSaving] = useState<Record<string, boolean>>({});
+  const [barriereSaved, setBarriereSaved] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setBarrieresEdit((prev) => {
+      const next = { ...prev };
+      for (const pid of selectedParcoursIds) {
+        if (!(pid in next)) {
+          next[pid] = parseBarriere(getBarriereHoraireForPoste?.(pid) ?? null);
+        }
+      }
+      return next;
+    });
+  }, [selectedParcoursIds]);
+
+  async function handleSaveBarriere(parcoursId: string) {
+    if (!onSetBarriereHoraire) return;
+    const { jour, heure } = barrieresEdit[parcoursId] ?? { jour: '', heure: '' };
+    const value = jour && heure ? `${jour} ${heure}` : null;
+    setBarriereSaving((p) => ({ ...p, [parcoursId]: true }));
+    try {
+      await onSetBarriereHoraire(parcoursId, value);
+      setBarriereSaved((p) => ({ ...p, [parcoursId]: true }));
+      setTimeout(() => setBarriereSaved((p) => ({ ...p, [parcoursId]: false })), 2000);
+    } finally {
+      setBarriereSaving((p) => ({ ...p, [parcoursId]: false }));
+    }
+  }
+
+  function formatBarriere(v: string): string {
+    const { jour, heure } = parseBarriere(v);
+    const jourLabel = jour === '0' ? 'J' : `J+${jour}`;
+    return `${jourLabel} à ${heure}`;
+  }
 
   const posteAffectations = affectations.filter((a) => a.poste_id === poste.id);
   const materiel = poste.materiel ?? [];
@@ -372,6 +424,54 @@ export default function PosteForm({
                       ) : (
                         <span className="text-gray-400">Trace GPX non disponible</span>
                       )}
+                      {isAdmin && onSetBarriereHoraire ? (
+                        <div className="mt-2 pt-2 border-t border-gray-200 flex items-center gap-2 flex-wrap">
+                          <span className="text-gray-500 flex-shrink-0">Barrière horaire :</span>
+                          <select
+                            value={barrieresEdit[p.id]?.jour ?? ''}
+                            onChange={(e) =>
+                              setBarrieresEdit((prev) => ({
+                                ...prev,
+                                [p.id]: { ...prev[p.id], jour: e.target.value },
+                              }))
+                            }
+                            className="border rounded px-1 py-0.5 text-xs"
+                          >
+                            <option value="">— jour —</option>
+                            <option value="0">J</option>
+                            <option value="1">J+1</option>
+                            <option value="2">J+2</option>
+                            <option value="3">J+3</option>
+                          </select>
+                          <input
+                            type="time"
+                            value={barrieresEdit[p.id]?.heure ?? ''}
+                            disabled={!barrieresEdit[p.id]?.jour}
+                            onChange={(e) =>
+                              setBarrieresEdit((prev) => ({
+                                ...prev,
+                                [p.id]: { ...prev[p.id], heure: e.target.value },
+                              }))
+                            }
+                            className="border rounded px-1 py-0.5 text-xs disabled:opacity-40"
+                          />
+                          <button
+                            type="button"
+                            disabled={barriereSaving[p.id]}
+                            onClick={() => handleSaveBarriere(p.id)}
+                            className="px-2 py-0.5 rounded bg-gray-700 text-white text-xs hover:bg-gray-800 disabled:opacity-50"
+                          >
+                            {barriereSaved[p.id] ? '✓ Enregistré' : 'Enregistrer'}
+                          </button>
+                        </div>
+                      ) : (() => {
+                        const bv = getBarriereHoraireForPoste?.(p.id) ?? null;
+                        return bv ? (
+                          <div className="mt-1.5 text-gray-600">
+                            Barrière horaire : <strong>{formatBarriere(bv)}</strong>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   );
                 })}

@@ -134,6 +134,12 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     [posteParcours]
   );
 
+  const getBarriereHoraireForPoste = useCallback(
+    (posteId: string, parcoursId: string) =>
+      posteParcours.find((pp) => pp.poste_id === posteId && pp.parcours_id === parcoursId)?.barriere_horaire ?? null,
+    [posteParcours]
+  );
+
   const getAffectationsForPoste = useCallback(
     (posteId: string) => affectations.filter((a) => a.poste_id === posteId),
     [affectations]
@@ -204,14 +210,36 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   }
 
   async function setPosteParcoursLinks(posteId: string, parcoursIds: string[]) {
-    await supabase.from('poste_parcours').delete().eq('poste_id', posteId);
-    if (parcoursIds.length) {
-      await supabase.from('poste_parcours').insert(parcoursIds.map((parcours_id) => ({ poste_id: posteId, parcours_id })));
+    const existing = posteParcours.filter((pp) => pp.poste_id === posteId);
+    const existingIds = existing.map((pp) => pp.parcours_id);
+    const toRemove = existingIds.filter((id) => !parcoursIds.includes(id));
+    const toAdd = parcoursIds.filter((id) => !existingIds.includes(id));
+    if (toRemove.length) {
+      await supabase.from('poste_parcours').delete().eq('poste_id', posteId).in('parcours_id', toRemove);
+    }
+    if (toAdd.length) {
+      await supabase.from('poste_parcours').insert(toAdd.map((parcours_id) => ({ poste_id: posteId, parcours_id })));
     }
     setPosteParcoursState((c) => [
-      ...c.filter((pp) => pp.poste_id !== posteId),
-      ...parcoursIds.map((parcours_id) => ({ poste_id: posteId, parcours_id })),
+      ...c.filter((pp) => pp.poste_id !== posteId || !toRemove.includes(pp.parcours_id)),
+      ...toAdd.map((parcours_id) => ({ poste_id: posteId, parcours_id, barriere_horaire: null })),
     ]);
+  }
+
+  async function setPosteParcoursBariereHoraire(posteId: string, parcoursId: string, value: string | null) {
+    const { error } = await supabase
+      .from('poste_parcours')
+      .update({ barriere_horaire: value })
+      .eq('poste_id', posteId)
+      .eq('parcours_id', parcoursId);
+    if (error) throw error;
+    setPosteParcoursState((c) =>
+      c.map((pp) =>
+        pp.poste_id === posteId && pp.parcours_id === parcoursId
+          ? { ...pp, barriere_horaire: value }
+          : pp,
+      ),
+    );
   }
 
   async function setPosteAbrisLinks(posteId: string, abriIds: string[]) {
@@ -445,6 +473,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     loading,
     refreshAll,
     getParcoursIdsForPoste,
+    getBarriereHoraireForPoste,
     getAffectationsForPoste,
     getAbriIdsForPoste,
     getExtractionIdsForPoste,
@@ -456,6 +485,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     updatePoste,
     deletePoste,
     setPosteParcoursLinks,
+    setPosteParcoursBariereHoraire,
     setPosteAbrisLinks,
     setPosteExtractionsLinks,
     setPosteStatut,
