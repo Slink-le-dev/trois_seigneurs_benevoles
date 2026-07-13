@@ -201,6 +201,23 @@ export default function ElevationPanel({
     setZoomRange([newStart, newStart + newSpan]);
   };
 
+  // ---- Pan (shift visible range left/right) ----
+  const panRef = useRef<(deltaKm: number) => void>(() => {});
+  panRef.current = (deltaKm: number) => {
+    if (!hasData) return;
+    const newStart = Math.max(0, Math.min(totalDist - visibleSpan, zoomStart + deltaKm));
+    setZoomRange([newStart, newStart + visibleSpan]);
+  };
+
+  // Used inside touch handler (closes over panRef/isZoomed/cW/visibleSpan)
+  const touchPanRef = useRef<(dx: number) => void>(() => {});
+  touchPanRef.current = (dx: number) => {
+    if (!isZoomed) return;
+    panRef.current(-(dx / cW) * visibleSpan);
+  };
+  const isZoomedRef = useRef(false);
+  isZoomedRef.current = isZoomed;
+
   // ---- Seek (hover) ----
   const seekRef = useRef<(clientX: number) => void>(() => {});
   const clearRef = useRef<() => void>(() => {});
@@ -240,15 +257,17 @@ export default function ElevationPanel({
     return () => el.removeEventListener('wheel', onWheel);
   }, [hasData]);
 
-  // ---- Touch: seek (1 finger) + pinch zoom (2 fingers) ----
+  // ---- Touch: pan (1 finger zoomed) / seek (1 finger not zoomed) + pinch zoom (2 fingers) ----
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
     let lastPinchDist = 0;
+    let touchStartX = 0;
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
-        seekRef.current(e.touches[0].clientX);
+        touchStartX = e.touches[0].clientX;
+        if (!isZoomedRef.current) seekRef.current(e.touches[0].clientX);
       } else if (e.touches.length === 2) {
         clearRef.current();
         lastPinchDist = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
@@ -257,7 +276,13 @@ export default function ElevationPanel({
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       if (e.touches.length === 1) {
-        seekRef.current(e.touches[0].clientX);
+        const currentX = e.touches[0].clientX;
+        if (isZoomedRef.current) {
+          touchPanRef.current(currentX - touchStartX);
+          touchStartX = currentX;
+        } else {
+          seekRef.current(currentX);
+        }
       } else if (e.touches.length === 2) {
         const newDist = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
@@ -524,6 +549,58 @@ export default function ElevationPanel({
           </div>
         )}
       </div>
+
+      {/* Scrollbar — visible only when zoomed */}
+      {isZoomed && hasData && (
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-gray-100 bg-white">
+          <button
+            onClick={() => panRef.current(-visibleSpan * 0.2)}
+            className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors text-lg leading-none select-none"
+          >
+            ‹
+          </button>
+          <div
+            className="flex-1 relative h-2.5 bg-gray-100 rounded-full cursor-pointer"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const ratio = (e.clientX - rect.left) / rect.width;
+              const newStart = Math.max(0, Math.min(totalDist - visibleSpan, ratio * totalDist - visibleSpan / 2));
+              setZoomRange([newStart, newStart + visibleSpan]);
+            }}
+          >
+            <div
+              className="absolute top-0 h-2.5 bg-gray-400 hover:bg-gray-500 rounded-full cursor-grab active:cursor-grabbing transition-colors"
+              style={{
+                left: `${(zoomStart / totalDist) * 100}%`,
+                width: `${Math.max(4, (visibleSpan / totalDist) * 100)}%`,
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                const startX = e.clientX;
+                const startZoomStart = zoomStart;
+                const trackWidth = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect().width;
+                const onMove = (me: MouseEvent) => {
+                  const deltaKm = ((me.clientX - startX) / trackWidth) * totalDist;
+                  const newStart = Math.max(0, Math.min(totalDist - visibleSpan, startZoomStart + deltaKm));
+                  setZoomRange([newStart, newStart + visibleSpan]);
+                };
+                const onUp = () => {
+                  document.removeEventListener('mousemove', onMove);
+                  document.removeEventListener('mouseup', onUp);
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+              }}
+            />
+          </div>
+          <button
+            onClick={() => panRef.current(visibleSpan * 0.2)}
+            className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors text-lg leading-none select-none"
+          >
+            ›
+          </button>
+        </div>
+      )}
     </div>
   );
 }
