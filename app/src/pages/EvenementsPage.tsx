@@ -34,13 +34,36 @@ function formatDate(debut: string, fin?: string | null) {
   return d;
 }
 
-function EventCard({ evt, past, onDelete }: { evt: Evenement; past?: boolean; onDelete: (evt: Evenement) => void }) {
+function IconPencil() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414a2 2 0 01.586-1.414z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+    </svg>
+  );
+}
+
+function EventCard({
+  evt,
+  past,
+  onEdit,
+  onDelete,
+}: {
+  evt: Evenement;
+  past?: boolean;
+  onEdit: (evt: Evenement) => void;
+  onDelete: (evt: Evenement) => void;
+}) {
   return (
     <div className={`relative flex items-center bg-white rounded-lg border transition-all group ${past ? 'border-gray-100 opacity-70 hover:opacity-100' : 'border-gray-200'} hover:border-[#00C389] hover:shadow-sm`}>
-      <Link
-        to={`/admin/${evt.slug}`}
-        className="flex-1 flex items-center justify-between px-5 py-4"
-      >
+      <Link to={`/admin/${evt.slug}`} className="flex-1 flex items-center justify-between px-5 py-4">
         <div>
           <div className={`font-semibold group-hover:text-[#005F61] ${past ? 'text-gray-600' : 'text-gray-900'}`}>{evt.nom}</div>
           <div className="text-sm text-gray-500 mt-0.5">{formatDate(evt.date_debut, evt.date_fin)}</div>
@@ -50,34 +73,53 @@ function EventCard({ evt, past, onDelete }: { evt: Evenement; past?: boolean; on
         </svg>
       </Link>
       <button
+        onClick={(e) => { e.preventDefault(); onEdit(evt); }}
+        className="flex-shrink-0 p-3 text-gray-300 hover:text-blue-500 transition-colors"
+        title="Modifier"
+      >
+        <IconPencil />
+      </button>
+      <button
         onClick={(e) => { e.preventDefault(); onDelete(evt); }}
         className="flex-shrink-0 p-3 mr-1 text-gray-300 hover:text-red-500 transition-colors"
         title="Supprimer"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-        </svg>
+        <IconTrash />
       </button>
     </div>
   );
 }
 
-interface CreateForm {
+interface EventForm {
   nom: string;
   date_debut: string;
   date_fin: string;
   slug: string;
 }
 
-const EMPTY_FORM: CreateForm = { nom: '', date_debut: '', date_fin: '', slug: '' };
+const EMPTY_FORM: EventForm = { nom: '', date_debut: '', date_fin: '', slug: '' };
+
+function formFromEvt(evt: Evenement): EventForm {
+  return { nom: evt.nom, date_debut: evt.date_debut, date_fin: evt.date_fin ?? '', slug: evt.slug };
+}
 
 function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Create modal
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [createForm, setCreateForm] = useState<EventForm>(EMPTY_FORM);
+  const [createSaving, setCreateSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Edit modal
+  const [editTarget, setEditTarget] = useState<Evenement | null>(null);
+  const [editForm, setEditForm] = useState<EventForm>(EMPTY_FORM);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<Evenement | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -86,48 +128,78 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const passes = evenements.filter((e) => e.date_debut < today).sort((a, b) => b.date_debut.localeCompare(a.date_debut));
 
   function fetchEvenements() {
-    supabase
-      .from('evenements')
-      .select('*')
-      .then(({ data }) => {
-        setEvenements(data ?? []);
-        setLoading(false);
-      });
+    supabase.from('evenements').select('*').then(({ data }) => {
+      setEvenements(data ?? []);
+      setLoading(false);
+    });
   }
 
   useEffect(() => { fetchEvenements(); }, []);
 
-  function handleNomChange(nom: string) {
-    setForm((f) => ({ ...f, nom, slug: toSlug(nom) }));
+  // ---- Create ----
+  function handleCreateNomChange(nom: string) {
+    setCreateForm((f) => ({ ...f, nom, slug: toSlug(nom) }));
   }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.nom || !form.date_debut || !form.slug) return;
-    setSaving(true);
-    setError(null);
+    if (!createForm.nom || !createForm.date_debut || !createForm.slug) return;
+    setCreateSaving(true);
+    setCreateError(null);
     const { error: err } = await supabase.from('evenements').insert({
-      nom: form.nom,
-      date_debut: form.date_debut,
-      date_fin: form.date_fin || null,
-      slug: form.slug,
+      nom: createForm.nom,
+      date_debut: createForm.date_debut,
+      date_fin: createForm.date_fin || null,
+      slug: createForm.slug,
     });
-    setSaving(false);
+    setCreateSaving(false);
     if (err) {
-      setError(err.message.includes('unique') ? 'Ce slug est déjà utilisé. Modifiez-le.' : err.message);
+      setCreateError(err.message.includes('unique') ? 'Ce slug est déjà utilisé. Modifiez-le.' : err.message);
       return;
     }
     setShowCreate(false);
-    setForm(EMPTY_FORM);
+    setCreateForm(EMPTY_FORM);
     fetchEvenements();
   }
 
-  function handleClose() {
+  function handleCreateClose() {
     setShowCreate(false);
-    setForm(EMPTY_FORM);
-    setError(null);
+    setCreateForm(EMPTY_FORM);
+    setCreateError(null);
   }
 
+  // ---- Edit ----
+  function openEdit(evt: Evenement) {
+    setEditTarget(evt);
+    setEditForm(formFromEvt(evt));
+    setEditError(null);
+  }
+
+  function handleEditNomChange(nom: string) {
+    setEditForm((f) => ({ ...f, nom, slug: toSlug(nom) }));
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTarget || !editForm.nom || !editForm.date_debut || !editForm.slug) return;
+    setEditSaving(true);
+    setEditError(null);
+    const { error: err } = await supabase.from('evenements').update({
+      nom: editForm.nom,
+      date_debut: editForm.date_debut,
+      date_fin: editForm.date_fin || null,
+      slug: editForm.slug,
+    }).eq('id', editTarget.id);
+    setEditSaving(false);
+    if (err) {
+      setEditError(err.message.includes('unique') ? 'Ce slug est déjà utilisé. Modifiez-le.' : err.message);
+      return;
+    }
+    setEditTarget(null);
+    fetchEvenements();
+  }
+
+  // ---- Delete ----
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -172,7 +244,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
             ) : (
               <div className="space-y-3">
                 {aVenir.map((evt) => (
-                  <EventCard key={evt.id} evt={evt} onDelete={setDeleteTarget} />
+                  <EventCard key={evt.id} evt={evt} onEdit={openEdit} onDelete={setDeleteTarget} />
                 ))}
               </div>
             )}
@@ -182,7 +254,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                 <h2 className="text-lg font-bold text-gray-500 mb-4">Mes évènements passés</h2>
                 <div className="space-y-3">
                   {passes.map((evt) => (
-                    <EventCard key={evt.id} evt={evt} past onDelete={setDeleteTarget} />
+                    <EventCard key={evt.id} evt={evt} past onEdit={openEdit} onDelete={setDeleteTarget} />
                   ))}
                 </div>
               </div>
@@ -191,14 +263,84 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
         )}
       </main>
 
+      {/* ---- Edit modal ---- */}
+      {editTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setEditTarget(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-5">Modifier l'évènement</h3>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'évènement</label>
+                <input
+                  autoFocus
+                  required
+                  type="text"
+                  value={editForm.nom}
+                  onChange={(e) => handleEditNomChange(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                  <input
+                    required
+                    type="date"
+                    value={editForm.date_debut}
+                    onChange={(e) => setEditForm((f) => ({ ...f, date_debut: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin <span className="text-gray-400 font-normal">(optionnelle)</span></label>
+                  <input
+                    type="date"
+                    value={editForm.date_fin}
+                    onChange={(e) => setEditForm((f) => ({ ...f, date_fin: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Identifiant URL</label>
+                <input
+                  required
+                  type="text"
+                  value={editForm.slug}
+                  onChange={(e) => setEditForm((f) => ({ ...f, slug: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#00C389]"
+                />
+                <p className="text-xs text-gray-400 mt-1">Modifie l'URL d'accès à cet évènement · doit être unique</p>
+              </div>
+              {editError && <p className="text-sm text-red-600">{editError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditTarget(null)}
+                  className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="flex-1 bg-[#00C389] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#00a874] disabled:opacity-60"
+                >
+                  {editSaving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Delete modal ---- */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setDeleteTarget(null)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start gap-3 mb-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                </svg>
+                <IconTrash />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Êtes-vous sûr de vouloir supprimer «&nbsp;{deleteTarget.nom}&nbsp;» ?</h3>
@@ -206,17 +348,10 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
               </div>
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50">
                 Annuler
               </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 bg-red-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-60"
-              >
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 bg-red-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-60">
                 {deleting ? 'Suppression…' : 'Supprimer'}
               </button>
             </div>
@@ -224,8 +359,9 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
         </div>
       )}
 
+      {/* ---- Create modal ---- */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={handleCreateClose}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-5">Nouvel évènement</h3>
             <form onSubmit={handleCreate} className="space-y-4">
@@ -235,8 +371,8 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                   autoFocus
                   required
                   type="text"
-                  value={form.nom}
-                  onChange={(e) => handleNomChange(e.target.value)}
+                  value={createForm.nom}
+                  onChange={(e) => handleCreateNomChange(e.target.value)}
                   placeholder="Trail des Trois Seigneurs"
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
                 />
@@ -247,8 +383,8 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                   <input
                     required
                     type="date"
-                    value={form.date_debut}
-                    onChange={(e) => setForm((f) => ({ ...f, date_debut: e.target.value }))}
+                    value={createForm.date_debut}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, date_debut: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
                   />
                 </div>
@@ -256,8 +392,8 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin <span className="text-gray-400 font-normal">(optionnelle)</span></label>
                   <input
                     type="date"
-                    value={form.date_fin}
-                    onChange={(e) => setForm((f) => ({ ...f, date_fin: e.target.value }))}
+                    value={createForm.date_fin}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, date_fin: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
                   />
                 </div>
@@ -267,28 +403,20 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                 <input
                   required
                   type="text"
-                  value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  value={createForm.slug}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, slug: e.target.value }))}
                   placeholder="trail-des-trois-seigneurs"
                   className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#00C389]"
                 />
                 <p className="text-xs text-gray-400 mt-1">Généré automatiquement · modifiable · doit être unique</p>
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {createError && <p className="text-sm text-red-600">{createError}</p>}
               <div className="flex gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
+                <button type="button" onClick={handleCreateClose} className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50">
                   Annuler
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 bg-[#00C389] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#00a874] disabled:opacity-60"
-                >
-                  {saving ? 'Création…' : 'Créer'}
+                <button type="submit" disabled={createSaving} className="flex-1 bg-[#00C389] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#00a874] disabled:opacity-60">
+                  {createSaving ? 'Création…' : 'Créer'}
                 </button>
               </div>
             </form>
