@@ -18,7 +18,7 @@ import {
   PosteTypeCode,
 } from '../types';
 
-export function useAppData(isAdmin: boolean, currentUserId: string | null = null, currentUserLabel: string | null = null) {
+export function useAppData(isAdmin: boolean, currentUserId: string | null = null, currentUserLabel: string | null = null, evenementId: string | null = null) {
   const [parcours, setParcours] = useState<Parcours[]>([]);
   const [postes, setPostes] = useState<Poste[]>([]);
   const [posteParcours, setPosteParcoursState] = useState<PosteParcours[]>([]);
@@ -38,6 +38,10 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     setLoading(true);
     const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
 
+    const parcoursQuery = evenementId
+      ? supabase.from('parcours').select('*').eq('evenement_id', evenementId).order('created_at')
+      : supabase.from('parcours').select('*').order('created_at');
+
     const [
       parcoursRes,
       postesRes,
@@ -51,7 +55,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       mainCouranteRes,
       settingsRes,
     ] = await Promise.all([
-      supabase.from('parcours').select('*').order('created_at'),
+      parcoursQuery,
       supabase.from('postes').select('*').order('created_at'),
       supabase.from('poste_parcours').select('*'),
       supabase.from('poste_abris').select('*'),
@@ -96,7 +100,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     }
 
     setLoading(false);
-  }, [isAdmin]);
+  }, [isAdmin, evenementId]);
 
   useEffect(() => {
     refreshAll();
@@ -148,7 +152,8 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   // ---- Parcours ----
 
   async function createParcours(data: Partial<Parcours>) {
-    const { data: row, error } = await supabase.from('parcours').insert(data).select().single();
+    const payload = evenementId ? { ...data, evenement_id: evenementId } : data;
+    const { data: row, error } = await supabase.from('parcours').insert(payload).select().single();
     if (error) throw error;
     setParcours((c) => [...c, row as Parcours]);
     return row as Parcours;

@@ -26,32 +26,37 @@ type Tab = 'carte' | 'benevoles' | 'dashboard' | 'maincourante' | 'export' | 'de
 export default function AdminDashboard() {
   const { session, loading: sessionLoading, signOut } = useSession();
   const { slug } = useParams<{ slug: string }>();
+  const [evenement, setEvenement] = useState<{ id: string; nom: string } | null>(null);
+  const [evenementLoading, setEvenementLoading] = useState(true);
 
-  if (sessionLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
+  useEffect(() => {
+    if (!slug) { setEvenementLoading(false); return; }
+    supabase.from('evenements').select('id, nom').eq('slug', slug).single()
+      .then(({ data }) => {
+        setEvenement(data ? { id: data.id, nom: data.nom } : null);
+        setEvenementLoading(false);
+      });
+  }, [slug]);
+
+  if (sessionLoading || evenementLoading) return <div className="p-6 text-center text-gray-500">Chargement…</div>;
   if (!session) return <AdminLogin />;
+  if (!evenement) return <div className="p-6 text-center text-red-500">Évènement introuvable.</div>;
 
-  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} slug={slug ?? ''} />;
+  return <AdminContent onSignOut={signOut} currentUserId={session.user.id} currentUserEmail={session.user.email ?? null} evenement={evenement} />;
 }
 
 function AdminContent({
   onSignOut,
   currentUserId,
   currentUserEmail,
-  slug,
+  evenement,
 }: {
   onSignOut: () => void;
   currentUserId: string;
   currentUserEmail: string | null;
-  slug: string;
+  evenement: { id: string; nom: string };
 }) {
-  const data = useAppData(true, currentUserId, currentUserEmail);
-  const [evenementNom, setEvenementNom] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!slug) return;
-    supabase.from('evenements').select('nom').eq('slug', slug).single()
-      .then(({ data: row }) => { if (row) setEvenementNom(row.nom); });
-  }, [slug]);
+  const data = useAppData(true, currentUserId, currentUserEmail, evenement.id);
   const [tab, setTab] = useState<Tab>('carte');
   const [showGpxModal, setShowGpxModal] = useState(false);
   const [parcoursVisibility, setParcoursVisibility] = useState<Record<string, boolean>>({});
@@ -186,7 +191,7 @@ function AdminContent({
           <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
           <div>
             <Link to="/admin" className="text-xs opacity-70 hover:opacity-100 hover:underline">← Mes évènements</Link>
-            <h1 className="font-semibold leading-tight">{evenementNom ?? 'Espace organisateur'}</h1>
+            <h1 className="font-semibold leading-tight">{evenement.nom}</h1>
           </div>
         </div>
         <div className="flex items-center gap-3 text-sm">

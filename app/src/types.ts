@@ -43,6 +43,7 @@ export interface Parcours {
   distance_km: number | null;
   denivele_m: number | null;
   gpx_geojson: GeoJSON.FeatureCollection | null;
+  evenement_id: string | null;
   created_at: string;
 }
 
