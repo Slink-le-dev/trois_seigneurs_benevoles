@@ -3,33 +3,9 @@ import { useParams } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
+import PosteForm from '../components/PosteForm';
 import { supabase } from '../lib/supabaseClient';
 import { useAppData } from '../lib/useAppData';
-import { POSTE_TYPES, Poste } from '../types';
-
-function PosteMiniCard({ poste, onClose }: { poste: Poste; onClose: () => void }) {
-  const types = POSTE_TYPES.filter((t) => poste.types.includes(t.code));
-  return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[1000] p-4 flex items-start justify-between gap-4">
-      <div>
-        <div className="font-semibold text-base">
-          {types.map((t) => t.emoji).join(' ')} Poste {poste.numero} — {poste.nom}
-        </div>
-        <div className="text-sm text-gray-500 mt-0.5">
-          {types.map((t) => t.label).join(' · ')}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="text-gray-400 hover:text-gray-600 text-xl leading-none flex-shrink-0"
-        aria-label="Fermer"
-      >
-        ×
-      </button>
-    </div>
-  );
-}
 
 export default function ParticipantView() {
   const { slug } = useParams<{ slug: string }>();
@@ -65,7 +41,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
     (p) => p.types.includes('eau') || p.types.includes('nourriture') || p.types.includes('medical'),
   );
 
-  const selectedPoste = ravitaillementPostes.find((p) => p.id === selectedPosteId) ?? null;
+  const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
 
 
   if (data.loading) {
@@ -160,15 +136,31 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
           filterParcoursIds={selectedParcoursId ? [selectedParcoursId] : []}
           isAdmin={false}
           selectedPosteId={selectedPosteId}
-          onSelectPoste={(id) => setSelectedPosteId((prev) => (prev === id ? null : id))}
+          onSelectPoste={setSelectedPosteId}
           showKmMarkers={showKmMarkers}
           hidePersonnelInfo
         />
-
-        {selectedPoste && (
-          <PosteMiniCard poste={selectedPoste} onClose={() => setSelectedPosteId(null)} />
-        )}
       </div>
+
+      {selectedPoste && (
+        <PosteForm
+          poste={selectedPoste}
+          parcours={data.parcours}
+          selectedParcoursIds={data.getParcoursIdsForPoste(selectedPoste.id)}
+          abrisTemporaires={data.abrisTemporaires}
+          selectedAbriIds={data.getAbriIdsForPoste(selectedPoste.id)}
+          pointsExtraction={data.pointsExtraction}
+          selectedExtractionIds={data.getExtractionIdsForPoste(selectedPoste.id)}
+          affectations={data.affectations}
+          benevoles={data.benevoles}
+          isAdmin={false}
+          onClose={() => setSelectedPosteId(null)}
+          allPostes={data.postes}
+          getParcoursIdsForPoste={data.getParcoursIdsForPoste}
+          getBarriereHoraireForPoste={(parcoursId) => data.getBarriereHoraireForPoste(selectedPoste.id, parcoursId)}
+          showDenivele={data.settings.show_denivele}
+        />
+      )}
     </div>
   );
 }
