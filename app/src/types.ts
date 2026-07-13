@@ -59,6 +59,7 @@ export interface Poste {
   point_passage_intermediaire: boolean;
   statut: PosteStatut;
   statut_updated_at: string;
+  evenement_id: string | null;
   created_at: string;
 }
 
@@ -129,6 +130,7 @@ export interface PointExtraction {
   libelle: string;
   lat: number;
   lng: number;
+  evenement_id: string | null;
   created_at: string;
 }
 
@@ -139,6 +141,7 @@ export interface AbriTemporaire {
   capacite: number;
   lat: number;
   lng: number;
+  evenement_id: string | null;
   created_at: string;
 }
 

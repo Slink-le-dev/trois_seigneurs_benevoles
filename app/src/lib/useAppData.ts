@@ -38,9 +38,8 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     setLoading(true);
     const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
 
-    const parcoursQuery = evenementId
-      ? supabase.from('parcours').select('*').eq('evenement_id', evenementId).order('created_at')
-      : supabase.from('parcours').select('*').order('created_at');
+    const byEvent = <T extends object>(q: T) =>
+      evenementId ? (q as any).eq('evenement_id', evenementId) : q;
 
     const [
       parcoursRes,
@@ -55,15 +54,15 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       mainCouranteRes,
       settingsRes,
     ] = await Promise.all([
-      parcoursQuery,
-      supabase.from('postes').select('*').order('created_at'),
+      byEvent(supabase.from('parcours').select('*').order('created_at')),
+      byEvent(supabase.from('postes').select('*').order('created_at')),
       supabase.from('poste_parcours').select('*'),
       supabase.from('poste_abris').select('*'),
       supabase.from('poste_extractions').select('*'),
       supabase.from(benevolesTable).select('*').order('nom'),
       supabase.from('affectations').select('*'),
-      supabase.from('points_extraction').select('*').order('created_at'),
-      supabase.from('abris_temporaires').select('*').order('created_at'),
+      byEvent(supabase.from('points_extraction').select('*').order('created_at')),
+      byEvent(supabase.from('abris_temporaires').select('*').order('created_at')),
       supabase.from('main_courante').select('*').is('deleted_at', null).order('date_evenement', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('app_settings').select('*').single(),
     ]);
@@ -116,6 +115,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
             return current.filter((p) => p.id !== (payload.old as any).id);
           }
           const incoming = payload.new as Poste;
+          if (evenementId && incoming.evenement_id !== evenementId) return current;
           const exists = current.some((p) => p.id === incoming.id);
           return exists
             ? current.map((p) => (p.id === incoming.id ? incoming : p))
@@ -127,7 +127,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [evenementId]);
 
   const getParcoursIdsForPoste = useCallback(
     (posteId: string) => posteParcours.filter((pp) => pp.poste_id === posteId).map((pp) => pp.parcours_id),
@@ -180,7 +180,8 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
 
   async function createPoste(data: Partial<Poste>, parcoursIds: string[]) {
     const numero = data.numero ?? (postes.length ? Math.max(...postes.map((p) => p.numero)) + 1 : 1);
-    const { data: row, error } = await supabase.from('postes').insert({ ...data, numero }).select().single();
+    const payload = evenementId ? { ...data, numero, evenement_id: evenementId } : { ...data, numero };
+    const { data: row, error } = await supabase.from('postes').insert(payload).select().single();
     if (error) throw error;
     const poste = row as Poste;
     setPostes((c) => [...c, poste]);
@@ -295,7 +296,9 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
 
   async function createPointExtraction(data: Partial<PointExtraction>) {
     const lettre = data.lettre ?? nextLettreExtraction();
-    const { data: row, error } = await supabase.from('points_extraction').insert({ ...data, lettre }).select().single();
+    const base = { ...data, lettre };
+    const payload = evenementId ? { ...base, evenement_id: evenementId } : base;
+    const { data: row, error } = await supabase.from('points_extraction').insert(payload).select().single();
     if (error) throw error;
     const point = row as PointExtraction;
     setPointsExtraction((c) => [...c, point]);
@@ -322,7 +325,9 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
 
   async function createAbriTemporaire(data: Partial<AbriTemporaire>) {
     const numero = data.numero ?? (abrisTemporaires.length ? Math.max(...abrisTemporaires.map((a) => a.numero)) + 1 : 1);
-    const { data: row, error } = await supabase.from('abris_temporaires').insert({ ...data, numero }).select().single();
+    const base = { ...data, numero };
+    const payload = evenementId ? { ...base, evenement_id: evenementId } : base;
+    const { data: row, error } = await supabase.from('abris_temporaires').insert(payload).select().single();
     if (error) throw error;
     const abri = row as AbriTemporaire;
     setAbrisTemporaires((c) => [...c, abri]);
