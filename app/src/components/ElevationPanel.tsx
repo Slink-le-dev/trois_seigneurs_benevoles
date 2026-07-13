@@ -103,6 +103,12 @@ export default function ElevationPanel({
   const [selectedId, setSelectedId] = useState<string | null>(defaultId);
   const [zoomRange, setZoomRange] = useState<[number, number] | null>(null);
 
+  useEffect(() => {
+    if (!filterParcoursIds?.length) return;
+    const matchId = filterParcoursIds.find((id) => available.some((p) => p.id === id));
+    if (matchId && matchId !== selectedId) setSelectedId(matchId);
+  }, [filterParcoursIds]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [chartPxW, setChartPxW] = useState(0);
