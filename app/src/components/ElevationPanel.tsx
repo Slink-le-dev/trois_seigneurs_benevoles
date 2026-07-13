@@ -386,24 +386,24 @@ export default function ElevationPanel({
           <text key={label} x={x} y={padT + cH + 22} textAnchor="middle" fontSize={9} fill="#c4c4c4">{label}</text>
         ))}
 
-        {/* Poste markers (clipped) */}
+        {/* Poste markers — lines clipped, emojis below the clip area */}
         <g clipPath={`url(#${clipId})`}>
-          {posteMarkers.map(({ dist, types }, i) => {
+          {posteMarkers.map(({ dist }, i) => {
             const x = toX(dist);
-            const totalW = (types.length - 1) * EMOJI_SPACING;
-            const startX = x - totalW / 2;
-            return (
-              <g key={i}>
-                <line x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />
-                {types.map((type, j) => (
-                  <text key={type} x={startX + j * EMOJI_SPACING} y={padT + cH + 8} textAnchor="middle" dominantBaseline="hanging" fontSize={11}>
-                    {EMOJI[type]}
-                  </text>
-                ))}
-              </g>
-            );
+            return <line key={i} x1={x} y1={padT} x2={x} y2={padT + cH} stroke="#9ca3af" strokeWidth={0.8} strokeDasharray="3 3" strokeOpacity={0.5} />;
           })}
         </g>
+        {posteMarkers.map(({ dist, types }, i) => {
+          const x = toX(dist);
+          if (x < padL || x > padL + cW) return null;
+          const totalW = (types.length - 1) * EMOJI_SPACING;
+          const startX = x - totalW / 2;
+          return types.map((type, j) => (
+            <text key={`${i}-${type}`} x={startX + j * EMOJI_SPACING} y={padT + cH + 8} textAnchor="middle" dominantBaseline="hanging" fontSize={11}>
+              {EMOJI[type]}
+            </text>
+          ));
+        })}
 
         {/* GPS position */}
         {gpsOnTrace && (() => {
