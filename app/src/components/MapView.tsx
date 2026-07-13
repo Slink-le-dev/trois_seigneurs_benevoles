@@ -59,6 +59,7 @@ interface MapViewProps {
   hidePersonnelInfo?: boolean;
   alwaysShowElevation?: boolean;
   onElevationParcoursChange?: (parcoursId: string) => void;
+  onElevationNextRavitUpdate?: (info: { km: number; nom: string } | null) => void;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -189,6 +190,7 @@ export default function MapView({
   hidePersonnelInfo = false,
   alwaysShowElevation = false,
   onElevationParcoursChange,
+  onElevationNextRavitUpdate,
 }: MapViewProps) {
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [tracking, setTracking] = useState(false);
@@ -437,6 +439,7 @@ export default function MapView({
         userPosition={tracking ? userPosition : null}
         onHoverPosition={setElevationHoverPos}
         onParcoursChange={onElevationParcoursChange}
+        onNextRavitUpdate={onElevationNextRavitUpdate}
         onClose={() => { setShowElevation(false); setElevationHoverPos(null); }}
       />
     )}

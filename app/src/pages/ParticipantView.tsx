@@ -32,6 +32,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [showGpxModal, setShowGpxModal] = useState(false);
   const [showKmMarkers, setShowKmMarkers] = useState(false);
+  const [nextRavit, setNextRavit] = useState<{ km: number; nom: string } | null>(null);
 
   const parcoursVisibility: Record<string, boolean> = selectedParcoursId
     ? Object.fromEntries(data.parcours.map((p) => [p.id, p.id === selectedParcoursId]))
@@ -125,6 +126,15 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
         </button>
       </div>
 
+      {nextRavit && (
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-teal-50 border-b border-teal-100 text-sm">
+          <span className="text-base leading-none">💧</span>
+          <span className="text-teal-700">Prochain ravitaillement :</span>
+          <span className="font-medium text-teal-900 truncate">{nextRavit.nom}</span>
+          <span className="ml-auto font-semibold text-teal-800 flex-shrink-0">{nextRavit.km} km</span>
+        </div>
+      )}
+
       <div className="flex-1 relative">
         <MapView
           parcours={data.parcours}
@@ -141,6 +151,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
           hidePersonnelInfo
           alwaysShowElevation
           onElevationParcoursChange={setSelectedParcoursId}
+          onElevationNextRavitUpdate={setNextRavit}
         />
       </div>
 

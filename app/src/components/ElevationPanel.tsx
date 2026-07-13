@@ -87,6 +87,7 @@ export default function ElevationPanel({
   userPosition,
   onHoverPosition,
   onParcoursChange,
+  onNextRavitUpdate,
   onClose,
 }: {
   parcours: Parcours[];
@@ -96,6 +97,7 @@ export default function ElevationPanel({
   userPosition?: [number, number] | null;
   onHoverPosition?: (pos: [number, number] | null) => void;
   onParcoursChange?: (parcoursId: string) => void;
+  onNextRavitUpdate?: (info: { km: number; nom: string } | null) => void;
   onClose: () => void;
 }) {
   const available = parcours.filter((p) => p.gpx_geojson);
@@ -355,11 +357,21 @@ export default function ElevationPanel({
     const dPlusRestants = suffixDeniv.dPlus[index];
     const dMinusRestants = suffixDeniv.dMinus[index];
     const nextRavit = posteMarkers
-      .filter((m) => m.types.includes('eau') || m.types.includes('nourriture'))
+      .filter((m) => m.types.includes('eau') || m.types.includes('nourriture') || m.types.includes('medical'))
       .find((m) => m.dist > point.dist + 0.05);
     const kmRavit = nextRavit != null ? nextRavit.dist - point.dist : null;
-    return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit };
+    const nomRavit = nextRavit?.nom ?? null;
+    return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit, nomRavit };
   }, [hoverInfo, suffixDeniv, profile, totalDist, posteMarkers]);
+
+  useEffect(() => {
+    if (!onNextRavitUpdate) return;
+    if (stats?.kmRavit != null && stats.nomRavit != null) {
+      onNextRavitUpdate({ km: Math.round(stats.kmRavit * 10) / 10, nom: stats.nomRavit });
+    } else {
+      onNextRavitUpdate(null);
+    }
+  }, [stats?.kmRavit, stats?.nomRavit]);
 
   const dash = '—';
 
