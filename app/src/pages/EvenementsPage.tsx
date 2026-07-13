@@ -106,6 +106,13 @@ function formFromEvt(evt: Evenement): EventForm {
 function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [organisateurNom, setOrganisateurNom] = useState('');
+
+  useEffect(() => {
+    supabase.from('app_settings').select('organisateur_nom').single().then(({ data }) => {
+      if (data) setOrganisateurNom((data as any).organisateur_nom ?? '');
+    });
+  }, []);
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -213,8 +220,8 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-[#00C389] text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Logo VO2max Tarascon" className="h-8 w-8 rounded-full" />
-          <h1 className="font-semibold">Espace organisateur</h1>
+          <img src={logo} alt="Logo Marmota" className="h-8 w-8 rounded-full" />
+          <h1 className="font-semibold">Marmota{organisateurNom ? ` — ${organisateurNom}` : ''}</h1>
         </div>
         <button onClick={onSignOut} className="text-sm underline opacity-80 hover:opacity-100">
           Déconnexion
