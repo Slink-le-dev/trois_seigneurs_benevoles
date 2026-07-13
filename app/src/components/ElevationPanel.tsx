@@ -69,11 +69,11 @@ function nearestProfilePoint(profile: ProfilePoint[], dist: number): ProfilePoin
 function fmt(n: number, dec = 1) { return n.toFixed(dec); }
 
 function slopeColor(pct: number): string {
-  if (pct <= 5)  return '#4ade80';
-  if (pct <= 10) return '#facc15';
-  if (pct <= 15) return '#fb923c';
-  if (pct <= 20) return '#f87171';
-  return '#78350f';
+  if (pct <= 5)  return '#65a30d';
+  if (pct <= 10) return '#eab308';
+  if (pct <= 15) return '#ea580c';
+  if (pct <= 20) return '#b91c1c';
+  return '#582900';
 }
 
 export default function ElevationPanel({
@@ -294,7 +294,7 @@ export default function ElevationPanel({
             <polygon
               key={i}
               points={`${x1},${y1} ${x2},${y2} ${x2},${baseline} ${x1},${baseline}`}
-              style={{ fill: slopeColor(slope), fillOpacity: 0.65 }}
+              style={{ fill: slopeColor(slope), fillOpacity: 0.7 }}
             />
           );
         })}
