@@ -396,12 +396,15 @@ export default function ElevationPanel({
         {posteMarkers.map(({ dist, types, nom }, i) => {
           const x = toX(dist);
           if (x < padL || x > padL + cW) return null;
+          const ratio = (x - padL) / cW;
+          const anchor: 'start' | 'middle' | 'end' =
+            ratio < 0.15 ? 'start' : ratio > 0.85 ? 'end' : 'middle';
           const totalW = (types.length - 1) * EMOJI_SPACING;
-          const startX = x - totalW / 2;
+          const startX = anchor === 'start' ? x : anchor === 'end' ? x - totalW : x - totalW / 2;
           const label = nom.length > 90 ? nom.slice(0, 89) + '…' : nom;
           return (
             <g key={i}>
-              <text x={x} y={padT - 20} textAnchor="middle" fontSize={8} fill="#6b7280">{label}</text>
+              <text x={x} y={padT - 20} textAnchor={anchor} fontSize={8} fill="#6b7280">{label}</text>
               {types.map((type, j) => (
                 <text key={type} x={startX + j * EMOJI_SPACING} y={padT - 6} textAnchor="middle" dominantBaseline="auto" fontSize={12}>
                   {EMOJI[type]}
