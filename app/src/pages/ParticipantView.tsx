@@ -146,9 +146,10 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
         <PosteFormParticipant
           poste={selectedPoste}
           parcours={data.parcours}
+          allPostes={data.postes}
           selectedParcoursId={selectedParcoursId}
           getParcoursIdsForPoste={data.getParcoursIdsForPoste}
-          getBarriereHoraireForPoste={(parcoursId) => data.getBarriereHoraireForPoste(selectedPoste.id, parcoursId)}
+          getBarriereHoraire={data.getBarriereHoraireForPoste}
           showDenivele={data.settings.show_denivele}
           onClose={() => setSelectedPosteId(null)}
         />
