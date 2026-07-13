@@ -174,14 +174,14 @@ export default function PosteForm({
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
 
-  function parseBarriere(v: string | null): { jour: string; heure: string } {
-    if (!v) return { jour: '', heure: '' };
-    const [jour, heure] = v.split(' ');
-    return { jour: jour ?? '', heure: heure ?? '' };
+  function parseBarriere(v: string | null): { date: string; heure: string } {
+    if (!v) return { date: '', heure: '' };
+    const [date, heure] = v.split(' ');
+    return { date: date ?? '', heure: heure ?? '' };
   }
 
-  const [barrieresEdit, setBarrieresEdit] = useState<Record<string, { jour: string; heure: string }>>(() => {
-    const init: Record<string, { jour: string; heure: string }> = {};
+  const [barrieresEdit, setBarrieresEdit] = useState<Record<string, { date: string; heure: string }>>(() => {
+    const init: Record<string, { date: string; heure: string }> = {};
     for (const pid of selectedParcoursIds) {
       init[pid] = parseBarriere(getBarriereHoraireForPoste?.(pid) ?? null);
     }
@@ -204,8 +204,8 @@ export default function PosteForm({
 
   async function handleSaveBarriere(parcoursId: string) {
     if (!onSetBarriereHoraire) return;
-    const { jour, heure } = barrieresEdit[parcoursId] ?? { jour: '', heure: '' };
-    const value = jour && heure ? `${jour} ${heure}` : null;
+    const { date, heure } = barrieresEdit[parcoursId] ?? { date: '', heure: '' };
+    const value = date && heure ? `${date} ${heure}` : null;
     setBarriereSaving((p) => ({ ...p, [parcoursId]: true }));
     try {
       await onSetBarriereHoraire(parcoursId, value);
@@ -217,9 +217,12 @@ export default function PosteForm({
   }
 
   function formatBarriere(v: string): string {
-    const { jour, heure } = parseBarriere(v);
-    const jourLabel = jour === '0' ? 'J' : `J+${jour}`;
-    return `${jourLabel} à ${heure}`;
+    const { date, heure } = parseBarriere(v);
+    if (!date || !heure) return v;
+    const d = new Date(`${date}T${heure}`);
+    if (isNaN(d.getTime())) return v;
+    const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    return `${dateStr} à ${heure}`;
   }
 
   const posteAffectations = affectations.filter((a) => a.poste_id === poste.id);
@@ -427,26 +430,21 @@ export default function PosteForm({
                       {isAdmin && onSetBarriereHoraire ? (
                         <div className="mt-2 pt-2 border-t border-gray-200 flex items-center gap-2 flex-wrap">
                           <span className="text-gray-500 flex-shrink-0">Barrière horaire :</span>
-                          <select
-                            value={barrieresEdit[p.id]?.jour ?? ''}
+                          <input
+                            type="date"
+                            value={barrieresEdit[p.id]?.date ?? ''}
                             onChange={(e) =>
                               setBarrieresEdit((prev) => ({
                                 ...prev,
-                                [p.id]: { ...prev[p.id], jour: e.target.value },
+                                [p.id]: { ...prev[p.id], date: e.target.value },
                               }))
                             }
                             className="border rounded px-1 py-0.5 text-xs"
-                          >
-                            <option value="">— jour —</option>
-                            <option value="0">J</option>
-                            <option value="1">J+1</option>
-                            <option value="2">J+2</option>
-                            <option value="3">J+3</option>
-                          </select>
+                          />
                           <input
                             type="time"
                             value={barrieresEdit[p.id]?.heure ?? ''}
-                            disabled={!barrieresEdit[p.id]?.jour}
+                            disabled={!barrieresEdit[p.id]?.date}
                             onChange={(e) =>
                               setBarrieresEdit((prev) => ({
                                 ...prev,
