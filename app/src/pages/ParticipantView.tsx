@@ -71,10 +71,10 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
       {showGpxModal && <GpxDownloadModal parcours={data.parcours} onClose={() => setShowGpxModal(false)} />}
 
       {/* Parcours selector + km markers toggle */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-white border-b text-sm flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-2 bg-white border-b text-sm overflow-x-auto flex-nowrap sm:flex-wrap">
         {data.parcours.length > 0 && (
           <>
-            <span className="text-xs text-gray-400 uppercase tracking-wide font-medium flex-shrink-0">
+            <span className="hidden sm:inline text-xs text-gray-400 uppercase tracking-wide font-medium flex-shrink-0">
               Mon parcours :
             </span>
             {data.parcours.map((p) => {
@@ -84,7 +84,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
                   key={p.id}
                   type="button"
                   onClick={() => setSelectedParcoursId(active ? null : p.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm transition-colors select-none ${
+                  className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm transition-colors select-none ${
                     active
                       ? 'text-white border-transparent'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
@@ -96,7 +96,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
                   </span>
                   <span>{p.nom}</span>
                   {(p.distance_km || p.denivele_m) && (
-                    <span className={active ? 'opacity-80 text-xs' : 'text-gray-400 text-xs'}>
+                    <span className={`hidden sm:inline ${active ? 'opacity-80 text-xs' : 'text-gray-400 text-xs'}`}>
                       {p.distance_km ? `${p.distance_km} km` : ''}
                       {p.distance_km && p.denivele_m ? ' / ' : ''}
                       {p.denivele_m ? `${p.denivele_m} m D+` : ''}
@@ -105,13 +105,13 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
                 </button>
               );
             })}
-            <span className="text-gray-200 select-none">|</span>
+            <span className="hidden sm:inline text-gray-200 select-none">|</span>
           </>
         )}
         <button
           type="button"
           onClick={() => setShowKmMarkers((v) => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm transition-colors select-none ${
+          className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm transition-colors select-none ${
             showKmMarkers
               ? 'bg-gray-700 text-white border-transparent'
               : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
