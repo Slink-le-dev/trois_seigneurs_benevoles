@@ -34,20 +34,31 @@ function formatDate(debut: string, fin?: string | null) {
   return d;
 }
 
-function EventCard({ evt, past }: { evt: Evenement; past?: boolean }) {
+function EventCard({ evt, past, onDelete }: { evt: Evenement; past?: boolean; onDelete: (evt: Evenement) => void }) {
   return (
-    <Link
-      to={`/admin/${evt.slug}`}
-      className={`flex items-center justify-between bg-white rounded-lg border px-5 py-4 hover:border-[#00C389] hover:shadow-sm transition-all group ${past ? 'border-gray-100 opacity-70 hover:opacity-100' : 'border-gray-200'}`}
-    >
-      <div>
-        <div className={`font-semibold group-hover:text-[#005F61] ${past ? 'text-gray-600' : 'text-gray-900'}`}>{evt.nom}</div>
-        <div className="text-sm text-gray-500 mt-0.5">{formatDate(evt.date_debut, evt.date_fin)}</div>
-      </div>
-      <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00C389] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-    </Link>
+    <div className={`relative flex items-center bg-white rounded-lg border transition-all group ${past ? 'border-gray-100 opacity-70 hover:opacity-100' : 'border-gray-200'} hover:border-[#00C389] hover:shadow-sm`}>
+      <Link
+        to={`/admin/${evt.slug}`}
+        className="flex-1 flex items-center justify-between px-5 py-4"
+      >
+        <div>
+          <div className={`font-semibold group-hover:text-[#005F61] ${past ? 'text-gray-600' : 'text-gray-900'}`}>{evt.nom}</div>
+          <div className="text-sm text-gray-500 mt-0.5">{formatDate(evt.date_debut, evt.date_fin)}</div>
+        </div>
+        <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00C389] flex-shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+      <button
+        onClick={(e) => { e.preventDefault(); onDelete(evt); }}
+        className="flex-shrink-0 p-3 mr-1 text-gray-300 hover:text-red-500 transition-colors"
+        title="Supprimer"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
@@ -67,6 +78,8 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Evenement | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const aVenir = evenements.filter((e) => e.date_debut >= today).sort((a, b) => a.date_debut.localeCompare(b.date_debut));
@@ -115,6 +128,15 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
     setError(null);
   }
 
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    await supabase.from('evenements').delete().eq('id', deleteTarget.id);
+    setDeleting(false);
+    setDeleteTarget(null);
+    fetchEvenements();
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-[#00C389] text-white px-4 py-3 flex items-center justify-between">
@@ -150,7 +172,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
             ) : (
               <div className="space-y-3">
                 {aVenir.map((evt) => (
-                  <EventCard key={evt.id} evt={evt} />
+                  <EventCard key={evt.id} evt={evt} onDelete={setDeleteTarget} />
                 ))}
               </div>
             )}
@@ -160,7 +182,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                 <h2 className="text-lg font-bold text-gray-500 mb-4">Mes évènements passés</h2>
                 <div className="space-y-3">
                   {passes.map((evt) => (
-                    <EventCard key={evt.id} evt={evt} past />
+                    <EventCard key={evt.id} evt={evt} past onDelete={setDeleteTarget} />
                   ))}
                 </div>
               </div>
@@ -168,6 +190,39 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
           </>
         )}
       </main>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setDeleteTarget(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">Êtes-vous sûr de vouloir supprimer «&nbsp;{deleteTarget.nom}&nbsp;» ?</h3>
+                <p className="text-sm text-gray-500 mt-1">Cette action est définitive.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleting ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={handleClose}>
