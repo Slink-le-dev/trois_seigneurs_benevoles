@@ -27,6 +27,8 @@ interface ParcoursStats {
   kmRestants: number;
   deniveleCumule: number | null;
   deniveleRestant: number | null;
+  deniveleDescendeCumule: number | null;
+  deniveleDescendeRestant: number | null;
   kmProchainRavitaillement: number | null;
 }
 
@@ -67,19 +69,27 @@ function computeParcoursStats(
   const hasElevation = allCoords[0].length >= 3;
   let deniveleCumule: number | null = null;
   let deniveleRestant: number | null = null;
+  let deniveleDescendeCumule: number | null = null;
+  let deniveleDescendeRestant: number | null = null;
   if (hasElevation) {
     let cumGain = 0;
+    let cumDescente = 0;
     for (let i = 1; i <= splitIndex; i++) {
       const diff = (allCoords[i][2] ?? 0) - (allCoords[i - 1][2] ?? 0);
       if (diff > 0) cumGain += diff;
+      else cumDescente += Math.abs(diff);
     }
     deniveleCumule = Math.round(cumGain);
+    deniveleDescendeCumule = Math.round(cumDescente);
     let remGain = 0;
+    let remDescente = 0;
     for (let i = splitIndex + 1; i < allCoords.length; i++) {
       const diff = (allCoords[i][2] ?? 0) - (allCoords[i - 1][2] ?? 0);
       if (diff > 0) remGain += diff;
+      else remDescente += Math.abs(diff);
     }
     deniveleRestant = Math.round(remGain);
+    deniveleDescendeRestant = Math.round(remDescente);
   }
 
   let kmProchainRavitaillement: number | null = null;
@@ -99,7 +109,7 @@ function computeParcoursStats(
     }
   }
 
-  return { kmCumules, kmRestants, deniveleCumule, deniveleRestant, kmProchainRavitaillement };
+  return { kmCumules, kmRestants, deniveleCumule, deniveleRestant, deniveleDescendeCumule, deniveleDescendeRestant, kmProchainRavitaillement };
 }
 
 interface PosteFormProps {
@@ -332,6 +342,20 @@ export default function PosteForm({
                           {stats.deniveleRestant !== null && showDenivele ? (
                             <div>
                               D+ restant : <strong>{stats.deniveleRestant} m</strong>
+                            </div>
+                          ) : (
+                            <div />
+                          )}
+                          {stats.deniveleDescendeCumule !== null && showDenivele ? (
+                            <div>
+                              D- cumulé : <strong>{stats.deniveleDescendeCumule} m</strong>
+                            </div>
+                          ) : (
+                            <div />
+                          )}
+                          {stats.deniveleDescendeRestant !== null && showDenivele ? (
+                            <div>
+                              D- restant : <strong>{stats.deniveleDescendeRestant} m</strong>
                             </div>
                           ) : (
                             <div />
