@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import defaultLogo from '../assets/logo.png';
 import { supabase } from '../lib/supabaseClient';
 
 const PRESET_COLORS = [
@@ -80,6 +81,10 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [organisateurNom, setOrganisateurNom] = useState('');
   const [couleurPrincipale, setCouleurPrincipale] = useState('#00C389');
   const [couleurSecondaire, setCouleurSecondaire] = useState('#F3EA5D');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -92,15 +97,38 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_settings').select('organisateur_nom, couleur_principale, couleur_secondaire').single()
+    supabase.from('app_settings').select('organisateur_nom, couleur_principale, couleur_secondaire, logo_url').single()
       .then(({ data }) => {
         if (!data) return;
         const d = data as any;
         setOrganisateurNom(d.organisateur_nom ?? '');
         setCouleurPrincipale(d.couleur_principale ?? '#00C389');
         setCouleurSecondaire(d.couleur_secondaire ?? '#F3EA5D');
+        setLogoUrl(d.logo_url ?? null);
       });
   }, []);
+
+  async function handleLogoUpload(file: File) {
+    setLogoUploading(true);
+    setLogoError(null);
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png';
+    const path = `logo.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('logos').upload(path, file, {
+      upsert: true,
+      contentType: file.type,
+    });
+    if (uploadError) {
+      setLogoError(uploadError.message);
+      setLogoUploading(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path);
+    // Append version param so browsers fetch fresh after each upload
+    const freshUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+    await supabase.from('app_settings').update({ logo_url: freshUrl }).eq('id', 1);
+    setLogoUrl(freshUrl);
+    setLogoUploading(false);
+  }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -171,6 +199,40 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C389]"
                 placeholder="Nom du club ou de l'organisation"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Logo de l'organisation</label>
+              <div className="flex items-center gap-4">
+                <img
+                  src={logoUrl ?? defaultLogo}
+                  alt="Logo actuel"
+                  className="w-14 h-14 rounded-full object-cover border-2 border-gray-200 flex-shrink-0"
+                />
+                <div className="flex-1">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={logoUploading}
+                    className="px-3 py-1.5 border rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    {logoUploading ? 'Téléchargement…' : logoUrl ? 'Modifier le logo' : 'Ajouter un logo'}
+                  </button>
+                  <p className="text-xs text-gray-400 mt-1">PNG, JPG ou SVG · format carré recommandé</p>
+                  {logoError && <p className="text-xs text-red-600 mt-1">{logoError}</p>}
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-4">

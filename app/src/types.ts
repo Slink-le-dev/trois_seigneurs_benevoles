@@ -85,6 +85,7 @@ export interface AppSettings {
   organisateur_nom: string;
   couleur_principale: string;
   couleur_secondaire: string;
+  logo_url: string | null;
 }
 
 export type BenevoleFormation =

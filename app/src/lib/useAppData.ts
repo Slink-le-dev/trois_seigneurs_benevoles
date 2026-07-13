@@ -31,7 +31,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   const [mainCourante, setMainCourante] = useState<MainCouranteEvent[]>([]);
   const [mainCouranteJournal, setMainCouranteJournal] = useState<MainCouranteJournalEntry[]>([]);
   const [mainCouranteCommentaires, setMainCouranteCommentaires] = useState<MainCouranteCommentaire[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ show_denivele: true, show_gpx_download_participant: true, show_gpx_download_benevoles: true, organisateur_nom: '', couleur_principale: '#00C389', couleur_secondaire: '#F3EA5D' });
+  const [settings, setSettings] = useState<AppSettings>({ show_denivele: true, show_gpx_download_participant: true, show_gpx_download_benevoles: true, organisateur_nom: '', couleur_principale: '#00C389', couleur_secondaire: '#F3EA5D', logo_url: null });
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {

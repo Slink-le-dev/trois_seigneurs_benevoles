@@ -108,12 +108,16 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
   const [organisateurNom, setOrganisateurNom] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_settings').select('organisateur_nom').single().then(({ data }) => {
-      if (data) setOrganisateurNom((data as any).organisateur_nom ?? '');
+    supabase.from('app_settings').select('organisateur_nom, logo_url').single().then(({ data }) => {
+      if (!data) return;
+      const d = data as any;
+      setOrganisateurNom(d.organisateur_nom ?? '');
+      setLogoUrl(d.logo_url ?? null);
     });
   }, []);
 
@@ -223,7 +227,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-[#00C389] text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Logo Marmota" className="h-8 w-8 rounded-full" />
+          <img src={logoUrl ?? logo} alt="Logo Marmota" className="h-8 w-8 rounded-full object-cover" />
           <h1 className="font-semibold">Marmota{organisateurNom ? ` — ${organisateurNom}` : ''}</h1>
         </div>
         <div className="flex items-center gap-1">

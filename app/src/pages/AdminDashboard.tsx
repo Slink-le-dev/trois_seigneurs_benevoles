@@ -174,7 +174,7 @@ function AdminContent({
     <div className="h-screen flex flex-col">
       <header className="bg-[#00C389] text-white px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Logo Marmota" className="h-8 w-8 rounded-full" />
+          <img src={data.settings.logo_url ?? logo} alt="Logo Marmota" className="h-8 w-8 rounded-full object-cover" />
           <div>
             <Link to="/admin" className="text-xs opacity-70 hover:opacity-100 hover:underline">← Mes évènements</Link>
             <h1 className="font-semibold leading-tight">
