@@ -58,6 +58,7 @@ interface MapViewProps {
   showKmMarkers?: boolean;
   hidePersonnelInfo?: boolean;
   alwaysShowElevation?: boolean;
+  onElevationParcoursChange?: (parcoursId: string) => void;
 }
 
 const COULEUR_SANS_PARCOURS = '#6b7280';
@@ -187,6 +188,7 @@ export default function MapView({
   showKmMarkers = true,
   hidePersonnelInfo = false,
   alwaysShowElevation = false,
+  onElevationParcoursChange,
 }: MapViewProps) {
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [tracking, setTracking] = useState(false);
@@ -434,6 +436,7 @@ export default function MapView({
         filterParcoursIds={filterParcoursIds}
         userPosition={tracking ? userPosition : null}
         onHoverPosition={setElevationHoverPos}
+        onParcoursChange={onElevationParcoursChange}
         onClose={() => { setShowElevation(false); setElevationHoverPos(null); }}
       />
     )}

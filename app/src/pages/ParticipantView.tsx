@@ -140,6 +140,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
           showKmMarkers={showKmMarkers}
           hidePersonnelInfo
           alwaysShowElevation
+          onElevationParcoursChange={setSelectedParcoursId}
         />
       </div>
 

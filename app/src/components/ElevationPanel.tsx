@@ -86,6 +86,7 @@ export default function ElevationPanel({
   filterParcoursIds,
   userPosition,
   onHoverPosition,
+  onParcoursChange,
   onClose,
 }: {
   parcours: Parcours[];
@@ -94,6 +95,7 @@ export default function ElevationPanel({
   filterParcoursIds?: string[];
   userPosition?: [number, number] | null;
   onHoverPosition?: (pos: [number, number] | null) => void;
+  onParcoursChange?: (parcoursId: string) => void;
   onClose: () => void;
 }) {
   const available = parcours.filter((p) => p.gpx_geojson);
@@ -521,7 +523,7 @@ export default function ElevationPanel({
             <button
               key={p.id}
               type="button"
-              onClick={() => setSelectedId(p.id)}
+              onClick={() => { setSelectedId(p.id); onParcoursChange?.(p.id); }}
               className="flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors"
               style={
                 selectedId === p.id
