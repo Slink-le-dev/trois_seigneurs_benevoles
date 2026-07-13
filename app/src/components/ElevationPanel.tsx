@@ -97,7 +97,7 @@ export default function ElevationPanel({
   userPosition?: [number, number] | null;
   onHoverPosition?: (pos: [number, number] | null) => void;
   onParcoursChange?: (parcoursId: string) => void;
-  onNextRavitUpdate?: (info: { km: number; nom: string } | null) => void;
+  onNextRavitUpdate?: (info: { km: number; nom: string; dPlus: number | null; dMoins: number | null } | null) => void;
   onClose: () => void;
 }) {
   const available = parcours.filter((p) => p.gpx_geojson);
@@ -361,17 +361,30 @@ export default function ElevationPanel({
       .find((m) => m.dist > point.dist + 0.05);
     const kmRavit = nextRavit != null ? nextRavit.dist - point.dist : null;
     const nomRavit = nextRavit?.nom ?? null;
-    return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit, nomRavit };
+    let dPlusRavit: number | null = null;
+    let dMinusRavit: number | null = null;
+    if (nextRavit != null) {
+      let lo = index, hi = profile.length - 1;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (profile[mid].dist < nextRavit.dist) lo = mid + 1; else hi = mid; }
+      dPlusRavit = Math.round(suffixDeniv.dPlus[index] - suffixDeniv.dPlus[lo]);
+      dMinusRavit = Math.round(suffixDeniv.dMinus[index] - suffixDeniv.dMinus[lo]);
+    }
+    return { kmCumul, kmRestants, pente, dPlusRestants, dMinusRestants, kmRavit, nomRavit, dPlusRavit, dMinusRavit };
   }, [hoverInfo, suffixDeniv, profile, totalDist, posteMarkers]);
 
   useEffect(() => {
     if (!onNextRavitUpdate) return;
     if (stats?.kmRavit != null && stats.nomRavit != null) {
-      onNextRavitUpdate({ km: Math.round(stats.kmRavit * 10) / 10, nom: stats.nomRavit });
+      onNextRavitUpdate({
+        km: Math.round(stats.kmRavit * 10) / 10,
+        nom: stats.nomRavit,
+        dPlus: stats.dPlusRavit,
+        dMoins: stats.dMinusRavit,
+      });
     } else {
       onNextRavitUpdate(null);
     }
-  }, [stats?.kmRavit, stats?.nomRavit]);
+  }, [stats?.kmRavit, stats?.nomRavit, stats?.dPlusRavit, stats?.dMinusRavit]);
 
   const dash = '—';
 

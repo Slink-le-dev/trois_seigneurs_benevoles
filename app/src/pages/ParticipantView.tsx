@@ -32,7 +32,7 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
   const [selectedPosteId, setSelectedPosteId] = useState<string | null>(null);
   const [showGpxModal, setShowGpxModal] = useState(false);
   const [showKmMarkers, setShowKmMarkers] = useState(false);
-  const [nextRavit, setNextRavit] = useState<{ km: number; nom: string } | null>(null);
+  const [nextRavit, setNextRavit] = useState<{ km: number; nom: string; dPlus: number | null; dMoins: number | null } | null>(null);
 
   const parcoursVisibility: Record<string, boolean> = selectedParcoursId
     ? Object.fromEntries(data.parcours.map((p) => [p.id, p.id === selectedParcoursId]))
@@ -127,11 +127,14 @@ function ParticipantViewContent({ evenement }: { evenement: { id: string; nom: s
       </div>
 
       {nextRavit && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-teal-50 border-b border-teal-100 text-sm">
+        <div className="flex items-center gap-x-3 gap-y-0.5 flex-wrap px-4 py-1.5 bg-teal-50 border-b border-teal-100 text-sm">
           <span className="text-base leading-none">💧</span>
-          <span className="text-teal-700">Prochain ravitaillement :</span>
           <span className="font-medium text-teal-900 truncate">{nextRavit.nom}</span>
-          <span className="ml-auto font-semibold text-teal-800 flex-shrink-0">{nextRavit.km} km</span>
+          <span className="ml-auto flex items-center gap-3 flex-shrink-0 font-semibold text-teal-800">
+            <span>{nextRavit.km} km</span>
+            {nextRavit.dPlus != null && <span>D+ {nextRavit.dPlus} m</span>}
+            {nextRavit.dMoins != null && <span>D− {nextRavit.dMoins} m</span>}
+          </span>
         </div>
       )}
 
