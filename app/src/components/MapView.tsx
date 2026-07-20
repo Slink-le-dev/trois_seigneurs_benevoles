@@ -212,7 +212,15 @@ export default function MapView({
       setTracking(true);
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => setUserPosition([pos.coords.latitude, pos.coords.longitude]),
-        () => { setTracking(false); setUserPosition(null); },
+        (err) => {
+          setTracking(false);
+          setUserPosition(null);
+          if (err.code === 1) {
+            alert('Accès à la position refusé.\n\nAutorisez la géolocalisation dans les paramètres de votre navigateur, puis réessayez.');
+          } else {
+            alert('Position indisponible.\n\nActivez la localisation GPS sur votre appareil, puis réessayez.');
+          }
+        },
         { enableHighAccuracy: true, maximumAge: 5000 },
       );
     }
