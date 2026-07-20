@@ -125,9 +125,11 @@ CREATE POLICY "evenements_delete_authenticated" ON evenements
   FOR DELETE TO authenticated
   USING (is_super_admin());
 
--- 9. Marquer a.passosmaciel@protonmail.com comme Super Admin
-INSERT INTO admin_roles (user_id, is_super_admin)
-SELECT id, true
-FROM auth.users
-WHERE email = 'a.passosmaciel@protonmail.com'
-ON CONFLICT (user_id) DO UPDATE SET is_super_admin = true;
+-- 9. Marquer votre compte Super Admin
+--    À exécuter SÉPARÉMENT dans le SQL Editor (ne pas committer — dépôt public) :
+--
+--    INSERT INTO admin_roles (user_id, is_super_admin)
+--    SELECT id, true
+--    FROM auth.users
+--    WHERE email = 'VOTRE_EMAIL_SUPER_ADMIN'
+--    ON CONFLICT (user_id) DO UPDATE SET is_super_admin = true;
