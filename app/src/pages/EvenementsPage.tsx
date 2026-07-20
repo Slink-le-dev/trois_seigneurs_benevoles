@@ -4,6 +4,7 @@ import logo from '../assets/logo-las-quatras-cabanas.png';
 import ProfileModal from '../components/ProfileModal';
 import AdminLogin from './AdminLogin';
 import { supabase } from '../lib/supabaseClient';
+import { useAdminRole } from '../lib/useAdminRole';
 import { useSession } from '../lib/useSession';
 import { Evenement } from '../types';
 
@@ -51,16 +52,26 @@ function IconTrash() {
   );
 }
 
+function IconUsers() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
 function EventCard({
   evt,
   past,
   onEdit,
   onDelete,
+  onManageAdmins,
 }: {
   evt: Evenement;
   past?: boolean;
-  onEdit: (evt: Evenement) => void;
-  onDelete: (evt: Evenement) => void;
+  onEdit?: (evt: Evenement) => void;
+  onDelete?: (evt: Evenement) => void;
+  onManageAdmins?: (evt: Evenement) => void;
 }) {
   return (
     <div className={`relative flex items-center bg-white rounded-lg border transition-all group ${past ? 'border-gray-100 opacity-70 hover:opacity-100' : 'border-gray-200'} hover:border-[#00C389] hover:shadow-sm`}>
@@ -73,20 +84,33 @@ function EventCard({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </Link>
-      <button
-        onClick={(e) => { e.preventDefault(); onEdit(evt); }}
-        className="flex-shrink-0 p-3 text-gray-300 hover:text-blue-500 transition-colors"
-        title="Modifier"
-      >
-        <IconPencil />
-      </button>
-      <button
-        onClick={(e) => { e.preventDefault(); onDelete(evt); }}
-        className="flex-shrink-0 p-3 mr-1 text-gray-300 hover:text-red-500 transition-colors"
-        title="Supprimer"
-      >
-        <IconTrash />
-      </button>
+      {onManageAdmins && (
+        <button
+          onClick={(e) => { e.preventDefault(); onManageAdmins(evt); }}
+          className="flex-shrink-0 p-3 text-gray-300 hover:text-indigo-500 transition-colors"
+          title="Gérer les admins"
+        >
+          <IconUsers />
+        </button>
+      )}
+      {onEdit && (
+        <button
+          onClick={(e) => { e.preventDefault(); onEdit(evt); }}
+          className="flex-shrink-0 p-3 text-gray-300 hover:text-blue-500 transition-colors"
+          title="Modifier"
+        >
+          <IconPencil />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={(e) => { e.preventDefault(); onDelete(evt); }}
+          className="flex-shrink-0 p-3 mr-1 text-gray-300 hover:text-red-500 transition-colors"
+          title="Supprimer"
+        >
+          <IconTrash />
+        </button>
+      )}
     </div>
   );
 }
@@ -104,7 +128,14 @@ function formFromEvt(evt: Evenement): EventForm {
   return { nom: evt.nom, date_debut: evt.date_debut, date_fin: evt.date_fin ?? '', slug: evt.slug };
 }
 
+interface EventAdmin {
+  user_id: string;
+  email: string;
+}
+
 function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
+  const { isSuperAdmin, loading: roleLoading } = useAdminRole();
+
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
   const [organisateurNom, setOrganisateurNom] = useState('');
@@ -137,7 +168,16 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [deleteTarget, setDeleteTarget] = useState<Evenement | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Manage admins modal
+  const [adminTarget, setAdminTarget] = useState<Evenement | null>(null);
+  const [eventAdmins, setEventAdmins] = useState<EventAdmin[]>([]);
+  const [adminListLoading, setAdminListLoading] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
   const today = new Date().toISOString().slice(0, 10);
+  // RLS already filters evenements to only accessible ones — no client-side filtering needed
   const aVenir = evenements.filter((e) => e.date_debut >= today).sort((a, b) => a.date_debut.localeCompare(b.date_debut));
   const passes = evenements.filter((e) => e.date_debut < today).sort((a, b) => b.date_debut.localeCompare(a.date_debut));
 
@@ -223,6 +263,65 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
     fetchEvenements();
   }
 
+  // ---- Manage admins ----
+  async function openManageAdmins(evt: Evenement) {
+    setAdminTarget(evt);
+    setEventAdmins([]);
+    setNewAdminEmail('');
+    setAdminError(null);
+    setAdminListLoading(true);
+    const { data } = await supabase.rpc('get_event_admins', { p_evenement_id: evt.id });
+    setEventAdmins((data as EventAdmin[]) ?? []);
+    setAdminListLoading(false);
+  }
+
+  async function handleAddAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!adminTarget || !newAdminEmail.trim()) return;
+    setAdminSaving(true);
+    setAdminError(null);
+
+    const { data: userId, error: resolveErr } = await supabase.rpc('get_user_id_by_email', {
+      p_email: newAdminEmail.trim(),
+    });
+    if (resolveErr || !userId) {
+      setAdminError('Aucun compte trouvé avec cette adresse email.');
+      setAdminSaving(false);
+      return;
+    }
+
+    if (eventAdmins.some((a) => a.user_id === userId)) {
+      setAdminError('Cet admin a déjà accès à cet événement.');
+      setAdminSaving(false);
+      return;
+    }
+
+    const { error: insertErr } = await supabase
+      .from('evenement_admins')
+      .insert({ evenement_id: adminTarget.id, user_id: userId });
+
+    if (insertErr) {
+      setAdminError(insertErr.message);
+      setAdminSaving(false);
+      return;
+    }
+
+    setNewAdminEmail('');
+    setAdminSaving(false);
+    const { data: refreshed } = await supabase.rpc('get_event_admins', { p_evenement_id: adminTarget.id });
+    setEventAdmins((refreshed as EventAdmin[]) ?? []);
+  }
+
+  async function handleRemoveAdmin(userId: string) {
+    if (!adminTarget) return;
+    await supabase
+      .from('evenement_admins')
+      .delete()
+      .eq('evenement_id', adminTarget.id)
+      .eq('user_id', userId);
+    setEventAdmins((prev) => prev.filter((a) => a.user_id !== userId));
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-[#00C389] text-white px-4 py-3 flex items-center justify-between">
@@ -279,18 +378,20 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
       <main className="flex-1 p-6 max-w-2xl mx-auto w-full">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-gray-800">Mes évènements à venir</h2>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 bg-[#00C389] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00a874] transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Nouvel évènement
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 bg-[#00C389] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#00a874] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Nouvel évènement
+            </button>
+          )}
         </div>
 
-        {loading ? (
+        {loading || roleLoading ? (
           <div className="text-center text-gray-400 py-12">Chargement…</div>
         ) : (
           <>
@@ -299,7 +400,13 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
             ) : (
               <div className="space-y-3">
                 {aVenir.map((evt) => (
-                  <EventCard key={evt.id} evt={evt} onEdit={openEdit} onDelete={setDeleteTarget} />
+                  <EventCard
+                    key={evt.id}
+                    evt={evt}
+                    onEdit={isSuperAdmin ? openEdit : undefined}
+                    onDelete={isSuperAdmin ? setDeleteTarget : undefined}
+                    onManageAdmins={isSuperAdmin ? openManageAdmins : undefined}
+                  />
                 ))}
               </div>
             )}
@@ -309,7 +416,14 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                 <h2 className="text-lg font-bold text-gray-500 mb-4">Mes évènements passés</h2>
                 <div className="space-y-3">
                   {passes.map((evt) => (
-                    <EventCard key={evt.id} evt={evt} past onEdit={openEdit} onDelete={setDeleteTarget} />
+                    <EventCard
+                      key={evt.id}
+                      evt={evt}
+                      past
+                      onEdit={isSuperAdmin ? openEdit : undefined}
+                      onDelete={isSuperAdmin ? setDeleteTarget : undefined}
+                      onManageAdmins={isSuperAdmin ? openManageAdmins : undefined}
+                    />
                   ))}
                 </div>
               </div>
@@ -475,6 +589,70 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Manage admins modal ---- */}
+      {adminTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setAdminTarget(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
+                <IconUsers />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Admins — {adminTarget.nom}</h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-5 ml-10">Les comptes ci-dessous ont accès à cet événement.</p>
+
+            {adminListLoading ? (
+              <div className="text-center text-gray-400 py-6">Chargement…</div>
+            ) : eventAdmins.length === 0 ? (
+              <div className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-lg mb-4">Aucun admin assigné.</div>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {eventAdmins.map((admin) => (
+                  <div key={admin.user_id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                    <span className="text-sm text-gray-700">{admin.email}</span>
+                    <button
+                      onClick={() => handleRemoveAdmin(admin.user_id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors ml-2 flex-shrink-0"
+                      title="Supprimer l'accès"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleAddAdmin} className="flex gap-2">
+              <input
+                type="email"
+                value={newAdminEmail}
+                onChange={(e) => { setNewAdminEmail(e.target.value); setAdminError(null); }}
+                placeholder="email@exemple.com"
+                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-0"
+                required
+              />
+              <button
+                type="submit"
+                disabled={adminSaving}
+                className="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 flex-shrink-0"
+              >
+                {adminSaving ? '…' : 'Ajouter'}
+              </button>
+            </form>
+            {adminError && <p className="text-sm text-red-600 mt-2">{adminError}</p>}
+
+            <button
+              onClick={() => setAdminTarget(null)}
+              className="mt-4 w-full border rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       )}
