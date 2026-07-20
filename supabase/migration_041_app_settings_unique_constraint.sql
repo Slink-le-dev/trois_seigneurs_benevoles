@@ -1,10 +1,14 @@
--- Migration 041: Replace partial unique index on app_settings.user_id
--- with a full UNIQUE CONSTRAINT so that upsert with onConflict works correctly.
+-- Migration 041: Fix app_settings constraints for multi-organizer architecture
 --
--- The partial index (WHERE user_id IS NOT NULL) is not recognised by PostgreSQL
--- for ON CONFLICT (user_id) DO UPDATE, causing every upsert to fail silently.
--- A full UNIQUE CONSTRAINT allows multiple NULLs (NULL ≠ NULL per SQL standard),
--- so existing rows with user_id = NULL are unaffected.
+-- 1. Drop the old "single_row" check constraint that blocked any INSERT
+--    beyond the original single global row.
+-- 2. Replace the partial unique index on user_id with a full UNIQUE CONSTRAINT
+--    so that upsert with onConflict: 'user_id' works correctly in PostgreSQL.
+--    A full UNIQUE CONSTRAINT allows multiple NULLs (NULL ≠ NULL per SQL standard).
 
+-- Drop legacy single-row guard
+ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS single_row;
+
+-- Replace partial index with proper UNIQUE CONSTRAINT
 DROP INDEX IF EXISTS app_settings_user_id_unique;
 ALTER TABLE app_settings ADD CONSTRAINT app_settings_user_id_unique UNIQUE (user_id);
