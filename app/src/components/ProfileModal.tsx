@@ -87,8 +87,10 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -99,24 +101,33 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_settings').select('organisateur_nom, telephone_pc_securite, couleur_principale, couleur_secondaire, couleur_tertiaire, logo_url').single()
-      .then(({ data }) => {
-        if (!data) return;
-        const d = data as any;
-        setOrganisateurNom(d.organisateur_nom ?? '');
-        setTelephonePcSecurite(d.telephone_pc_securite ?? '');
-        setCouleurPrincipale(d.couleur_principale ?? '#00C389');
-        setCouleurSecondaire(d.couleur_secondaire ?? '#F3EA5D');
-        setCouleurTertiaire(d.couleur_tertiaire ?? '#374151');
-        setLogoUrl(d.logo_url ?? null);
-      });
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setCurrentUserId(user.id);
+      supabase
+        .from('app_settings')
+        .select('organisateur_nom, telephone_pc_securite, couleur_principale, couleur_secondaire, couleur_tertiaire, logo_url')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!data) return;
+          const d = data as any;
+          setOrganisateurNom(d.organisateur_nom ?? '');
+          setTelephonePcSecurite(d.telephone_pc_securite ?? '');
+          setCouleurPrincipale(d.couleur_principale ?? '#00C389');
+          setCouleurSecondaire(d.couleur_secondaire ?? '#F3EA5D');
+          setCouleurTertiaire(d.couleur_tertiaire ?? '#374151');
+          setLogoUrl(d.logo_url ?? null);
+        });
+    });
   }, []);
 
   async function handleLogoUpload(file: File) {
+    if (!currentUserId) return;
     setLogoUploading(true);
     setLogoError(null);
     const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png';
-    const path = `logo.${ext}`;
+    const path = `logos/${currentUserId}.${ext}`;
     const { error: uploadError } = await supabase.storage.from('logos').upload(path, file, {
       upsert: true,
       contentType: file.type,
@@ -129,23 +140,35 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
     const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path);
     // Append version param so browsers fetch fresh after each upload
     const freshUrl = `${urlData.publicUrl}?v=${Date.now()}`;
-    await supabase.from('app_settings').update({ logo_url: freshUrl }).eq('id', 1);
+    await supabase.from('app_settings').upsert(
+      { user_id: currentUserId, logo_url: freshUrl },
+      { onConflict: 'user_id' },
+    );
     setLogoUrl(freshUrl);
     setLogoUploading(false);
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
+    if (!currentUserId) return;
     setSaving(true);
     setSaveSuccess(false);
-    await supabase.from('app_settings').update({
+    setSaveError(null);
+    const payload = {
+      user_id: currentUserId,
       organisateur_nom: organisateurNom,
       telephone_pc_securite: telephonePcSecurite,
       couleur_principale: couleurPrincipale,
       couleur_secondaire: couleurSecondaire,
       couleur_tertiaire: couleurTertiaire,
-    }).eq('id', 1);
+      logo_url: logoUrl,
+    };
+    const { error } = await supabase.from('app_settings').upsert(payload, { onConflict: 'user_id' });
     setSaving(false);
+    if (error) {
+      setSaveError(error.message);
+      return;
+    }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   }
@@ -282,6 +305,7 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
               </span>
             </div>
 
+            {saveError && <p className="text-sm text-red-600">{saveError}</p>}
             <button
               type="submit"
               disabled={saving}

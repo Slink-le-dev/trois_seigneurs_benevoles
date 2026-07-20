@@ -120,6 +120,7 @@ export interface Benevole {
   telephone: string | null;
   formation: BenevoleFormation;
   created_at: string;
+  organisateur_id: string | null;
 }
 
 export interface Affectation {
@@ -157,6 +158,7 @@ export type AppelantSpecial = 'coureur' | 'croix_rouge' | 'autre';
 
 export interface MainCouranteEvent {
   id: string;
+  evenement_id: string | null;
   numero: number;
   date_evenement: string;
   created_at: string;
@@ -200,6 +202,7 @@ export interface Evenement {
   date_fin: string | null;
   slug: string;
   created_at: string;
+  organisateur_id: string | null;
 }
 
 export interface MainCouranteCommentaire {

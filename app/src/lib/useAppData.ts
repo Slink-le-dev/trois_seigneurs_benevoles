@@ -38,8 +38,28 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     setLoading(true);
     const benevolesTable = isAdmin ? 'benevoles' : 'benevoles_public';
 
+    // Resolve the event's primary organizer — needed to filter bénévoles for
+    // the public view (benevoles_public bypasses RLS, so we filter client-side).
+    let orgId: string | null = null;
+    if (evenementId) {
+      const { data: evtData } = await supabase
+        .from('evenements')
+        .select('organisateur_id')
+        .eq('id', evenementId)
+        .single();
+      orgId = (evtData as any)?.organisateur_id ?? null;
+    }
+
     const byEvent = <T extends object>(q: T) =>
       evenementId ? (q as any).eq('evenement_id', evenementId) : q;
+
+    // Authenticated admins: RLS restricts to their own bénévoles automatically.
+    // Anon (public view): must filter by organisateur_id explicitly.
+    const benevolesQ = (!isAdmin && !orgId)
+      ? Promise.resolve({ data: [] as any[], error: null })
+      : orgId
+        ? supabase.from(benevolesTable).select('*').order('nom').eq('organisateur_id', orgId)
+        : supabase.from(benevolesTable).select('*').order('nom');
 
     const [
       parcoursRes,
@@ -59,12 +79,19 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
       supabase.from('poste_parcours').select('*'),
       supabase.from('poste_abris').select('*'),
       supabase.from('poste_extractions').select('*'),
-      supabase.from(benevolesTable).select('*').order('nom'),
+      benevolesQ,
       supabase.from('affectations').select('*'),
       byEvent(supabase.from('points_extraction').select('*').order('created_at')),
       byEvent(supabase.from('abris_temporaires').select('*').order('created_at')),
-      supabase.from('main_courante').select('*').is('deleted_at', null).order('date_evenement', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('app_settings').select('*').single(),
+      byEvent(supabase.from('main_courante').select('*').is('deleted_at', null)).order('date_evenement', { ascending: false }).order('created_at', { ascending: false }),
+      // Admin: fetch the logged-in user's own settings directly (no dependency on
+      // evenements.organisateur_id which may not be set yet).
+      // Public/anon: use get_event_settings which resolves via the organizer link.
+      (isAdmin && currentUserId)
+        ? supabase.from('app_settings').select('*').eq('user_id', currentUserId).maybeSingle()
+        : evenementId
+          ? supabase.rpc('get_event_settings', { p_evenement_id: evenementId })
+          : Promise.resolve({ data: null as AppSettings | null, error: null }),
     ]);
 
     if (parcoursRes.data) setParcours(parcoursRes.data as Parcours[]);
@@ -80,6 +107,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
           telephone: b.telephone ?? null,
           formation: b.formation ?? 'aucune',
           created_at: b.created_at,
+          organisateur_id: b.organisateur_id ?? null,
         }))
       );
     }
@@ -87,19 +115,29 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     if (pointsExtractionRes.data) setPointsExtraction(pointsExtractionRes.data as PointExtraction[]);
     if (abrisTemporairesRes.data) setAbrisTemporaires(abrisTemporairesRes.data as AbriTemporaire[]);
     if (mainCouranteRes.data) setMainCourante(mainCouranteRes.data as MainCouranteEvent[]);
-    if (settingsRes.data) setSettings(settingsRes.data as AppSettings);
+    if (settingsRes.data) {
+      const rows = Array.isArray(settingsRes.data)
+        ? (settingsRes.data as AppSettings[])
+        : [(settingsRes.data as AppSettings)];
+      if (rows.length > 0) setSettings(rows[0]);
+    }
 
     if (isAdmin) {
+      const mcIds = (mainCouranteRes.data ?? []).map((m: any) => m.id as string);
       const [journalRes, commentairesRes] = await Promise.all([
-        supabase.from('main_courante_journal').select('*').order('created_at'),
-        supabase.from('main_courante_commentaires').select('*').order('created_at'),
+        mcIds.length > 0
+          ? supabase.from('main_courante_journal').select('*').order('created_at').in('event_id', mcIds)
+          : Promise.resolve({ data: [] as MainCouranteJournalEntry[], error: null }),
+        mcIds.length > 0
+          ? supabase.from('main_courante_commentaires').select('*').order('created_at').in('event_id', mcIds)
+          : Promise.resolve({ data: [] as MainCouranteCommentaire[], error: null }),
       ]);
       if (journalRes.data) setMainCouranteJournal(journalRes.data as MainCouranteJournalEntry[]);
       if (commentairesRes.data) setMainCouranteCommentaires(commentairesRes.data as MainCouranteCommentaire[]);
     }
 
     setLoading(false);
-  }, [isAdmin, evenementId]);
+  }, [isAdmin, evenementId, currentUserId]);
 
   useEffect(() => {
     refreshAll();
@@ -279,7 +317,12 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
   // ---- Bénévoles & affectations ----
 
   async function createBenevole(data: Partial<Benevole>) {
-    const { data: row, error } = await supabase.from('benevoles').insert(data).select().single();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: row, error } = await supabase
+      .from('benevoles')
+      .insert({ ...data, organisateur_id: user?.id ?? null })
+      .select()
+      .single();
     if (error) throw error;
     setBenevoles((c) => [...c, row as Benevole]);
     return row as Benevole;
@@ -382,7 +425,7 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
     if (!currentUserId) throw new Error('Utilisateur non authentifié.');
     const { data: row, error } = await supabase
       .from('main_courante')
-      .insert({ ...data, created_by: currentUserId })
+      .insert({ ...data, created_by: currentUserId, evenement_id: evenementId })
       .select()
       .single();
     if (error) throw error;
@@ -439,7 +482,12 @@ export function useAppData(isAdmin: boolean, currentUserId: string | null = null
 
   async function updateSettings(partial: Partial<AppSettings>) {
     const next = { ...settings, ...partial };
-    const { error } = await supabase.from('app_settings').update(next).eq('id', 1);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Non authentifié');
+    const { error } = await supabase.from('app_settings').upsert(
+      { ...next, user_id: user.id },
+      { onConflict: 'user_id' },
+    );
     if (error) throw error;
     setSettings(next);
   }

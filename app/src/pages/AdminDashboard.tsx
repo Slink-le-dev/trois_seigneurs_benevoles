@@ -223,7 +223,7 @@ function AdminContent({
         </div>
       </header>
 
-      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {showProfile && <ProfileModal onClose={() => { setShowProfile(false); data.refreshAll(); }} />}
 
       {showSignOutConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowSignOutConfirm(false)}>

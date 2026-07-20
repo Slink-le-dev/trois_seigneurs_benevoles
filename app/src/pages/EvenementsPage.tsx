@@ -136,6 +136,7 @@ interface EventAdmin {
 function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const { isSuperAdmin, loading: roleLoading } = useAdminRole();
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
   const [organisateurNom, setOrganisateurNom] = useState('');
@@ -144,13 +145,26 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
+  function fetchSettings(userId: string) {
+    supabase
+      .from('app_settings')
+      .select('organisateur_nom, logo_url, couleur_tertiaire')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const d = data as any;
+        setOrganisateurNom(d.organisateur_nom ?? '');
+        setLogoUrl(d.logo_url ?? null);
+        setCouleurTertiaire(d.couleur_tertiaire ?? '#374151');
+      });
+  }
+
   useEffect(() => {
-    supabase.from('app_settings').select('organisateur_nom, logo_url, couleur_tertiaire').single().then(({ data }) => {
-      if (!data) return;
-      const d = data as any;
-      setOrganisateurNom(d.organisateur_nom ?? '');
-      setLogoUrl(d.logo_url ?? null);
-      setCouleurTertiaire(d.couleur_tertiaire ?? '#374151');
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setCurrentUserId(user.id);
+      fetchSettings(user.id);
     });
   }, []);
 
@@ -173,6 +187,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   // Manage admins modal
   const [adminTarget, setAdminTarget] = useState<Evenement | null>(null);
   const [eventAdmins, setEventAdmins] = useState<EventAdmin[]>([]);
+  const [eventOrganisateurId, setEventOrganisateurId] = useState<string | null>(null);
   const [adminListLoading, setAdminListLoading] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [adminSaving, setAdminSaving] = useState(false);
@@ -207,6 +222,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
       date_debut: createForm.date_debut,
       date_fin: createForm.date_fin || null,
       slug: createForm.slug,
+      organisateur_id: currentUserId,
     });
     setCreateSaving(false);
     if (err) {
@@ -269,12 +285,26 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
   async function openManageAdmins(evt: Evenement) {
     setAdminTarget(evt);
     setEventAdmins([]);
+    setEventOrganisateurId(evt.organisateur_id);
     setNewAdminEmail('');
     setAdminError(null);
     setAdminListLoading(true);
     const { data } = await supabase.rpc('get_event_admins', { p_evenement_id: evt.id });
     setEventAdmins((data as EventAdmin[]) ?? []);
     setAdminListLoading(false);
+  }
+
+  async function handleSetOrganisateur(userId: string) {
+    if (!adminTarget) return;
+    const { error } = await supabase
+      .from('evenements')
+      .update({ organisateur_id: userId })
+      .eq('id', adminTarget.id);
+    if (error) { setAdminError(error.message); return; }
+    setEventOrganisateurId(userId);
+    setEvenements((prev) =>
+      prev.map((e) => (e.id === adminTarget.id ? { ...e, organisateur_id: userId } : e)),
+    );
   }
 
   async function handleAddAdmin(e: React.FormEvent) {
@@ -322,6 +352,13 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
       .eq('evenement_id', adminTarget.id)
       .eq('user_id', userId);
     setEventAdmins((prev) => prev.filter((a) => a.user_id !== userId));
+    if (userId === eventOrganisateurId) {
+      await supabase.from('evenements').update({ organisateur_id: null }).eq('id', adminTarget.id);
+      setEventOrganisateurId(null);
+      setEvenements((prev) =>
+        prev.map((e) => (e.id === adminTarget!.id ? { ...e, organisateur_id: null } : e)),
+      );
+    }
   }
 
   return (
@@ -332,15 +369,17 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
           <h1 className="font-semibold">Marmota{organisateurNom ? ` — ${organisateurNom}` : ''}</h1>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowProfile(true)}
-            title="Profil"
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors opacity-80 hover:opacity-100"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
+          {!isSuperAdmin && (
+            <button
+              onClick={() => setShowProfile(true)}
+              title="Profil organisateur"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors opacity-80 hover:opacity-100"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={() => setShowSignOutConfirm(true)}
             title="Déconnexion"
@@ -353,7 +392,7 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
         </div>
       </header>
 
-      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {!isSuperAdmin && showProfile && <ProfileModal onClose={() => { setShowProfile(false); if (currentUserId) fetchSettings(currentUserId); }} />}
 
       {showSignOutConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowSignOutConfirm(false)}>
@@ -613,20 +652,36 @@ function EvenementsContent({ onSignOut }: { onSignOut: () => void }) {
               <div className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-lg mb-4">Aucun admin assigné.</div>
             ) : (
               <div className="space-y-2 mb-4">
-                {eventAdmins.map((admin) => (
-                  <div key={admin.user_id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                    <span className="text-sm text-gray-700">{admin.email}</span>
-                    <button
-                      onClick={() => handleRemoveAdmin(admin.user_id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors ml-2 flex-shrink-0"
-                      title="Supprimer l'accès"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                {eventAdmins.map((admin) => {
+                  const isOrg = admin.user_id === eventOrganisateurId;
+                  return (
+                    <div key={admin.user_id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="text-sm text-gray-700 flex-1 min-w-0 truncate">{admin.email}</span>
+                      {isOrg ? (
+                        <span className="flex-shrink-0 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                          Organisateur
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleSetOrganisateur(admin.user_id)}
+                          className="flex-shrink-0 text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:border-indigo-400 px-2 py-0.5 rounded-full transition-colors"
+                          title="Définir comme organisateur principal"
+                        >
+                          Définir organisateur
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleRemoveAdmin(admin.user_id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        title="Supprimer l'accès"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
