@@ -78,7 +78,10 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
             </button>
           )}
           <a href={`/admin/${slug}`} className="underline opacity-80 hover:opacity-100">
-            Espace organisateur
+            Vue organisateur
+          </a>
+          <a href={`/participant/${slug}`} className="underline opacity-80 hover:opacity-100">
+            Vue participant
           </a>
         </div>
       </header>
