@@ -86,6 +86,7 @@ export interface AppSettings {
   organisateur_nom: string;
   couleur_principale: string;
   couleur_secondaire: string;
+  couleur_tertiaire: string;
   logo_url: string | null;
   telephone_pc_securite: string;
 }

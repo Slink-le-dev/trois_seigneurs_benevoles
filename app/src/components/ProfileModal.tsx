@@ -82,6 +82,7 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [telephonePcSecurite, setTelephonePcSecurite] = useState('');
   const [couleurPrincipale, setCouleurPrincipale] = useState('#00C389');
   const [couleurSecondaire, setCouleurSecondaire] = useState('#F3EA5D');
+  const [couleurTertiaire, setCouleurTertiaire] = useState('#374151');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -98,7 +99,7 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_settings').select('organisateur_nom, telephone_pc_securite, couleur_principale, couleur_secondaire, logo_url').single()
+    supabase.from('app_settings').select('organisateur_nom, telephone_pc_securite, couleur_principale, couleur_secondaire, couleur_tertiaire, logo_url').single()
       .then(({ data }) => {
         if (!data) return;
         const d = data as any;
@@ -106,6 +107,7 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
         setTelephonePcSecurite(d.telephone_pc_securite ?? '');
         setCouleurPrincipale(d.couleur_principale ?? '#00C389');
         setCouleurSecondaire(d.couleur_secondaire ?? '#F3EA5D');
+        setCouleurTertiaire(d.couleur_tertiaire ?? '#374151');
         setLogoUrl(d.logo_url ?? null);
       });
   }, []);
@@ -141,6 +143,7 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
       telephone_pc_securite: telephonePcSecurite,
       couleur_principale: couleurPrincipale,
       couleur_secondaire: couleurSecondaire,
+      couleur_tertiaire: couleurTertiaire,
     }).eq('id', 1);
     setSaving(false);
     setSaveSuccess(true);
@@ -250,25 +253,32 @@ export default function ProfileModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <ColorPicker label="Couleur principale" value={couleurPrincipale} onChange={setCouleurPrincipale} />
               <ColorPicker label="Couleur secondaire" value={couleurSecondaire} onChange={setCouleurSecondaire} />
+              <ColorPicker label="Couleur tertiaire" value={couleurTertiaire} onChange={setCouleurTertiaire} />
             </div>
 
             {/* Preview */}
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50 flex-wrap">
               <span className="text-xs text-gray-500">Aperçu :</span>
               <span
                 className="px-3 py-1 rounded-full text-white text-xs font-medium"
                 style={{ background: couleurPrincipale }}
               >
-                Bouton principal
+                Principale
               </span>
               <span
                 className="px-3 py-1 rounded-full text-xs font-medium border-b-2"
                 style={{ borderColor: couleurSecondaire, color: couleurPrincipale }}
               >
-                Onglet actif
+                Secondaire
+              </span>
+              <span
+                className="px-3 py-1 rounded-full text-white text-xs font-medium"
+                style={{ background: couleurTertiaire }}
+              >
+                Tertiaire
               </span>
             </div>
 
