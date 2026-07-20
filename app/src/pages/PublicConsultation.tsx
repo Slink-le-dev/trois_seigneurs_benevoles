@@ -47,6 +47,7 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
   const [onlyPointPassage, setOnlyPointPassage] = useState(false);
   const [showKmMarkers, setShowKmMarkers] = useState(false);
   const [showGpxModal, setShowGpxModal] = useState(false);
+  const [nextRavit, setNextRavit] = useState<{ km: number; nom: string; dPlus: number | null; dMoins: number | null } | null>(null);
 
   const selectedPoste = data.postes.find((p) => p.id === selectedPosteId) ?? null;
   const selectedExtraction = data.pointsExtraction.find((p) => p.id === selectedExtractionId) ?? null;
@@ -110,6 +111,18 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
         telephonePcSecurite={data.settings.telephone_pc_securite}
       />
 
+      {nextRavit && (
+        <div className="flex items-center gap-x-3 gap-y-0.5 flex-wrap px-4 py-1.5 bg-teal-50 border-b border-teal-100 text-sm">
+          <span className="text-base leading-none">💧</span>
+          <span className="font-medium text-teal-900 truncate">{nextRavit.nom}</span>
+          <span className="ml-auto flex items-center gap-3 flex-shrink-0 font-semibold text-teal-800">
+            <span>{nextRavit.km} km</span>
+            {nextRavit.dPlus != null && <span>D+ {nextRavit.dPlus} m</span>}
+            {nextRavit.dMoins != null && <span>D− {nextRavit.dMoins} m</span>}
+          </span>
+        </div>
+      )}
+
       <div className="flex-1 relative">
         <MapView
           parcours={data.parcours}
@@ -129,6 +142,9 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
           onlyFormation={onlyFormation}
           onlyPointPassage={onlyPointPassage}
           showKmMarkers={showKmMarkers}
+          alwaysShowElevation
+          onElevationParcoursChange={(id) => setFilterParcoursIds([id])}
+          onElevationNextRavitUpdate={setNextRavit}
           pointsExtraction={data.pointsExtraction}
           showExtractions={showExtractions}
           selectedExtractionId={selectedExtractionId}
