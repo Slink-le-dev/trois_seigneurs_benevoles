@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-las-quatras-cabanas.png';
 import AbriTemporaireForm from '../components/AbriTemporaireForm';
 import FilterBar from '../components/FilterBar';
 import GpxDownloadModal from '../components/GpxDownloadModal';

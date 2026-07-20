@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-las-quatras-cabanas.png';
 import BenevolesTable from '../components/BenevolesTable';
 import DebrayabilitesTab from '../components/DebrayabilitesTab';
 import ExportTab from '../components/ExportTab';

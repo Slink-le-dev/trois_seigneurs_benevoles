@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import defaultLogo from '../assets/logo.png';
+import defaultLogo from '../assets/logo-las-quatras-cabanas.png';
 import { supabase } from '../lib/supabaseClient';
 
 const PRESET_COLORS = [

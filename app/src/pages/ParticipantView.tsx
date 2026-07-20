@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-las-quatras-cabanas.png';
 import GpxDownloadModal from '../components/GpxDownloadModal';
 import MapView from '../components/MapView';
 import PosteFormParticipant from '../components/PosteFormParticipant';

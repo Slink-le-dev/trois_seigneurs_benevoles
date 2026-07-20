@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-las-quatras-cabanas.png';
 import ProfileModal from '../components/ProfileModal';
 import AdminLogin from './AdminLogin';
 import { supabase } from '../lib/supabaseClient';
