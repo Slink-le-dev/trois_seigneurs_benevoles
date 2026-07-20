@@ -112,6 +112,7 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
         showKmMarkers={showKmMarkers}
         setShowKmMarkers={setShowKmMarkers}
         telephonePcSecurite={data.settings.telephone_pc_securite}
+        showMissions={false}
       />
 
       {nextRavit && (

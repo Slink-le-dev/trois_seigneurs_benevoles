@@ -26,6 +26,7 @@ interface FilterBarProps {
   showKmMarkers: boolean;
   setShowKmMarkers: (v: boolean) => void;
   telephonePcSecurite?: string;
+  showMissions?: boolean;
 }
 
 const ACCENT = '#005F61';
@@ -77,6 +78,7 @@ export default function FilterBar({
   showKmMarkers,
   setShowKmMarkers,
   telephonePcSecurite = '',
+  showMissions = true,
 }: FilterBarProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [draftParcoursIds, setDraftParcoursIds] = useState(filterParcoursIds);
@@ -307,21 +309,23 @@ export default function FilterBar({
                 </div>
               </div>
 
-              <div>
-                <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Missions</h3>
-                <div className="flex flex-col gap-2">
-                  {POSTE_MISSIONS.map((m) => (
-                    <label key={m.code} className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        checked={draftMissions.includes(m.code)}
-                        onChange={() => setDraftMissions(toggle(draftMissions, m.code))}
-                      />
-                      {m.label}
-                    </label>
-                  ))}
+              {showMissions && (
+                <div>
+                  <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Missions</h3>
+                  <div className="flex flex-col gap-2">
+                    {POSTE_MISSIONS.map((m) => (
+                      <label key={m.code} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={draftMissions.includes(m.code)}
+                          onChange={() => setDraftMissions(toggle(draftMissions, m.code))}
+                        />
+                        {m.label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <h3 className="font-semibold text-gray-500 uppercase text-xs mb-2">Statut</h3>
