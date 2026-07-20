@@ -61,7 +61,7 @@ function PublicConsultationContent({ evenement, slug }: { evenement: { id: strin
       <header className="text-white px-4 py-2 flex items-center justify-between" style={{ backgroundColor: data.settings.couleur_secondaire }}>
         <div className="flex items-center gap-2">
           <img src={data.settings.logo_url ?? logo} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
-          <h1 className="font-semibold">Postes bénévoles — {evenement.nom}</h1>
+          <h1 className="font-semibold">{evenement.nom} — Vue bénévole</h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
           {data.settings.show_gpx_download_benevoles && (
