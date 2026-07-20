@@ -179,10 +179,10 @@ function AdminContent({
           <img src={data.settings.logo_url ?? logo} alt="Logo Marmota" className="h-8 w-8 rounded-full object-cover" />
           <div>
             <Link to="/admin" className="text-xs opacity-70 hover:opacity-100 hover:underline">← Mes évènements</Link>
-            <h1 className="font-semibold leading-tight">
-              Marmota{data.settings.organisateur_nom ? ` — ${data.settings.organisateur_nom}` : ''}
-            </h1>
-            <p className="text-xs opacity-80 leading-tight">{evenement.nom}</p>
+            <h1 className="font-semibold leading-tight">{evenement.nom}</h1>
+            {data.settings.organisateur_nom && (
+              <p className="text-xs opacity-80 leading-tight">{data.settings.organisateur_nom}</p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3 text-sm">
